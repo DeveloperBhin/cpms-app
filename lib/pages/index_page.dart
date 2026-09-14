@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'scan_page.dart';
 import 'history_page.dart';
 import 'crop_page.dart';
+import '../services/api_services/api_services.dart';
 
 
 class IndexPage extends StatefulWidget {
   const IndexPage({super.key});
+  
 
   @override
   State<IndexPage> createState() => _IndexPageState();
@@ -15,14 +17,58 @@ class IndexPage extends StatefulWidget {
 class _IndexPageState extends State<IndexPage> {
   int _currentIndex = 0;
 
+  String _fullName = 'User';
+  bool _loadingUser = true;
+
+  @override
+void initState() {
+  super.initState();
+  _loadCurrentUser();
+}
+
   void _onNavigationTapped(int index) {
     setState(() {
       _currentIndex = index;
     });
   }
 
+Future<void> _loadCurrentUser() async {
+  try {
+    final user = await ApiServices.getCurrentUser();
+
+    if (!mounted) return;
+
+    setState(() {
+      _fullName = user['fullName'] ?? 'User';
+      
+      _loadingUser = false;
+    });
+  } catch (e) {
+    if (!mounted) return;
+
+    setState(() {
+      _fullName = 'User';
+      _loadingUser = false;
+    });
+  }
+}
+
+String _getGreeting() {
+  final hour = DateTime.now().hour;
+
+  if (hour < 12) {
+    return 'Good Morning,';
+  } else if (hour < 18) {
+    return 'Good Afternoon,';
+  } else {
+    return 'Good Evening,';
+  }
+}
+
+
   @override
   Widget build(BuildContext context) {
+    
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9F8),
 
@@ -91,30 +137,34 @@ class _IndexPageState extends State<IndexPage> {
 
                   // Greeting
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          'Good Morning,',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          'ResearcherJohn',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+  child: Column(
+    crossAxisAlignment:
+        CrossAxisAlignment.start,
+    children: [
+      Text(
+        _getGreeting(),
+        style: const TextStyle(
+          fontSize: 12,
+          color: Colors.grey,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+
+      const SizedBox(height: 2),
+
+      Text(
+        _loadingUser
+            ? 'Loading...'
+            : _fullName,
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: Colors.black87,
+        ),
+      ),
+    ],
+  ),
+),
 
                   // Notification
                   Container(

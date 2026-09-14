@@ -32,6 +32,8 @@ dependencies:
   
   # Permission handling
   permission_handler: ^13.0.1
+
+  file_picker: 10.3.3
   
   # URL launcher for opening external links
   url_launcher: ^6.2.5
