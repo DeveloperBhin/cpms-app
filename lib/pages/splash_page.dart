@@ -16,7 +16,7 @@ import '../providers/app_provider.dart';
 import '../services/model_service.dart';
 // import 'home_page.dart';
 import 'main_page.dart';
-import 'home_page.dart';
+import 'login_page.dart';
 
 
 class SplashPage extends StatefulWidget {
@@ -89,8 +89,8 @@ class _SplashPageState extends State<SplashPage>
         // Short delay to show "Ready!" message
         await Future.delayed(const Duration(milliseconds: 300));
 
-        // Navigate to HomePage, replacing the splash screen
-        _navigateToHome();
+        // Navigate to LoginPage, replacing the splash screen
+        _navigateToLogin();
       }
     } catch (e) {
       // Handle initialization errors
@@ -101,25 +101,25 @@ class _SplashPageState extends State<SplashPage>
         // Navigate anyway after showing error briefly
         await Future.delayed(const Duration(seconds: 2));
         if (mounted) {
-          _navigateToHome();
+          _navigateToLogin();
         }
       }
     }
   }
 
-  /// Navigate to HomePage, replacing the splash screen in the navigation stack
-  // void _navigateToHome() {
+  /// Navigate to LoginPage, replacing the splash screen in the navigation stack
+  // void _navigateToLogin() {
   //   Navigator.of(context).pushReplacement(
-  //     MaterialPageRoute(builder: (context) => const HomePage()),
+  //     MaterialPageRoute(builder: (context) => const LoginPage()),
   //   );
   // }
 
-  void _navigateToHome() {
-  Navigator.of(context).pushReplacement(
-    MaterialPageRoute(
-      builder: (context) => const HomePage(),
-    ),
-  );
+  void _navigateToLogin() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => const LoginPage(),
+      ),
+    );
 }
 
   @override

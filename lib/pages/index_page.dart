@@ -1,14 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'scan_page.dart';
-import 'history_page.dart';
-import 'crop_page.dart';
-import '../services/api_services/api_services.dart';
-
-
 class IndexPage extends StatefulWidget {
   const IndexPage({super.key});
-  
 
   @override
   State<IndexPage> createState() => _IndexPageState();
@@ -17,528 +10,156 @@ class IndexPage extends StatefulWidget {
 class _IndexPageState extends State<IndexPage> {
   int _currentIndex = 0;
 
-  String _fullName = 'User';
-  bool _loadingUser = true;
-
-  @override
-void initState() {
-  super.initState();
-  _loadCurrentUser();
-}
+  static const Color primaryGreen = Color(0xFF087A2F);
+  static const Color backgroundColor = Color(0xFFF8FAF8);
+  static const Color borderColor = Color(0xFFDCE8DF);
+  static const Color lightGreen = Color(0xFFE7F3EB);
+  static const Color textDark = Color(0xFF25402D);
+  static const Color orange = Color(0xFFE7A33E);
 
   void _onNavigationTapped(int index) {
     setState(() {
       _currentIndex = index;
     });
+
+    switch (index) {
+      case 0:
+        // Home
+        break;
+
+      case 1:
+        // TODO: Navigate to Farms page
+        break;
+
+      case 2:
+        // TODO: Navigate to Trees page
+        break;
+
+      case 3:
+        // TODO: Navigate to Tasks page
+        break;
+
+      case 4:
+        // TODO: Navigate to More page
+        break;
+    }
   }
-
-Future<void> _loadCurrentUser() async {
-  try {
-    final user = await ApiServices.getCurrentUser();
-
-    if (!mounted) return;
-
-    setState(() {
-      _fullName = user['fullName'] ?? 'User';
-      
-      _loadingUser = false;
-    });
-  } catch (e) {
-    if (!mounted) return;
-
-    setState(() {
-      _fullName = 'User';
-      _loadingUser = false;
-    });
-  }
-}
-
-String _getGreeting() {
-  final hour = DateTime.now().hour;
-
-  if (hour < 12) {
-    return 'Good Morning,';
-  } else if (hour < 18) {
-    return 'Good Afternoon,';
-  } else {
-    return 'Good Evening,';
-  }
-}
-
 
   @override
   Widget build(BuildContext context) {
-    
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9F8),
+      backgroundColor: backgroundColor,
 
+      // ============================================================
+      // BODY
+      // ============================================================
       body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
-            // =========================================================
-            // TOP HEADER
-            // =========================================================
+            // ======================================================
+            // DASHBOARD HEADER
+            // ======================================================
             Container(
+              width: double.infinity,
+              height: 52,
               padding: const EdgeInsets.symmetric(
                 horizontal: 14,
-                vertical: 10,
               ),
               decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(
-                  bottom: BorderSide(
-                    color: Color(0xFFE5E5E5),
-                  ),
+                color: primaryGreen,
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(18),
+                  bottomRight: Radius.circular(18),
                 ),
               ),
-              child: Row(
-                children: [
-                  // Profile picture
-                  Stack(
-                    children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.grey.shade300,
-                          ),
-                        ),
-                        child: ClipOval(
-                          child: Image.asset(
-                            'assets/images/app_icon.png',
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-
-                      // Online indicator
-                      Positioned(
-                        right: 0,
-                        bottom: 1,
-                        child: Container(
-                          width: 13,
-                          height: 13,
-                          decoration: BoxDecoration(
-                            color: Colors.green,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white,
-                              width: 2,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(width: 10),
-
-                  // Greeting
-                  Expanded(
-  child: Column(
-    crossAxisAlignment:
-        CrossAxisAlignment.start,
-    children: [
-      Text(
-        _getGreeting(),
-        style: const TextStyle(
-          fontSize: 12,
-          color: Colors.grey,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-
-      const SizedBox(height: 2),
-
-      Text(
-        _loadingUser
-            ? 'Loading...'
-            : _fullName,
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Colors.black87,
-        ),
-      ),
-    ],
-  ),
-),
-
-                  // Notification
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.grey.shade300,
-                      ),
-                    ),
-                    child: Stack(
-                      children: [
-                        const Center(
-                          child: Icon(
-                            Icons.notifications_none,
-                            color: Colors.black87,
-                            size: 24,
-                          ),
-                        ),
-
-                        Positioned(
-                          right: 8,
-                          top: 7,
-                          child: Container(
-                            width: 7,
-                            height: 7,
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              alignment: Alignment.centerLeft,
+              child: const Text(
+                'Dashboard',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
 
-            // =========================================================
+            // ======================================================
             // PAGE CONTENT
-            // =========================================================
+            // ======================================================
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
+                padding: const EdgeInsets.fromLTRB(
+                  12,
+                  20,
+                  12,
+                  22,
                 ),
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
                   children: [
-                    // =================================================
-                    // IDENTIFY PLANT HEALTH CARD
-                    // =================================================
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF0FFF3),
-                        borderRadius:
-                            BorderRadius.circular(12),
-                        border: Border.all(
-                          color: const Color(0xFFBDEFC8),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: const [
-                                    Text(
-                                      'Identify Plant Health',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight:
-                                            FontWeight.bold,
-                                        color:
-                                            Color(0xFF174D2A),
-                                      ),
-                                    ),
-
-                                    SizedBox(height: 5),
-
-                                    Text(
-                                      'Get instant AI diagnosis and\n'
-                                      'expert treatment\n'
-                                      'recommendations.',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        height: 1.4,
-                                        color:
-                                            Color(0xFF52705A),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                              // Microscope icon
-                              Container(
-                                width: 55,
-                                height: 55,
-                                decoration: BoxDecoration(
-                                  color: const Color(
-                                    0xFFDDF9E4,
-                                  ),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.biotech_outlined,
-                                  color: Colors.green,
-                                  size: 30,
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 10),
-
-                          // Scan button
-                          SizedBox(
-                            width: double.infinity,
-                            height: 42,
-                            child: ElevatedButton.icon(
-                              onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                               ScanPage(
-  onBack: () {
-    Navigator.pop(context);
-  },
-),
-                                ),
-                              );
-                              },
-                              icon: const Icon(
-                                Icons.camera_alt_outlined,
-                                size: 18,
-                              ),
-                              label: const Text(
-                                'Scan Plant',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              style:
-                                  ElevatedButton.styleFrom(
-                                backgroundColor:
-                                    const Color(0xFF16C653),
-                                foregroundColor:
-                                    Colors.white,
-                                elevation: 0,
-                                shape:
-                                    RoundedRectangleBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(
-                                    10,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 105),
-
-                    // =================================================
-                    // RECENT SCANS
-                    // =================================================
-                    Row(
-                      mainAxisAlignment:
-                          MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Recent Scans',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-
-                        TextButton(
-                          
-                                              onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                               HistoryPage(
-  onBack: () {
-    Navigator.pop(context);
-  },
-),
-  ),
-                              );
-                              },
-                          child: const Text(
-                            'See All ›',
-                            style: TextStyle(
-                              color: Color(0xFF16B94D),
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 2),
-
+                    // ==================================================
+                    // FIRST ROW
+                    // FARMS / TREES
+                    // ==================================================
                     Row(
                       children: [
                         Expanded(
-                          child: _recentScanCard(
-                            image:
-                                'assets/images/tomato.jpg',
-                            title: 'Tomato',
-                            date: 'Oct 12, 2023',
-                            status: 'Disease Detected',
-                            isDisease: true,
+                          child: _statCard(
+                            title: 'Farms',
+                            value: '3',
+                            subtitle: 'registered',
                           ),
                         ),
-
-                        const SizedBox(width: 18),
-
+                        const SizedBox(width: 12),
                         Expanded(
-                          child: _recentScanCard(
-                            image:
-                                'assets/images/maize.jpg',
-                            title: 'Maize',
-                            date: 'Oct 10, 2023',
-                            status: 'Healthy',
-                            isDisease: false,
+                          child: _statCard(
+                            title: 'Trees',
+                            value: '1,250',
+                            subtitle: 'active',
                           ),
                         ),
                       ],
                     ),
 
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 14),
 
-                    // =================================================
-                    // TUTORIALS
-                    // =================================================
+                    // ==================================================
+                    // SECOND ROW
+                    // HARVEST / ACTIVITIES
+                    // ==================================================
                     Row(
-                      mainAxisAlignment:
-                          MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'Available Crops',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                        Expanded(
+                          child: _statCard(
+                            title: 'Harvest',
+                            value: '12,050 kg',
+                            subtitle: 'season total',
                           ),
                         ),
-
-                        TextButton(
-                                           onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                               CropPage(
-  onBack: () {
-    Navigator.pop(context);
-  },
- 
-  onScan: () {
-    // open ScanPage here
-  },
-
-),
-  ),
-                              );
-                              },
-                          child: const Text(
-                            'See All ›',
-                            style: TextStyle(
-                              color: Color(0xFF16B94D),
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _statCard(
+                            title: 'Activities',
+                            value: '8',
+                            subtitle: 'this week',
                           ),
                         ),
                       ],
                     ),
 
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 22),
 
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE8FFDC),
-                        borderRadius:
-                            BorderRadius.circular(12),
-                        border: Border.all(
-                          color: const Color(0xFFC9F1B7),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 42,
-                            height: 42,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFD8F9C9),
-                              borderRadius:
-                                  BorderRadius.circular(10),
-                            ),
-                            child: const Icon(
-                            Icons.eco_outlined,
-                              color: Color(0xFF20C95A),
-                            ),
-                          ),
+                    // ==================================================
+                    // PRODUCTION OVERVIEW
+                    // ==================================================
+                    _productionOverview(),
 
-                          const SizedBox(width: 12),
+                    const SizedBox(height: 22),
 
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Crops',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight:
-                                        FontWeight.bold,
-                                    color:
-                                        Color(0xFF315D2F),
-                                  ),
-                                ),
-
-                                SizedBox(height: 2),
-
-                                Text(
-                                  'Access different plants, how to\n'
-                                  'take care of them, their common\n'
-                                  'diseases and how to treat them.',
-                                  style: TextStyle(
-                                    fontSize: 9,
-                                    height: 1.3,
-                                    color:
-                                        Color(0xFF658061),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          const Icon(
-                            Icons.chevron_right,
-                            color: Colors.grey,
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
+                    // ==================================================
+                    // UPCOMING ACTIVITIES
+                    // ==================================================
+                    _upcomingActivities(),
                   ],
                 ),
               ),
@@ -547,107 +168,345 @@ String _getGreeting() {
         ),
       ),
 
-     
+      // ============================================================
+      // BOTTOM NAVIGATION
+      // ============================================================
     );
   }
 
-  // ===============================================================
-  // RECENT SCAN CARD
-  // ===============================================================
-  Widget _recentScanCard({
-    required String image,
+  // ==============================================================
+  // STAT CARD
+  // ==============================================================
+  Widget _statCard({
     required String title,
-    required String date,
-    required String status,
-    required bool isDisease,
+    required String value,
+    required String subtitle,
   }) {
     return Container(
-      height: 123,
+      height: 104,
+      padding: const EdgeInsets.fromLTRB(
+        12,
+        12,
+        10,
+        10,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(13),
         border: Border.all(
-          color: Colors.grey.shade200,
+          color: borderColor,
+          width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
-      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: Image.asset(
-                    image,
-                    fit: BoxFit.cover,
-                  ),
+          // Title
+          Row(
+            children: [
+              Container(
+                width: 17,
+                height: 17,
+                decoration: const BoxDecoration(
+                  color: lightGreen,
+                  shape: BoxShape.circle,
                 ),
+              ),
 
-                Positioned(
-                  left: 5,
-                  bottom: 5,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 5,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isDisease
-                          ? Colors.red
-                          : Colors.green,
-                      borderRadius:
-                          BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      status,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 7,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+              const SizedBox(width: 7),
+
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: Color(0xFF637168),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-              ],
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 5),
+
+          // Value
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: primaryGreen,
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              height: 1,
             ),
           ),
 
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 7,
-              vertical: 4,
-            ),
-            child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  date,
-                  style: const TextStyle(
-                    fontSize: 7,
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
+          const Spacer(),
+
+          // Subtitle
+          Text(
+            subtitle,
+            style: const TextStyle(
+              color: Color(0xFF89948C),
+              fontSize: 8,
+              fontWeight: FontWeight.w400,
             ),
           ),
         ],
       ),
     );
+  }
+
+  // ==============================================================
+  // PRODUCTION OVERVIEW
+  // ==============================================================
+  Widget _productionOverview() {
+    return Container(
+      width: double.infinity,
+      height: 180,
+      padding: const EdgeInsets.fromLTRB(
+        14,
+        14,
+        14,
+        10,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(13),
+        border: Border.all(
+          color: borderColor,
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Production Overview',
+            style: TextStyle(
+              color: textDark,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          Expanded(
+            child: CustomPaint(
+              painter: ProductionChartPainter(),
+              size: Size.infinite,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==============================================================
+  // UPCOMING ACTIVITIES
+  // ==============================================================
+  Widget _upcomingActivities() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(
+        14,
+        14,
+        14,
+        15,
+      ),
+      decoration: BoxDecoration(
+        color: primaryGreen,
+        borderRadius: BorderRadius.circular(13),
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Upcoming Activities',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+
+          SizedBox(height: 13),
+
+          Text(
+            'Weeding • Jan 15',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 9,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+
+          SizedBox(height: 13),
+
+          Text(
+            'Pesticide Application • Mar 05',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 9,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+
+          SizedBox(height: 13),
+
+          Text(
+            'Pruning • Oct 30',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 9,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==============================================================
+  // BOTTOM NAVIGATION
+  // ==============================================================
+  
+
+  // ==============================================================
+  // NAVIGATION ITEM
+  // ==============================================================
+  Widget _navigationItem({
+    required int index,
+    required IconData icon,
+    required IconData selectedIcon,
+    required String label,
+  }) {
+    final bool selected = _currentIndex == index;
+
+    return Expanded(
+      child: InkWell(
+        onTap: () => _onNavigationTapped(index),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              selected ? selectedIcon : icon,
+              size: 17,
+              color: selected
+                  ? primaryGreen
+                  : const Color(0xFF9AA39D),
+            ),
+
+            const SizedBox(height: 4),
+
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 8,
+                fontWeight: selected
+                    ? FontWeight.w700
+                    : FontWeight.w500,
+                color: selected
+                    ? primaryGreen
+                    : const Color(0xFF9AA39D),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// =================================================================
+// PRODUCTION CHART PAINTER
+// =================================================================
+class ProductionChartPainter extends CustomPainter {
+  static const Color primaryGreen = Color(0xFF087A2F);
+  static const Color orange = Color(0xFFE7A33E);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.width <= 0 || size.height <= 0) {
+      return;
+    }
+
+    final linePaint = Paint()
+      ..color = primaryGreen
+      ..strokeWidth = 3
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final points = <Offset>[
+      Offset(
+        size.width * 0.02,
+        size.height * 0.72,
+      ),
+      Offset(
+        size.width * 0.18,
+        size.height * 0.49,
+      ),
+      Offset(
+        size.width * 0.33,
+        size.height * 0.64,
+      ),
+      Offset(
+        size.width * 0.48,
+        size.height * 0.28,
+      ),
+      Offset(
+        size.width * 0.63,
+        size.height * 0.40,
+      ),
+      Offset(
+        size.width * 0.77,
+        size.height * 0.06,
+      ),
+      Offset(
+        size.width * 0.98,
+        size.height * 0.18,
+      ),
+    ];
+
+    final path = Path();
+
+    path.moveTo(
+      points.first.dx,
+      points.first.dy,
+    );
+
+    for (int i = 1; i < points.length; i++) {
+      path.lineTo(
+        points[i].dx,
+        points[i].dy,
+      );
+    }
+
+    canvas.drawPath(
+      path,
+      linePaint,
+    );
+
+    // Highlight point
+    final highlightPaint = Paint()
+      ..color = orange
+      ..style = PaintingStyle.fill;
+
+    canvas.drawCircle(
+      points[5],
+      5,
+      highlightPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(
+    covariant CustomPainter oldDelegate,
+  ) {
+    return false;
   }
 }

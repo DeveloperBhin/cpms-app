@@ -36,27 +36,27 @@ class BottomNav extends StatelessWidget {
         ),
 
         BottomNavigationBarItem(
-          icon: Icon(Icons.history_outlined),
-          activeIcon: Icon(Icons.history),
-          label: 'History',
+          icon: Icon(Icons.crop_square_outlined),
+          activeIcon: Icon(Icons.crop_square),
+          label: 'Farms',
         ),
 
         BottomNavigationBarItem(
-          icon: Icon(Icons.camera_alt_outlined),
-          activeIcon: Icon(Icons.camera_alt),
-          label: 'Scan',
+          icon: Icon(Icons.park_outlined),
+          activeIcon: Icon(Icons.park),
+          label: 'Trees',
         ),
 
         BottomNavigationBarItem(
-          icon: Icon(Icons.eco_outlined),
-          activeIcon: Icon(Icons.eco_outlined),
-          label: 'Crops',
+          icon: Icon(Icons.check_outlined),
+          activeIcon: Icon(Icons.check),
+          label: 'Tasks',
         ),
 
         BottomNavigationBarItem(
-          icon: Icon(Icons.person_outline),
-          activeIcon: Icon(Icons.person),
-          label: 'Profile',
+          icon: Icon(Icons.menu_outlined),
+          activeIcon: Icon(Icons.menu),
+          label: 'More',
         ),
       ],
     );

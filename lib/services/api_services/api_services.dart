@@ -17,26 +17,60 @@ class ApiServices {
   // REGISTER
   // =========================
 
-  static Future<Map<String, dynamic>> register({
-    required String fullName,
-    required String email,
-    required String phone,
-    required String password,
-  }) async {
+static Future<Map<String, dynamic>> register({
+  required String fullName,
+  required String username,
+  required String region,
+  required String district,
+  required String ward,
+  required String village,
+  required String phoneNumber,
+  required String password,
+}) async {
+  final uri = Uri.parse('$baseUrl/auth/register');
+
+  final requestBody = {
+    'fullName': fullName,
+    'username': username,
+    'region': region,
+    'district': district,
+    'ward': ward,
+    'village': village,
+    'phoneNumber': phoneNumber,
+    'password': password,
+  };
+
+  try {
     final response = await http.post(
-      Uri.parse('$baseUrl/auth/register'),
+      uri,
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
-      body: jsonEncode({
-        'fullName': fullName,
-        'email': email,
-        'phone': phone,
-        'password': password,
-      }),
+      body: jsonEncode(requestBody),
     );
 
-    final data = jsonDecode(response.body);
+    print('REGISTER URL: $uri');
+    print('REGISTER REQUEST: ${jsonEncode(requestBody)}');
+    print('REGISTER STATUS: ${response.statusCode}');
+    print('REGISTER RESPONSE: ${response.body}');
+
+    Map<String, dynamic> data = {};
+
+    if (response.body.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(response.body);
+
+        if (decoded is Map<String, dynamic>) {
+          data = decoded;
+        }
+      } catch (_) {
+        throw Exception(
+          'Server returned an invalid response '
+          '(${response.statusCode})',
+        );
+      }
+    }
 
     if (response.statusCode >= 200 &&
         response.statusCode < 300) {
@@ -44,9 +78,26 @@ class ApiServices {
     }
 
     throw Exception(
-      data['message'] ?? 'Registration failed',
+      data['message'] ??
+          data['error'] ??
+          'Registration failed (${response.statusCode})',
     );
+  } on http.ClientException catch (e) {
+    throw Exception(
+      'Unable to connect to the server: ${e.message}',
+    );
+  } on SocketException {
+    throw Exception(
+      'Unable to connect to the server. Check your internet connection.',
+    );
+  } catch (e) {
+    if (e is Exception) {
+      rethrow;
+    }
+
+    throw Exception('Registration failed');
   }
+}
 
   // =========================
   // LOGIN

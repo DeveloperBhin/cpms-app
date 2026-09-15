@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'camera_page.dart';
+// import 'camera_page.dart';
 import 'tips_page.dart';
 
 class ScanPage extends StatefulWidget {
@@ -20,7 +20,7 @@ class _ScanPageState extends State<ScanPage> {
 
   late final List<Widget> _pages = [
     _buildHomeContent(),
-    const CameraPage(),
+    // const CameraPage(),
     const TipsPage(),
   ];
 

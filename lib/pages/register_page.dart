@@ -535,18 +535,15 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
-
-  final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
-
-  final _regionController = TextEditingController();
-  final _districtController = TextEditingController();
-  final _wardController = TextEditingController();
-  final _villageController = TextEditingController();
-
-  final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
+final _nameController = TextEditingController();
+final _usernameController = TextEditingController();
+final _regionController = TextEditingController();
+final _districtController = TextEditingController();
+final _wardController = TextEditingController();
+final _villageController = TextEditingController();
+final _phoneController = TextEditingController();
+final _passwordController = TextEditingController();
+final _confirmPasswordController = TextEditingController();
 
   bool _isLoading = false;
 
@@ -554,22 +551,19 @@ class _RegisterPageState extends State<RegisterPage> {
   static const Color fieldBackground = Color(0xFFEAF4EE);
   static const Color fieldBorder = Color(0xFFD7E9DD);
 
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _emailController.dispose();
-    _phoneController.dispose();
-
-    _regionController.dispose();
-    _districtController.dispose();
-    _wardController.dispose();
-    _villageController.dispose();
-
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
-
-    super.dispose();
-  }
+@override
+void dispose() {
+  _nameController.dispose();
+  _usernameController.dispose();
+  _regionController.dispose();
+  _districtController.dispose();
+  _wardController.dispose();
+  _villageController.dispose();
+  _phoneController.dispose();
+  _passwordController.dispose();
+  _confirmPasswordController.dispose();
+  super.dispose();
+}
 
   // ============================================================
   // REGISTER
@@ -585,12 +579,16 @@ class _RegisterPageState extends State<RegisterPage> {
     });
 
     try {
-      final result = await ApiServices.register(
-        fullName: _nameController.text.trim(),
-        email: _emailController.text.trim(),
-        phone: _phoneController.text.trim(),
-        password: _passwordController.text,
-      );
+    final result = await ApiServices.register(
+  fullName: _nameController.text.trim(),
+  username: _usernameController.text.trim(),
+  region: _regionController.text.trim(),
+  district: _districtController.text.trim(),
+  ward: _wardController.text.trim(),
+  village: _villageController.text.trim(),
+  phoneNumber: _phoneController.text.trim(),
+  password: _passwordController.text,
+);
 
       if (!mounted) return;
 
@@ -771,179 +769,143 @@ class _RegisterPageState extends State<RegisterPage> {
                     child: Column(
                       children: [
                         // FULL NAME
-                        _buildField(
-                          controller: _nameController,
-                          hint: 'Full name',
-                          keyboardType: TextInputType.name,
+// FULL NAME
+_buildField(
+  controller: _nameController,
+  hint: 'Full Name',
+  keyboardType: TextInputType.name,
+  validator: (value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Full name is required';
+    }
+    return null;
+  },
+),
 
-                          validator: (value) {
-                            if (value == null ||
-                                value.trim().isEmpty) {
-                              return 'Full name is required';
-                            }
+_gap(),
 
-                            return null;
-                          },
-                        ),
+// USERNAME
+_buildField(
+  controller: _usernameController,
+  hint: 'Username',
+  validator: (value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Username is required';
+    }
+    return null;
+  },
+),
 
-                        _gap(),
+_gap(),
 
-                        // PHONE
-                        _buildField(
-                          controller: _phoneController,
-                          hint: 'Phone',
-                          keyboardType: TextInputType.phone,
+// REGION
+_buildField(
+  controller: _regionController,
+  hint: 'Region',
+  validator: (value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Region is required';
+    }
+    return null;
+  },
+),
 
-                          validator: (value) {
-                            if (value == null ||
-                                value.trim().isEmpty) {
-                              return 'Phone is required';
-                            }
+_gap(),
 
-                            return null;
-                          },
-                        ),
+// DISTRICT
+_buildField(
+  controller: _districtController,
+  hint: 'District',
+  validator: (value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'District is required';
+    }
+    return null;
+  },
+),
 
-                        _gap(),
+_gap(),
 
-                        // REGION
-                        _buildField(
-                          controller: _regionController,
-                          hint: 'Region',
+// WARD
+_buildField(
+  controller: _wardController,
+  hint: 'Ward',
+  validator: (value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Ward is required';
+    }
+    return null;
+  },
+),
 
-                          validator: (value) {
-                            if (value == null ||
-                                value.trim().isEmpty) {
-                              return 'Region is required';
-                            }
+_gap(),
 
-                            return null;
-                          },
-                        ),
+// VILLAGE
+_buildField(
+  controller: _villageController,
+  hint: 'Village',
+  validator: (value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Village is required';
+    }
+    return null;
+  },
+),
 
-                        _gap(),
+_gap(),
 
-                        // DISTRICT
-                        _buildField(
-                          controller: _districtController,
-                          hint: 'District',
+// PHONE NUMBER
+_buildField(
+  controller: _phoneController,
+  hint: 'Phone Number',
+  keyboardType: TextInputType.phone,
+  validator: (value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Phone number is required';
+    }
+    return null;
+  },
+),
 
-                          validator: (value) {
-                            if (value == null ||
-                                value.trim().isEmpty) {
-                              return 'District is required';
-                            }
+_gap(),
 
-                            return null;
-                          },
-                        ),
+// PASSWORD
+_buildField(
+  controller: _passwordController,
+  hint: 'Password',
+  obscureText: true,
+  validator: (value) {
+    if (value == null || value.isEmpty) {
+      return 'Password is required';
+    }
 
-                        _gap(),
+    if (value.length < 6) {
+      return 'Minimum 6 characters';
+    }
 
-                        // WARD
-                        _buildField(
-                          controller: _wardController,
-                          hint: 'Ward',
+    return null;
+  },
+),
 
-                          validator: (value) {
-                            if (value == null ||
-                                value.trim().isEmpty) {
-                              return 'Ward is required';
-                            }
+_gap(),
 
-                            return null;
-                          },
-                        ),
+// CONFIRM PASSWORD
+_buildField(
+  controller: _confirmPasswordController,
+  hint: 'Confirm Password',
+  obscureText: true,
+  validator: (value) {
+    if (value == null || value.isEmpty) {
+      return 'Confirm password is required';
+    }
 
-                        _gap(),
+    if (value != _passwordController.text) {
+      return 'Passwords do not match';
+    }
 
-                        // VILLAGE
-                        _buildField(
-                          controller: _villageController,
-                          hint: 'Village',
-
-                          validator: (value) {
-                            if (value == null ||
-                                value.trim().isEmpty) {
-                              return 'Village is required';
-                            }
-
-                            return null;
-                          },
-                        ),
-
-                        _gap(),
-
-                        // EMAIL
-                        //
-                        // Not shown in your screenshot,
-                        // but required by your existing API.
-                        _buildField(
-                          controller: _emailController,
-                          hint: 'Email',
-                          keyboardType:
-                              TextInputType.emailAddress,
-
-                          validator: (value) {
-                            if (value == null ||
-                                value.trim().isEmpty) {
-                              return 'Email is required';
-                            }
-
-                            if (!value.contains('@')) {
-                              return 'Enter a valid email';
-                            }
-
-                            return null;
-                          },
-                        ),
-
-                        _gap(),
-
-                        // PASSWORD
-                        _buildField(
-                          controller: _passwordController,
-                          hint: 'Password',
-                          obscureText: true,
-
-                          validator: (value) {
-                            if (value == null ||
-                                value.isEmpty) {
-                              return 'Password is required';
-                            }
-
-                            if (value.length < 6) {
-                              return 'Minimum 6 characters';
-                            }
-
-                            return null;
-                          },
-                        ),
-
-                        _gap(),
-
-                        // CONFIRM PASSWORD
-                        _buildField(
-                          controller:
-                              _confirmPasswordController,
-
-                          hint: 'Confirm password',
-                          obscureText: true,
-
-                          validator: (value) {
-                            if (value == null ||
-                                value.isEmpty) {
-                              return 'Confirm your password';
-                            }
-
-                            if (value !=
-                                _passwordController.text) {
-                              return 'Passwords do not match';
-                            }
-
-                            return null;
-                          },
-                        ),
+    return null;
+  },
+),
 
                         const SizedBox(height: 42),
 

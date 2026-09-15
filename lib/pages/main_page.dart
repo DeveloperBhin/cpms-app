@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'home_page.dart';
 import 'index_page.dart';
-import 'scan_page.dart';
 import 'me_page.dart';
-import 'history_page.dart';
-import 'crop_page.dart';
-
+import 'farms_page.dart';
+import 'blocks_page.dart';
 import '../widgets/bottom_nav.dart';
+import 'trees_page.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -32,7 +31,7 @@ List<Widget> get _pages => [
         //   ),
         // ),
 
-           HistoryPage(
+           FarmsPage(
           onBack: () {
             setState(() {
               _currentIndex = 0;
@@ -42,7 +41,7 @@ List<Widget> get _pages => [
 
 
 
-        ScanPage(
+        BlocksPage(
           onBack: () {
             setState(() {
               _currentIndex = 0;
@@ -52,7 +51,7 @@ List<Widget> get _pages => [
 
          
 
-        CropPage(
+        TreesPage(
           
           onBack: () {
             setState(() {
