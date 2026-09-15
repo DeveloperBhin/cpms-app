@@ -48,10 +48,10 @@ class BottomNav extends StatelessWidget {
         ),
 
         BottomNavigationBarItem(
-          icon: Icon(Icons.check_outlined),
-          activeIcon: Icon(Icons.check),
-          label: 'Tasks',
-        ),
+  icon: Icon(Icons.assignment_outlined),
+  activeIcon: Icon(Icons.assignment),
+  label: 'Activities',
+),
 
         BottomNavigationBarItem(
           icon: Icon(Icons.menu_outlined),

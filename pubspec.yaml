@@ -40,6 +40,7 @@ dependencies:
   http: ^1.6.0
   shared_preferences: ^2.5.5
   barcode_widget: ^2.0.4
+  mobile_scanner: ^7.4.2
 dev_dependencies:
   flutter_test:
     sdk: flutter

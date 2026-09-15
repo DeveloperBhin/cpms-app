@@ -345,7 +345,6 @@ class _TreePageState extends State<TreePage> {
         ),
       ),
 
-      bottomNavigationBar: _bottomNavigation(),
     );
   }
 
@@ -696,74 +695,7 @@ class _TreePageState extends State<TreePage> {
   // ==============================================================
   // BOTTOM NAVIGATION
   // ==============================================================
-  Widget _bottomNavigation() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: Colors.grey.shade200,
-          ),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 62,
-          child: Row(
-            children: [
-              _navItem(
-                icon: Icons.home_outlined,
-                label: 'Home',
-                selected: false,
-                onTap: () {
-                  Navigator.popUntil(
-                    context,
-                    (route) => route.isFirst,
-                  );
-                },
-              ),
 
-              _navItem(
-                icon:
-                    Icons.crop_square_outlined,
-                label: 'Farms',
-                selected: false,
-                onTap: () {
-                  // Connect FarmsPage here
-                },
-              ),
-
-              _navItem(
-                icon: Icons.park_outlined,
-                label: 'Trees',
-                selected: true,
-                onTap: () {},
-              ),
-
-              _navItem(
-                icon: Icons.check_outlined,
-                label: 'Tasks',
-                selected: false,
-                onTap: () {
-                  // Connect TasksPage here
-                },
-              ),
-
-              _navItem(
-                icon: Icons.menu,
-                label: 'More',
-                selected: false,
-                onTap: () {
-                  // Connect MorePage here
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   Widget _navItem({
     required IconData icon,

@@ -152,7 +152,6 @@ const SizedBox(height: 14),
         ),
       ),
 
-      bottomNavigationBar: _bottomNavigation(context),
     );
   }
 
@@ -348,76 +347,7 @@ Widget _informationCard(BuildContext context) {    return Container(
   // ===============================================================
   // BOTTOM NAVIGATION
   // ===============================================================
-  Widget _bottomNavigation(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: Colors.grey.shade200,
-          ),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 62,
-          child: Row(
-            children: [
-              _navigationItem(
-                icon: Icons.home_outlined,
-                label: 'Home',
-                selected: false,
-                onTap: () {
-                  Navigator.popUntil(
-                    context,
-                    (route) => route.isFirst,
-                  );
-                },
-              ),
-
-              _navigationItem(
-                icon: Icons.crop_square_outlined,
-                label: 'Farms',
-                selected: true,
-                onTap: () {
-                  Navigator.pop(context);
-                },
-              ),
-
-              _navigationItem(
-                icon: Icons.park_outlined,
-                label: 'Trees',
-                selected: false,
-                onTap: () {},
-              ),
-
-              _navigationItem(
-                icon: Icons.check_outlined,
-                label: 'Tasks',
-                selected: false,
-                onTap: () {},
-              ),
-
-              _navigationItem(
-                icon: Icons.menu,
-                label: 'More',
-                selected: false,
-                onTap: () {},
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  
 
   // ===============================================================
   // NAV ITEM

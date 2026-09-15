@@ -6,6 +6,7 @@ import 'farms_page.dart';
 import 'blocks_page.dart';
 import '../widgets/bottom_nav.dart';
 import 'trees_page.dart';
+import 'activity_page.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -52,6 +53,15 @@ List<Widget> get _pages => [
          
 
         TreePage(
+          
+          onBack: () {
+            setState(() {
+              _currentIndex = 0;
+            });
+          },
+   
+        ),
+         ActivityPage(
           
           onBack: () {
             setState(() {

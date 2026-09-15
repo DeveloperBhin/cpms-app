@@ -204,7 +204,6 @@ class _BlockDetailsPageState extends State<BlockDetailsPage> {
         ),
       ),
 
-      bottomNavigationBar: _bottomNavigation(context),
     );
   }
 
@@ -465,65 +464,7 @@ class _BlockDetailsPageState extends State<BlockDetailsPage> {
   // ===============================================================
   // BOTTOM NAVIGATION
   // ===============================================================
-  Widget _bottomNavigation(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: Colors.grey.shade200,
-          ),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 62,
-          child: Row(
-            children: [
-              _navItem(
-                icon: Icons.home_outlined,
-                label: 'Home',
-                selected: false,
-                onTap: () {
-                  Navigator.popUntil(
-                    context,
-                    (route) => route.isFirst,
-                  );
-                },
-              ),
-              _navItem(
-                icon: Icons.crop_square_outlined,
-                label: 'Farms',
-                selected: true,
-                onTap: () {
-                  Navigator.pop(context);
-                },
-              ),
-              _navItem(
-                icon: Icons.park_outlined,
-                label: 'Trees',
-                selected: false,
-                onTap: () {},
-              ),
-              _navItem(
-                icon: Icons.check_outlined,
-                label: 'Tasks',
-                selected: false,
-                onTap: () {},
-              ),
-              _navItem(
-                icon: Icons.menu,
-                label: 'More',
-                selected: false,
-                onTap: () {},
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+ 
 
   Widget _navItem({
     required IconData icon,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:barcode_widget/barcode_widget.dart';
-
+import 'scan_page.dart';
+import 'tree_activity_page.dart';
 class TreeDetailsPage extends StatelessWidget {
   final String farmId;
   final String blockId;
@@ -8,7 +9,6 @@ class TreeDetailsPage extends StatelessWidget {
   final String variety;
   final String age;
   final String status;
-
   const TreeDetailsPage({
     super.key,
     required this.farmId,
@@ -17,6 +17,7 @@ class TreeDetailsPage extends StatelessWidget {
     required this.variety,
     required this.age,
     required this.status,
+
   });
 
   static const Color primaryGreen = Color(0xFF087A2F);
@@ -98,7 +99,11 @@ class TreeDetailsPage extends StatelessWidget {
                     // =============================================
                     // TREE INFORMATION
                     // =============================================
-                  _treeInformation(),
+          _treeInformation(),
+
+const SizedBox(height: 18),
+
+_scanTreeButton(context),
 
 const SizedBox(height: 18),
 
@@ -107,7 +112,6 @@ _treeCodeCard(context),
 const SizedBox(height: 18),
 
 _locationCard(),
-
                     const SizedBox(height: 18),
 
                     // =============================================
@@ -127,8 +131,11 @@ _locationCard(),
                     // =============================================
                     // RECENT ACTIVITIES
                     // =============================================
-                    _recentActivities(),
-                  ],
+_activityActions(context),
+
+const SizedBox(height: 18),
+
+_recentActivities(),                  ],
                 ),
               ),
             ),
@@ -136,7 +143,6 @@ _locationCard(),
         ),
       ),
 
-      bottomNavigationBar: _bottomNavigation(context),
     );
   }
 
@@ -256,6 +262,150 @@ _locationCard(),
       ),
     );
   }
+
+  Widget _activityActions(BuildContext context) {
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(14),
+    decoration: _cardDecoration(),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Tree Activities',
+          style: TextStyle(
+            color: primaryGreen,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+
+        const SizedBox(height: 5),
+
+        const Text(
+          'Record and manage activities performed on this tree.',
+          style: TextStyle(
+            color: textGrey,
+            fontSize: 8,
+          ),
+        ),
+
+        const SizedBox(height: 15),
+
+        SizedBox(
+          width: double.infinity,
+          height: 42,
+          child: ElevatedButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => TreeActivityPage(
+                    treeId: treeId,
+                    farmId: farmId,
+                    blockId: blockId,
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(
+              Icons.add_task,
+              size: 16,
+            ),
+            label: const Text(
+              'Add / View Tree Activities',
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryGreen,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+  Widget _scanTreeButton(BuildContext context) {
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(13),
+      border: Border.all(
+        color: borderColor,
+      ),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Scan Tree',
+          style: TextStyle(
+            color: primaryGreen,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+
+        const SizedBox(height: 5),
+
+        const Text(
+          'Scan a tree barcode to identify and view its information.',
+          style: TextStyle(
+            color: textGrey,
+            fontSize: 8,
+          ),
+        ),
+
+        const SizedBox(height: 14),
+
+        SizedBox(
+          width: double.infinity,
+          height: 44,
+          child: ElevatedButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ScanPage(),
+                ),
+              );
+            },
+            icon: const Icon(
+              Icons.barcode_reader,
+              size: 19,
+            ),
+            label: const Text(
+              'Scan Tree Barcode',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryGreen,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(9),
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
 Widget _treeCodeCard(BuildContext context) {
   return Container(
     width: double.infinity,
@@ -808,74 +958,7 @@ void _showTreeBarcode(BuildContext context) {
   // ===============================================================
   // BOTTOM NAVIGATION
   // ===============================================================
-  Widget _bottomNavigation(
-    BuildContext context,
-  ) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: Colors.grey.shade200,
-          ),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 62,
-          child: Row(
-            children: [
-              _navItem(
-                icon: Icons.home_outlined,
-                label: 'Home',
-                selected: false,
-                onTap: () {
-                  Navigator.popUntil(
-                    context,
-                    (route) => route.isFirst,
-                  );
-                },
-              ),
-
-              _navItem(
-                icon: Icons.crop_square_outlined,
-                label: 'Farms',
-                selected: true,
-                onTap: () {
-                  Navigator.popUntil(
-                    context,
-                    (route) => route.isFirst,
-                  );
-                },
-              ),
-
-              _navItem(
-                icon: Icons.park_outlined,
-                label: 'Trees',
-                selected: false,
-                onTap: () {},
-              ),
-
-              _navItem(
-                icon: Icons.check_outlined,
-                label: 'Tasks',
-                selected: false,
-                onTap: () {},
-              ),
-
-              _navItem(
-                icon: Icons.menu,
-                label: 'More',
-                selected: false,
-                onTap: () {},
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+ 
 
   Widget _navItem({
     required IconData icon,

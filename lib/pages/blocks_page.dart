@@ -225,7 +225,6 @@ class _BlocksPageState extends State<BlocksPage> {
         ),
       ),
 
-      bottomNavigationBar: _bottomNavigation(),
     );
   }
 
@@ -366,53 +365,7 @@ class _BlocksPageState extends State<BlocksPage> {
   // ==============================================================
   // BOTTOM NAVIGATION
   // ==============================================================
-  Widget _bottomNavigation() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: Colors.grey.shade200,
-          ),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 62,
-          child: Row(
-            children: [
-              _navItem(
-                Icons.home_outlined,
-                'Home',
-                false,
-              ),
-              _navItem(
-                Icons.crop_square_outlined,
-                'Farms',
-                true,
-              ),
-              _navItem(
-                Icons.park_outlined,
-                'Trees',
-                false,
-              ),
-              _navItem(
-                Icons.check_outlined,
-                'Tasks',
-                false,
-              ),
-              _navItem(
-                Icons.menu,
-                'More',
-                false,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+ 
 
   Widget _navItem(
     IconData icon,
