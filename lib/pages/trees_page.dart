@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'treesdetails_page.dart';
 
 class TreePage extends StatefulWidget {
-  const TreePage({super.key});
+    final VoidCallback onBack;
+  const TreePage({super.key,
+    required this.onBack,
+  });
 
   @override
   State<TreePage> createState() => _TreePageState();

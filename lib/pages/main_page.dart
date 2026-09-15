@@ -41,28 +41,24 @@ List<Widget> get _pages => [
 
 
 
-        BlocksPage(
-          onBack: () {
-            setState(() {
-              _currentIndex = 0;
-            });
-          },
-        ),
+        // BlocksPage(
+        //   // onBack: () {
+        //   //   setState(() {
+        //   //     _currentIndex = 0;
+        //   //   });
+        //   // },
+        // ),
 
          
 
-        TreesPage(
+        TreePage(
           
           onBack: () {
             setState(() {
               _currentIndex = 0;
             });
           },
-           onScan: () {
-    setState(() {
-              _currentIndex = 0;
-    });
-  },
+   
         ),
 
 MePage(

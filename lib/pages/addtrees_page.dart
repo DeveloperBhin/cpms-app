@@ -44,7 +44,6 @@ class _AddTreePageState extends State<AddTreePage> {
 
   @override
   void dispose() {
-    _treeCodeController.dispose();
     _varietyController.dispose();
     _plantingYearController.dispose();
     _latitudeController.dispose();
@@ -90,7 +89,6 @@ class _AddTreePageState extends State<AddTreePage> {
       final treeData = {
         'farmId': widget.farmId,
         'blockId': widget.blockId,
-        'treeCode': _treeCodeController.text.trim(),
         'variety': _varietyController.text.trim(),
         'plantingYear':
             _plantingYearController.text.trim(),

@@ -11,7 +11,7 @@ import 'package:flutter/material.dart';
 
 // import 'camera_page.dart';
 import 'tips_page.dart';
-import 'scan_page.dart';
+// import 'scan_page.dart';
 import 'detail_page.dart';
 import 'login_page.dart';
 
@@ -75,11 +75,11 @@ final List<Map<String, String>> _slides = [
  pages = [
       _buildHomeContent(context),
       // const CameraPage(),
-ScanPage(
-  onBack: () {
-    Navigator.pop(context);
-  },
-),
+// ScanPage(
+//   onBack: () {
+//     Navigator.pop(context);
+//   },
+// ),
       const TipsPage(),
       const PlantDetailPage(
         plantName: "Avocado",
@@ -342,16 +342,16 @@ Widget _buildHomeContent(BuildContext context) {
                     children: [
                       TextButton(
                          onPressed: () {
-                      Navigator.push(
-  context,
-  MaterialPageRoute(
-    builder: (context) => ScanPage(
-      onBack: () {
-        Navigator.pop(context);
-      },
-    ),
-  ),
-);
+//                       Navigator.push(
+//   context,
+//   MaterialPageRoute(
+//     builder: (context) => ScanPage(
+//       onBack: () {
+//         Navigator.pop(context);
+//       },
+//     ),
+//   ),
+// );
                       },
                         child: const Text(
                           'Skip to Login',
