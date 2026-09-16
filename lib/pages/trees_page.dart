@@ -1,152 +1,263 @@
 import 'package:flutter/material.dart';
+
 import 'treesdetails_page.dart';
+import '../services/api_services/tree_api_services.dart';
 
 class TreePage extends StatefulWidget {
-    final VoidCallback onBack;
-  const TreePage({super.key,
+  final VoidCallback onBack;
+
+  const TreePage({
+    super.key,
     required this.onBack,
   });
 
   @override
-  State<TreePage> createState() => _TreePageState();
+  State<TreePage> createState() =>
+      _TreePageState();
 }
 
 class _TreePageState extends State<TreePage> {
-  static const Color primaryGreen = Color(0xFF087A2F);
-  static const Color backgroundColor = Color(0xFFF8FAF8);
-  static const Color borderColor = Color(0xFFDCE8DF);
-  static const Color lightGreen = Color(0xFFE7F3EB);
-  static const Color textDark = Color(0xFF25402D);
-  static const Color textGrey = Color(0xFF718078);
+  static const Color primaryGreen =
+      Color(0xFF087A2F);
 
-  final TextEditingController _searchController =
+  static const Color backgroundColor =
+      Color(0xFFF8FAF8);
+
+  static const Color borderColor =
+      Color(0xFFDCE8DF);
+
+  static const Color lightGreen =
+      Color(0xFFE7F3EB);
+
+  static const Color textDark =
+      Color(0xFF25402D);
+
+  static const Color textGrey =
+      Color(0xFF718078);
+
+  final TextEditingController
+      _searchController =
       TextEditingController();
+
+  List<Map<String, dynamic>> trees = [];
 
   String _searchText = '';
 
+  bool _isLoading = true;
+
+  String? _error;
+
   // ==============================================================
-  // TEMPORARY DATA
-  //
-  // Later replace this with:
-  // ApiServices.getTrees()
+  // INIT
   // ==============================================================
-  final List<Map<String, String>> trees = [
-    {
-      'id': 'TR-0001',
-      'farmId': 'FM-0001',
-      'farmName': 'Shamba la Mbiyuyu',
-      'blockId': 'BL-0001',
-      'blockName': 'Block A',
-      'variety': 'Common',
-      'age': '5 years',
-      'status': 'Active',
-    },
-    {
-      'id': 'TR-0002',
-      'farmId': 'FM-0001',
-      'farmName': 'Shamba la Mbiyuyu',
-      'blockId': 'BL-0001',
-      'blockName': 'Block A',
-      'variety': 'Improved',
-      'age': '4 years',
-      'status': 'Active',
-    },
-    {
-      'id': 'TR-0003',
-      'farmId': 'FM-0001',
-      'farmName': 'Shamba la Mbiyuyu',
-      'blockId': 'BL-0002',
-      'blockName': 'Block B',
-      'variety': 'Common',
-      'age': '5 years',
-      'status': 'Active',
-    },
-    {
-      'id': 'TR-0004',
-      'farmId': 'FM-0002',
-      'farmName': 'Farm FM-0002',
-      'blockId': 'BL-0003',
-      'blockName': 'Block A',
-      'variety': 'Improved',
-      'age': '3 years',
-      'status': 'Inactive',
-    },
-  ];
+
+  @override
+  void initState() {
+    super.initState();
+
+    _loadTrees();
+  }
+
+  // ==============================================================
+  // DISPOSE
+  // ==============================================================
 
   @override
   void dispose() {
     _searchController.dispose();
+
     super.dispose();
+  }
+
+  // ==============================================================
+  // LOAD TREES
+  // ==============================================================
+
+  Future<void> _loadTrees() async {
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+    }
+
+    try {
+      final result =
+          await TreeApiServices.getMyTrees();
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        trees = result;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isLoading = false;
+        _error = e.toString();
+      });
+    }
   }
 
   // ==============================================================
   // FILTER TREES
   // ==============================================================
-  List<Map<String, String>> get filteredTrees {
+
+  List<Map<String, dynamic>>
+      get filteredTrees {
+
     if (_searchText.trim().isEmpty) {
       return trees;
     }
 
-    final query = _searchText.toLowerCase().trim();
+    final query =
+        _searchText.toLowerCase().trim();
 
     return trees.where((tree) {
-      final id = tree['id']?.toLowerCase() ?? '';
-      final farm = tree['farmName']?.toLowerCase() ?? '';
-      final block = tree['blockName']?.toLowerCase() ?? '';
-      final variety = tree['variety']?.toLowerCase() ?? '';
+      final id =
+          tree['id']?.toString().toLowerCase() ??
+              '';
+
+      final treeCode =
+          tree['treeCode']
+                  ?.toString()
+                  .toLowerCase() ??
+              '';
+
+      final farmName =
+          tree['farmName']
+                  ?.toString()
+                  .toLowerCase() ??
+              '';
+
+      final blockName =
+          tree['blockName']
+                  ?.toString()
+                  .toLowerCase() ??
+              '';
+
+      final variety =
+          tree['variety']
+                  ?.toString()
+                  .toLowerCase() ??
+              '';
+
+      final status =
+          tree['status']
+                  ?.toString()
+                  .toLowerCase() ??
+              '';
+
+      final plantingYear =
+          tree['plantingYear']
+                  ?.toString()
+                  .toLowerCase() ??
+              '';
 
       return id.contains(query) ||
-          farm.contains(query) ||
-          block.contains(query) ||
-          variety.contains(query);
+          treeCode.contains(query) ||
+          farmName.contains(query) ||
+          blockName.contains(query) ||
+          variety.contains(query) ||
+          status.contains(query) ||
+          plantingYear.contains(query);
     }).toList();
   }
 
   // ==============================================================
   // COUNTS
   // ==============================================================
-  int get activeTrees {
-    return trees
-        .where(
-          (tree) => tree['status'] == 'Active',
-        )
-        .length;
+
+  int get healthyTrees {
+    return trees.where((tree) {
+      return tree['status']
+              ?.toString()
+              .toUpperCase() ==
+          'HEALTHY';
+    }).length;
   }
 
-  int get inactiveTrees {
-    return trees
-        .where(
-          (tree) => tree['status'] != 'Active',
-        )
-        .length;
+  int get diseasedTrees {
+    return trees.where((tree) {
+      return tree['status']
+              ?.toString()
+              .toUpperCase() ==
+          'DISEASED';
+    }).length;
+  }
+
+  int get deadTrees {
+    return trees.where((tree) {
+      return tree['status']
+              ?.toString()
+              .toUpperCase() ==
+          'DEAD';
+    }).length;
   }
 
   // ==============================================================
   // OPEN TREE
   // ==============================================================
-  void _openTree(Map<String, String> tree) {
-    Navigator.push(
+
+  Future<void> _openTree(
+    Map<String, dynamic> tree,
+  ) async {
+
+    final farmId =
+        tree['farmId']?.toString() ?? '';
+
+    final blockId =
+        tree['blockId']?.toString() ?? '';
+
+    final treeId =
+        tree['id']?.toString() ?? '';
+
+    if (farmId.isEmpty ||
+        blockId.isEmpty ||
+        treeId.isEmpty) {
+
+      _showMessage(
+        'Unable to open this tree because '
+        'its farm, block or tree ID is missing.',
+      );
+
+      return;
+    }
+
+    await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => TreeDetailsPage(
-          farmId: tree['farmId']!,
-          blockId: tree['blockId']!,
-          treeId: tree['id']!,
-          variety: tree['variety']!,
-          age: tree['age']!,
-          status: tree['status']!,
+        builder: (context) =>
+            TreeDetailsPage(
+          farmId: farmId,
+          blockId: blockId,
+          treeId: treeId,
         ),
       ),
     );
+
+    if (mounted) {
+      await _loadTrees();
+    }
   }
+
+  // ==============================================================
+  // BUILD
+  // ==============================================================
 
   @override
   Widget build(BuildContext context) {
-    final visibleTrees = filteredTrees;
+    final visibleTrees =
+        filteredTrees;
 
     return Scaffold(
       backgroundColor: backgroundColor,
-
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -154,214 +265,368 @@ class _TreePageState extends State<TreePage> {
             // =====================================================
             // HEADER
             // =====================================================
+
             Container(
               width: double.infinity,
               height: 55,
-              padding: const EdgeInsets.symmetric(
+              padding:
+                  const EdgeInsets.symmetric(
                 horizontal: 16,
               ),
-              decoration: const BoxDecoration(
+              decoration:
+                  const BoxDecoration(
                 color: primaryGreen,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(18),
-                  bottomRight: Radius.circular(18),
+                borderRadius:
+                    BorderRadius.only(
+                  bottomLeft:
+                      Radius.circular(18),
+                  bottomRight:
+                      Radius.circular(18),
                 ),
               ),
-              child: const Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Trees',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
+              child: Row(
+                children: [
+                  InkWell(
+                    onTap: widget.onBack,
+                    borderRadius:
+                        BorderRadius.circular(
+                      20,
+                    ),
+                    child: const Padding(
+                      padding:
+                          EdgeInsets.all(3),
+                      child: Icon(
+                        Icons
+                            .arrow_back_ios_new,
+                        color: Colors.white,
+                        size: 14,
+                      ),
+                    ),
                   ),
-                ),
+
+                  const SizedBox(width: 8),
+
+                  const Expanded(
+                    child: Text(
+                      'Trees',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight:
+                            FontWeight.w700,
+                      ),
+                    ),
+                  ),
+
+                  IconButton(
+                    onPressed: _loadTrees,
+                    tooltip: 'Refresh',
+                    icon: const Icon(
+                      Icons.refresh,
+                      color: Colors.white,
+                      size: 19,
+                    ),
+                  ),
+                ],
               ),
             ),
 
             // =====================================================
             // CONTENT
             // =====================================================
+
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(
-                  13,
-                  20,
-                  13,
-                  25,
-                ),
-                child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                  children: [
-                    // =============================================
-                    // SUMMARY
-                    // =============================================
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _summaryCard(
-                            title: 'Total Trees',
-                            value: trees.length.toString(),
-                            icon: Icons.park_outlined,
+              child: RefreshIndicator(
+                color: primaryGreen,
+                onRefresh: _loadTrees,
+                child:
+                    SingleChildScrollView(
+                  physics:
+                      const AlwaysScrollableScrollPhysics(),
+                  padding:
+                      const EdgeInsets.fromLTRB(
+                    13,
+                    20,
+                    13,
+                    25,
+                  ),
+                  child: Column(
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                    children: [
+                      // ===========================================
+                      // SUMMARY
+                      // ===========================================
+
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _summaryCard(
+                              title:
+                                  'Total Trees',
+                              value: trees.length
+                                  .toString(),
+                              icon:
+                                  Icons.park_outlined,
+                            ),
                           ),
-                        ),
 
-                        const SizedBox(width: 10),
-
-                        Expanded(
-                          child: _summaryCard(
-                            title: 'Active',
-                            value: activeTrees.toString(),
-                            icon:
-                                Icons.check_circle_outline,
+                          const SizedBox(
+                            width: 8,
                           ),
-                        ),
 
-                        const SizedBox(width: 10),
-
-                        Expanded(
-                          child: _summaryCard(
-                            title: 'Inactive',
-                            value: inactiveTrees.toString(),
-                            icon: Icons.remove_circle_outline,
+                          Expanded(
+                            child: _summaryCard(
+                              title: 'Healthy',
+                              value: healthyTrees
+                                  .toString(),
+                              icon: Icons
+                                  .check_circle_outline,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
 
-                    const SizedBox(height: 20),
+                          const SizedBox(
+                            width: 8,
+                          ),
 
-                    // =============================================
-                    // SEARCH
-                    // =============================================
-                    Container(
-                      height: 43,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius:
-                            BorderRadius.circular(9),
-                        border: Border.all(
-                          color: borderColor,
-                        ),
+                          Expanded(
+                            child: _summaryCard(
+                              title: 'Diseased',
+                              value: diseasedTrees
+                                  .toString(),
+                              icon: Icons
+                                  .warning_amber_rounded,
+                            ),
+                          ),
+
+                          const SizedBox(
+                            width: 8,
+                          ),
+
+                          Expanded(
+                            child: _summaryCard(
+                              title: 'Dead',
+                              value: deadTrees
+                                  .toString(),
+                              icon: Icons
+                                  .remove_circle_outline,
+                            ),
+                          ),
+                        ],
                       ),
-                      child: TextField(
-                        controller: _searchController,
-                        onChanged: (value) {
-                          setState(() {
-                            _searchText = value;
-                          });
-                        },
-                        style: const TextStyle(
-                          color: textDark,
-                          fontSize: 10,
-                        ),
-                        decoration: InputDecoration(
-                          border: InputBorder.none,
-                          hintText:
-                              'Search tree by code, farm, block or variety',
-                          hintStyle: const TextStyle(
-                            color: textGrey,
-                            fontSize: 9,
-                          ),
-                          prefixIcon: const Icon(
-                            Icons.search,
-                            color: textGrey,
-                            size: 18,
-                          ),
-                          suffixIcon:
-                              _searchText.isNotEmpty
-                                  ? IconButton(
-                                      onPressed: () {
-                                        _searchController
-                                            .clear();
 
-                                        setState(() {
-                                          _searchText = '';
-                                        });
-                                      },
-                                      icon: const Icon(
-                                        Icons.close,
-                                        size: 16,
-                                        color: textGrey,
-                                      ),
-                                    )
-                                  : null,
-                        ),
+                      const SizedBox(
+                        height: 20,
                       ),
-                    ),
 
-                    const SizedBox(height: 22),
+                      // ===========================================
+                      // SEARCH
+                      // ===========================================
 
-                    // =============================================
-                    // TITLE
-                    // =============================================
-                    Row(
-                      mainAxisAlignment:
-                          MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Registered Trees',
-                          style: TextStyle(
+                      Container(
+                        height: 43,
+                        decoration:
+                            BoxDecoration(
+                          color: Colors.white,
+                          borderRadius:
+                              BorderRadius
+                                  .circular(9),
+                          border: Border.all(
+                            color:
+                                borderColor,
+                          ),
+                        ),
+                        child: TextField(
+                          controller:
+                              _searchController,
+                          onChanged: (value) {
+                            setState(() {
+                              _searchText =
+                                  value;
+                            });
+                          },
+                          style:
+                              const TextStyle(
                             color: textDark,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 10,
                           ),
-                        ),
+                          decoration:
+                              InputDecoration(
+                            border:
+                                InputBorder.none,
+                            hintText:
+                                'Search tree by code, farm, block or variety',
+                            hintStyle:
+                                const TextStyle(
+                              color:
+                                  textGrey,
+                              fontSize: 9,
+                            ),
+                            prefixIcon:
+                                const Icon(
+                              Icons.search,
+                              color:
+                                  textGrey,
+                              size: 18,
+                            ),
+                            suffixIcon:
+                                _searchText
+                                        .isNotEmpty
+                                    ? IconButton(
+                                        onPressed:
+                                            () {
+                                          _searchController
+                                              .clear();
 
-                        Text(
-                          '${visibleTrees.length} trees',
-                          style: const TextStyle(
-                            color: textGrey,
-                            fontSize: 8,
+                                          setState(
+                                              () {
+                                            _searchText =
+                                                '';
+                                          });
+                                        },
+                                        icon:
+                                            const Icon(
+                                          Icons
+                                              .close,
+                                          size:
+                                              16,
+                                          color:
+                                              textGrey,
+                                        ),
+                                      )
+                                    : null,
                           ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 14),
-
-                    // =============================================
-                    // LIST
-                    // =============================================
-                    if (visibleTrees.isEmpty)
-                      _emptyState()
-                    else
-                      ...visibleTrees.map(
-                        (tree) => Padding(
-                          padding:
-                              const EdgeInsets.only(
-                            bottom: 12,
-                          ),
-                          child: _treeCard(tree),
                         ),
                       ),
-                  ],
+
+                      const SizedBox(
+                        height: 22,
+                      ),
+
+                      // ===========================================
+                      // REGISTERED TREES HEADER
+                      // ===========================================
+
+                      Row(
+                        mainAxisAlignment:
+                            MainAxisAlignment
+                                .spaceBetween,
+                        children: [
+                          const Text(
+                            'Registered Trees',
+                            style:
+                                TextStyle(
+                              color:
+                                  textDark,
+                              fontSize: 13,
+                              fontWeight:
+                                  FontWeight
+                                      .w700,
+                            ),
+                          ),
+
+                          if (!_isLoading)
+                            Text(
+                              '${visibleTrees.length} trees',
+                              style:
+                                  const TextStyle(
+                                color:
+                                    textGrey,
+                                fontSize: 8,
+                              ),
+                            ),
+                        ],
+                      ),
+
+                      const SizedBox(
+                        height: 14,
+                      ),
+
+                      // ===========================================
+                      // LIST
+                      // ===========================================
+
+                      _buildTreeList(
+                        visibleTrees,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
 
+  // ==============================================================
+  // TREE LIST
+  // ==============================================================
+
+  Widget _buildTreeList(
+    List<Map<String, dynamic>>
+        visibleTrees,
+  ) {
+
+    if (_isLoading) {
+      return const Padding(
+        padding:
+            EdgeInsets.symmetric(
+          vertical: 40,
+        ),
+        child: Center(
+          child:
+              CircularProgressIndicator(
+            color: primaryGreen,
+          ),
+        ),
+      );
+    }
+
+    if (_error != null) {
+      return _errorState();
+    }
+
+    if (visibleTrees.isEmpty) {
+      return _emptyState();
+    }
+
+    return Column(
+      children: visibleTrees
+          .map(
+            (tree) => Padding(
+              padding:
+                  const EdgeInsets.only(
+                bottom: 12,
+              ),
+              child: _treeCard(
+                tree,
+              ),
+            ),
+          )
+          .toList(),
     );
   }
 
   // ==============================================================
   // SUMMARY CARD
   // ==============================================================
+
   Widget _summaryCard({
     required String title,
     required String value,
     required IconData icon,
   }) {
+
     return Container(
       height: 83,
-      padding: const EdgeInsets.all(10),
+      padding:
+          const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(11),
+        borderRadius:
+            BorderRadius.circular(11),
         border: Border.all(
           color: borderColor,
         ),
@@ -370,26 +635,34 @@ class _TreePageState extends State<TreePage> {
         crossAxisAlignment:
             CrossAxisAlignment.start,
         mainAxisAlignment:
-            MainAxisAlignment.spaceBetween,
+            MainAxisAlignment
+                .spaceBetween,
         children: [
           Row(
             children: [
               Icon(
                 icon,
                 color: primaryGreen,
-                size: 15,
+                size: 14,
               ),
 
-              const SizedBox(width: 5),
+              const SizedBox(
+                width: 4,
+              ),
 
               Expanded(
                 child: Text(
                   title,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  overflow:
+                      TextOverflow
+                          .ellipsis,
+                  style:
+                      const TextStyle(
                     color: textGrey,
-                    fontSize: 7,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 6.5,
+                    fontWeight:
+                        FontWeight
+                            .w500,
                   ),
                 ),
               ),
@@ -398,10 +671,12 @@ class _TreePageState extends State<TreePage> {
 
           Text(
             value,
-            style: const TextStyle(
+            style:
+                const TextStyle(
               color: textDark,
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
+              fontSize: 17,
+              fontWeight:
+                  FontWeight.w800,
             ),
           ),
         ],
@@ -412,24 +687,72 @@ class _TreePageState extends State<TreePage> {
   // ==============================================================
   // TREE CARD
   // ==============================================================
+
   Widget _treeCard(
-    Map<String, String> tree,
+    Map<String, dynamic> tree,
   ) {
-    final bool isActive =
-        tree['status'] == 'Active';
+
+    final rawId =
+        tree['id']?.toString() ??
+            '';
+
+    final treeCode =
+        tree['treeCode']
+                ?.toString() ??
+            'TR-${rawId.padLeft(6, '0')}';
+
+    final variety =
+        tree['variety']
+                ?.toString() ??
+            '-';
+
+    final plantingYear =
+        tree['plantingYear']
+                ?.toString() ??
+            '-';
+
+    final status =
+        tree['status']
+                ?.toString() ??
+            '-';
+
+    final farmName =
+        tree['farmName']
+                ?.toString() ??
+            '-';
+
+    final blockName =
+        tree['blockName']
+                ?.toString() ??
+            '-';
+
+    final formattedStatus =
+        _formatStatus(status);
+
+    final statusColor =
+        _statusColor(status);
+
+    final statusBackground =
+        _statusBackground(
+      status,
+    );
 
     return InkWell(
       onTap: () {
         _openTree(tree);
       },
-      borderRadius: BorderRadius.circular(13),
+      borderRadius:
+          BorderRadius.circular(13),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(14),
+        padding:
+            const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius:
-              BorderRadius.circular(13),
+              BorderRadius.circular(
+            13,
+          ),
           border: Border.all(
             color: borderColor,
           ),
@@ -441,45 +764,59 @@ class _TreePageState extends State<TreePage> {
             // ===========================================
             // TOP
             // ===========================================
+
             Row(
               children: [
                 Container(
                   width: 38,
                   height: 38,
-                  decoration: const BoxDecoration(
-                    color: lightGreen,
-                    shape: BoxShape.circle,
+                  decoration:
+                      BoxDecoration(
+                    color:
+                        statusBackground,
+                    shape:
+                        BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.park_outlined,
-                    color: primaryGreen,
+                    color: statusColor,
                     size: 20,
                   ),
                 ),
 
-                const SizedBox(width: 11),
+                const SizedBox(
+                  width: 11,
+                ),
 
                 Expanded(
                   child: Column(
                     crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                        CrossAxisAlignment
+                            .start,
                     children: [
                       Text(
-                        tree['id']!,
-                        style: const TextStyle(
-                          color: textDark,
+                        treeCode,
+                        style:
+                            const TextStyle(
+                          color:
+                              textDark,
                           fontSize: 11,
                           fontWeight:
-                              FontWeight.w800,
+                              FontWeight
+                                  .w800,
                         ),
                       ),
 
-                      const SizedBox(height: 4),
+                      const SizedBox(
+                        height: 4,
+                      ),
 
                       Text(
-                        '${tree['variety']} • ${tree['age']}',
-                        style: const TextStyle(
-                          color: textGrey,
+                        '$variety • Planted $plantingYear',
+                        style:
+                            const TextStyle(
+                          color:
+                              textGrey,
                           fontSize: 8,
                         ),
                       ),
@@ -489,71 +826,83 @@ class _TreePageState extends State<TreePage> {
 
                 Container(
                   padding:
-                      const EdgeInsets.symmetric(
+                      const EdgeInsets
+                          .symmetric(
                     horizontal: 8,
                     vertical: 5,
                   ),
-                  decoration: BoxDecoration(
-                    color: isActive
-                        ? lightGreen
-                        : const Color(0xFFF3F3F3),
+                  decoration:
+                      BoxDecoration(
+                    color:
+                        statusBackground,
                     borderRadius:
-                        BorderRadius.circular(6),
+                        BorderRadius
+                            .circular(
+                      6,
+                    ),
                   ),
                   child: Text(
-                    tree['status']!,
+                    formattedStatus,
                     style: TextStyle(
-                      color: isActive
-                          ? primaryGreen
-                          : textGrey,
+                      color:
+                          statusColor,
                       fontSize: 7,
                       fontWeight:
-                          FontWeight.w700,
+                          FontWeight
+                              .w700,
                     ),
                   ),
                 ),
               ],
             ),
 
-            const SizedBox(height: 13),
+            const SizedBox(
+              height: 13,
+            ),
 
             const Divider(
               height: 1,
               color: borderColor,
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(
+              height: 12,
+            ),
 
             // ===========================================
             // FARM / BLOCK
             // ===========================================
+
             Row(
               children: [
                 Expanded(
                   child: _treeInfo(
                     title: 'Farm',
-                    value:
-                        tree['farmName']!,
+                    value: farmName,
                   ),
                 ),
 
-                const SizedBox(width: 10),
+                const SizedBox(
+                  width: 10,
+                ),
 
                 Expanded(
                   child: _treeInfo(
                     title: 'Block',
-                    value:
-                        tree['blockName']!,
+                    value: blockName,
                   ),
                 ),
               ],
             ),
 
-            const SizedBox(height: 13),
+            const SizedBox(
+              height: 13,
+            ),
 
             // ===========================================
-            // BARCODE + VIEW
+            // TREE CODE / VIEW
             // ===========================================
+
             Row(
               children: [
                 const Icon(
@@ -562,19 +911,26 @@ class _TreePageState extends State<TreePage> {
                   size: 18,
                 ),
 
-                const SizedBox(width: 6),
-
-                Text(
-                  tree['id']!,
-                  style: const TextStyle(
-                    color: textGrey,
-                    fontSize: 8,
-                    fontWeight:
-                        FontWeight.w600,
-                  ),
+                const SizedBox(
+                  width: 6,
                 ),
 
-                const Spacer(),
+                Expanded(
+                  child: Text(
+                    treeCode,
+                    overflow:
+                        TextOverflow
+                            .ellipsis,
+                    style:
+                        const TextStyle(
+                      color: textGrey,
+                      fontSize: 8,
+                      fontWeight:
+                          FontWeight
+                              .w600,
+                    ),
+                  ),
+                ),
 
                 TextButton(
                   onPressed: () {
@@ -585,16 +941,20 @@ class _TreePageState extends State<TreePage> {
                     foregroundColor:
                         primaryGreen,
                     padding:
-                        const EdgeInsets.symmetric(
+                        const EdgeInsets
+                            .symmetric(
                       horizontal: 6,
                     ),
                   ),
-                  child: const Text(
+                  child:
+                      const Text(
                     'View Tree ›',
-                    style: TextStyle(
+                    style:
+                        TextStyle(
                       fontSize: 9,
                       fontWeight:
-                          FontWeight.w700,
+                          FontWeight
+                              .w700,
                     ),
                   ),
                 ),
@@ -609,32 +969,40 @@ class _TreePageState extends State<TreePage> {
   // ==============================================================
   // TREE INFORMATION
   // ==============================================================
+
   Widget _treeInfo({
     required String title,
     required String value,
   }) {
+
     return Column(
       crossAxisAlignment:
           CrossAxisAlignment.start,
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style:
+              const TextStyle(
             color: textGrey,
             fontSize: 7,
           ),
         ),
 
-        const SizedBox(height: 4),
+        const SizedBox(
+          height: 4,
+        ),
 
         Text(
           value,
           maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
+          overflow:
+              TextOverflow.ellipsis,
+          style:
+              const TextStyle(
             color: textDark,
             fontSize: 8,
-            fontWeight: FontWeight.w600,
+            fontWeight:
+                FontWeight.w600,
           ),
         ),
       ],
@@ -642,47 +1010,148 @@ class _TreePageState extends State<TreePage> {
   }
 
   // ==============================================================
-  // EMPTY
+  // ERROR STATE
   // ==============================================================
-  Widget _emptyState() {
+
+  Widget _errorState() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(
+      padding:
+          const EdgeInsets.symmetric(
+        vertical: 35,
+        horizontal: 20,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius:
+            BorderRadius.circular(13),
+        border: Border.all(
+          color: borderColor,
+        ),
+      ),
+      child: Column(
+        children: [
+          const Icon(
+            Icons.error_outline,
+            color: Colors.redAccent,
+            size: 32,
+          ),
+
+          const SizedBox(
+            height: 10,
+          ),
+
+          const Text(
+            'Unable to load trees',
+            style: TextStyle(
+              color: textDark,
+              fontSize: 11,
+              fontWeight:
+                  FontWeight.w700,
+            ),
+          ),
+
+          const SizedBox(
+            height: 6,
+          ),
+
+          Text(
+            _error ??
+                'Unknown error',
+            textAlign:
+                TextAlign.center,
+            style:
+                const TextStyle(
+              color: textGrey,
+              fontSize: 8,
+            ),
+          ),
+
+          const SizedBox(
+            height: 14,
+          ),
+
+          TextButton.icon(
+            onPressed: _loadTrees,
+            icon: const Icon(
+              Icons.refresh,
+              size: 16,
+            ),
+            label:
+                const Text(
+              'Try Again',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==============================================================
+  // EMPTY STATE
+  // ==============================================================
+
+  Widget _emptyState() {
+    final searching =
+        _searchText
+            .trim()
+            .isNotEmpty;
+
+    return Container(
+      width: double.infinity,
+      padding:
+          const EdgeInsets.symmetric(
         vertical: 45,
         horizontal: 20,
       ),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(13),
+        borderRadius:
+            BorderRadius.circular(13),
         border: Border.all(
           color: borderColor,
         ),
       ),
-      child: const Column(
+      child: Column(
         children: [
           Icon(
-            Icons.search_off,
+            searching
+                ? Icons.search_off
+                : Icons
+                    .park_outlined,
             color: textGrey,
             size: 32,
           ),
 
-          SizedBox(height: 10),
+          const SizedBox(
+            height: 10,
+          ),
 
           Text(
-            'No trees found',
-            style: TextStyle(
+            searching
+                ? 'No trees found'
+                : 'No trees registered',
+            style:
+                const TextStyle(
               color: textDark,
               fontSize: 11,
-              fontWeight: FontWeight.w700,
+              fontWeight:
+                  FontWeight.w700,
             ),
           ),
 
-          SizedBox(height: 5),
+          const SizedBox(
+            height: 5,
+          ),
 
           Text(
-            'Try another tree code, farm or block.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
+            searching
+                ? 'Try another tree code, farm, block or variety.'
+                : 'Trees registered in your farms will appear here.',
+            textAlign:
+                TextAlign.center,
+            style:
+                const TextStyle(
               color: textGrey,
               fontSize: 8,
             ),
@@ -693,50 +1162,94 @@ class _TreePageState extends State<TreePage> {
   }
 
   // ==============================================================
-  // BOTTOM NAVIGATION
+  // STATUS
   // ==============================================================
 
+  String _formatStatus(
+    String status,
+  ) {
 
-  Widget _navItem({
-    required IconData icon,
-    required String label,
-    required bool selected,
-    required VoidCallback onTap,
-  }) {
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          mainAxisAlignment:
-              MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 17,
-              color: selected
-                  ? primaryGreen
-                  : const Color(
-                      0xFF9AA39D,
-                    ),
-            ),
+    final value =
+        status.trim();
 
-            const SizedBox(height: 4),
+    if (value.isEmpty ||
+        value == '-') {
+      return '-';
+    }
 
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 8,
-                fontWeight: selected
-                    ? FontWeight.w700
-                    : FontWeight.w500,
-                color: selected
-                    ? primaryGreen
-                    : const Color(
-                        0xFF9AA39D,
-                      ),
-              ),
-            ),
-          ],
+    final lower =
+        value.toLowerCase();
+
+    return lower[0]
+            .toUpperCase() +
+        lower.substring(1);
+  }
+
+  Color _statusColor(
+    String status,
+  ) {
+
+    switch (
+        status.toUpperCase()) {
+
+      case 'HEALTHY':
+        return primaryGreen;
+
+      case 'DISEASED':
+        return const Color(
+          0xFFD97706,
+        );
+
+      case 'DEAD':
+        return const Color(
+          0xFFB91C1C,
+        );
+
+      default:
+        return textGrey;
+    }
+  }
+
+  Color _statusBackground(
+    String status,
+  ) {
+
+    switch (
+        status.toUpperCase()) {
+
+      case 'HEALTHY':
+        return lightGreen;
+
+      case 'DISEASED':
+        return const Color(
+          0xFFFFF3D6,
+        );
+
+      case 'DEAD':
+        return const Color(
+          0xFFFFE4E4,
+        );
+
+      default:
+        return const Color(
+          0xFFF0F2F1,
+        );
+    }
+  }
+
+  // ==============================================================
+  // MESSAGE
+  // ==============================================================
+
+  void _showMessage(
+    String message,
+  ) {
+
+    ScaffoldMessenger.of(context)
+        .showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
         ),
       ),
     );

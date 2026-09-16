@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../services/api_services/block_api_services.dart';
+
 class AddBlockPage extends StatefulWidget {
   final String farmId;
   final String farmName;
@@ -21,7 +23,6 @@ class _AddBlockPageState extends State<AddBlockPage> {
   final _blockSizeController = TextEditingController();
   final _numberOfTreesController = TextEditingController();
   final _varietyController = TextEditingController();
-  final _plantingYearController = TextEditingController();
   final _notesController = TextEditingController();
 
   bool _isLoading = false;
@@ -29,6 +30,8 @@ class _AddBlockPageState extends State<AddBlockPage> {
   static const Color primaryGreen = Color(0xFF087A2F);
   static const Color fieldBackground = Color(0xFFEAF4EE);
   static const Color fieldBorder = Color(0xFFD7E9DD);
+  static const Color textDark = Color(0xFF304438);
+  static const Color textGrey = Color(0xFF718078);
 
   @override
   void dispose() {
@@ -36,36 +39,45 @@ class _AddBlockPageState extends State<AddBlockPage> {
     _blockSizeController.dispose();
     _numberOfTreesController.dispose();
     _varietyController.dispose();
-    _plantingYearController.dispose();
     _notesController.dispose();
+
     super.dispose();
   }
 
-  // ==============================================================
-  // SELECT PLANTING YEAR
-  // ==============================================================
-  Future<void> _selectPlantingYear() async {
-    final currentYear = DateTime.now().year;
+  // ============================================================
+  // SUBMIT BLOCK
+  // ============================================================
 
-    final DateTime? date = await showDatePicker(
-      context: context,
-      initialDate: DateTime(currentYear),
-      firstDate: DateTime(1950),
-      lastDate: DateTime(currentYear),
+  Future<void> _submitBlock() async {
+    if (_isLoading) {
+      return;
+    }
+
+    final valid = _formKey.currentState?.validate() ?? false;
+
+    if (!valid) {
+      return;
+    }
+
+    final size = double.tryParse(
+      _blockSizeController.text.trim(),
     );
 
-    if (date != null) {
-      setState(() {
-        _plantingYearController.text = date.year.toString();
-      });
-    }
-  }
+    final treeCount = int.tryParse(
+      _numberOfTreesController.text.trim(),
+    );
 
-  // ==============================================================
-  // SUBMIT BLOCK
-  // ==============================================================
-  Future<void> _submitBlock() async {
-    if (!_formKey.currentState!.validate()) {
+    if (size == null || size <= 0) {
+      _showError(
+        'Enter a valid block size.',
+      );
+      return;
+    }
+
+    if (treeCount == null || treeCount < 0) {
+      _showError(
+        'Enter a valid number of trees.',
+      );
       return;
     }
 
@@ -74,26 +86,23 @@ class _AddBlockPageState extends State<AddBlockPage> {
     });
 
     try {
-      final blockData = {
-        'farmId': widget.farmId,
-        'blockName': _blockNameController.text.trim(),
-        'size': _blockSizeController.text.trim(),
-        'numberOfTrees': _numberOfTreesController.text.trim(),
-        'variety': _varietyController.text.trim(),
-        'plantingYear': _plantingYearController.text.trim(),
-        'notes': _notesController.text.trim(),
-      };
-
-      debugPrint('ADD BLOCK: $blockData');
-
-      // TODO:
-      // final result = await ApiServices.addBlock(...);
-
-      await Future.delayed(
-        const Duration(milliseconds: 500),
+      final result =
+          await BlockApiServices.createBlock(
+        farmId: widget.farmId,
+        name: _blockNameController.text.trim(),
+        size: size,
+        variety: _varietyController.text.trim(),
+        treeCount: treeCount,
+        description: _notesController.text.trim(),
       );
 
-      if (!mounted) return;
+      debugPrint(
+        'BLOCK CREATED: $result',
+      );
+
+      if (!mounted) {
+        return;
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -104,21 +113,27 @@ class _AddBlockPageState extends State<AddBlockPage> {
         ),
       );
 
-      // Return true so BlocksPage knows something was added.
-      Navigator.pop(context, true);
+      // Return true so BlocksPage reloads the blocks API.
+      Navigator.pop(
+        context,
+        true,
+      );
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            e.toString().replaceFirst(
-                  'Exception: ',
-                  '',
-                ),
-          ),
-          backgroundColor: Colors.red,
-        ),
+      debugPrint(
+        'CREATE BLOCK ERROR: $e',
+      );
+
+      _showError(
+        e
+            .toString()
+            .replaceFirst(
+              'Exception: ',
+              '',
+            ),
       );
     } finally {
       if (mounted) {
@@ -128,6 +143,39 @@ class _AddBlockPageState extends State<AddBlockPage> {
       }
     }
   }
+
+  void _showError(String message) {
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  // ============================================================
+  // FARM DISPLAY ID
+  // ============================================================
+
+  String get _farmDisplayId {
+    final id = int.tryParse(
+      widget.farmId,
+    );
+
+    if (id == null) {
+      return widget.farmId;
+    }
+
+    return 'FM-${id.toString().padLeft(4, '0')}';
+  }
+
+  // ============================================================
+  // BUILD
+  // ============================================================
 
   @override
   Widget build(BuildContext context) {
@@ -148,9 +196,10 @@ class _AddBlockPageState extends State<AddBlockPage> {
           ),
           child: Column(
             children: [
-              // ====================================================
+              // =================================================
               // HEADER
-              // ====================================================
+              // =================================================
+
               Container(
                 width: double.infinity,
                 height: 52,
@@ -167,9 +216,11 @@ class _AddBlockPageState extends State<AddBlockPage> {
                 child: Row(
                   children: [
                     InkWell(
-                      onTap: () {
-                        Navigator.pop(context);
-                      },
+                      onTap: _isLoading
+                          ? null
+                          : () {
+                              Navigator.pop(context);
+                            },
                       borderRadius: BorderRadius.circular(20),
                       child: const Padding(
                         padding: EdgeInsets.all(3),
@@ -197,9 +248,10 @@ class _AddBlockPageState extends State<AddBlockPage> {
                 ),
               ),
 
-              // ====================================================
+              // =================================================
               // FORM
-              // ====================================================
+              // =================================================
+
               Expanded(
                 child: SingleChildScrollView(
                   keyboardDismissBehavior:
@@ -216,64 +268,30 @@ class _AddBlockPageState extends State<AddBlockPage> {
                       crossAxisAlignment:
                           CrossAxisAlignment.start,
                       children: [
-                        // ==========================================
-                        // FARM
-                        // ==========================================
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(13),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF4F9F5),
-                            borderRadius:
-                                BorderRadius.circular(8),
-                            border: Border.all(
-                              color: fieldBorder,
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Farm',
-                                style: TextStyle(
-                                  color: Color(0xFF718078),
-                                  fontSize: 8,
-                                ),
-                              ),
+                        // =========================================
+                        // FARM INFORMATION
+                        // =========================================
 
-                              const SizedBox(height: 4),
-
-                              Text(
-                                widget.farmName,
-                                style: const TextStyle(
-                                  color: Color(0xFF304438),
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-
-                              const SizedBox(height: 3),
-
-                              Text(
-                                'Farm ID: ${widget.farmId}',
-                                style: const TextStyle(
-                                  color: Color(0xFF718078),
-                                  fontSize: 8,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        _farmInformation(),
 
                         const SizedBox(height: 18),
 
-                        // ==========================================
+                        // =========================================
                         // BLOCK NAME
-                        // ==========================================
+                        // =========================================
+
+                        _fieldLabel(
+                          'Block Name',
+                        ),
+
+                        const SizedBox(height: 6),
+
                         _buildField(
-                          controller: _blockNameController,
+                          controller:
+                              _blockNameController,
                           hint: 'Block name',
+                          textInputAction:
+                              TextInputAction.next,
                           validator: (value) {
                             if (value == null ||
                                 value.trim().isEmpty) {
@@ -286,16 +304,27 @@ class _AddBlockPageState extends State<AddBlockPage> {
 
                         _gap(),
 
-                        // ==========================================
+                        // =========================================
                         // BLOCK SIZE
-                        // ==========================================
+                        // =========================================
+
+                        _fieldLabel(
+                          'Block Size',
+                        ),
+
+                        const SizedBox(height: 6),
+
                         _buildField(
-                          controller: _blockSizeController,
+                          controller:
+                              _blockSizeController,
                           hint: 'Block size / acres',
                           keyboardType:
-                              const TextInputType.numberWithOptions(
+                              const TextInputType
+                                  .numberWithOptions(
                             decimal: true,
                           ),
+                          textInputAction:
+                              TextInputAction.next,
                           validator: (value) {
                             if (value == null ||
                                 value.trim().isEmpty) {
@@ -306,7 +335,8 @@ class _AddBlockPageState extends State<AddBlockPage> {
                               value.trim(),
                             );
 
-                            if (size == null || size <= 0) {
+                            if (size == null ||
+                                size <= 0) {
                               return 'Enter a valid block size';
                             }
 
@@ -316,14 +346,24 @@ class _AddBlockPageState extends State<AddBlockPage> {
 
                         _gap(),
 
-                        // ==========================================
+                        // =========================================
                         // NUMBER OF TREES
-                        // ==========================================
+                        // =========================================
+
+                        _fieldLabel(
+                          'Number of Trees',
+                        ),
+
+                        const SizedBox(height: 6),
+
                         _buildField(
                           controller:
                               _numberOfTreesController,
                           hint: 'Number of trees',
-                          keyboardType: TextInputType.number,
+                          keyboardType:
+                              TextInputType.number,
+                          textInputAction:
+                              TextInputAction.next,
                           validator: (value) {
                             if (value == null ||
                                 value.trim().isEmpty) {
@@ -334,7 +374,8 @@ class _AddBlockPageState extends State<AddBlockPage> {
                               value.trim(),
                             );
 
-                            if (trees == null || trees < 0) {
+                            if (trees == null ||
+                                trees < 0) {
                               return 'Enter a valid number of trees';
                             }
 
@@ -344,12 +385,22 @@ class _AddBlockPageState extends State<AddBlockPage> {
 
                         _gap(),
 
-                        // ==========================================
+                        // =========================================
                         // CASHEW VARIETY
-                        // ==========================================
+                        // =========================================
+
+                        _fieldLabel(
+                          'Cashew Variety',
+                        ),
+
+                        const SizedBox(height: 6),
+
                         _buildField(
-                          controller: _varietyController,
+                          controller:
+                              _varietyController,
                           hint: 'Cashew variety',
+                          textInputAction:
+                              TextInputAction.next,
                           validator: (value) {
                             if (value == null ||
                                 value.trim().isEmpty) {
@@ -362,42 +413,33 @@ class _AddBlockPageState extends State<AddBlockPage> {
 
                         _gap(),
 
-                        // ==========================================
-                        // PLANTING YEAR
-                        // ==========================================
+                        // =========================================
+                        // DESCRIPTION
+                        // =========================================
+
+                        _fieldLabel(
+                          'Description',
+                        ),
+
+                        const SizedBox(height: 6),
+
                         _buildField(
                           controller:
-                              _plantingYearController,
-                          hint: 'Planting year',
-                          readOnly: true,
-                          onTap: _selectPlantingYear,
-                          validator: (value) {
-                            if (value == null ||
-                                value.trim().isEmpty) {
-                              return 'Planting year is required';
-                            }
-
-                            return null;
-                          },
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // ==========================================
-                        // NOTES
-                        // ==========================================
-                        _buildField(
-                          controller: _notesController,
-                          hint: 'Notes / block description',
+                              _notesController,
+                          hint:
+                              'Notes / block description',
                           minLines: 4,
                           maxLines: 4,
+                          textInputAction:
+                              TextInputAction.newline,
                         ),
 
-                        const SizedBox(height: 50),
+                        const SizedBox(height: 35),
 
-                        // ==========================================
-                        // SUBMIT BUTTON
-                        // ==========================================
+                        // =========================================
+                        // SUBMIT
+                        // =========================================
+
                         SizedBox(
                           width: double.infinity,
                           height: 46,
@@ -405,15 +447,22 @@ class _AddBlockPageState extends State<AddBlockPage> {
                             onPressed: _isLoading
                                 ? null
                                 : _submitBlock,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: primaryGreen,
-                              foregroundColor: Colors.white,
+                            style:
+                                ElevatedButton.styleFrom(
+                              backgroundColor:
+                                  primaryGreen,
+                              foregroundColor:
+                                  Colors.white,
                               disabledBackgroundColor:
-                                  primaryGreen.withOpacity(0.6),
+                                  primaryGreen
+                                      .withOpacity(0.6),
                               elevation: 0,
-                              shape: RoundedRectangleBorder(
+                              shape:
+                                  RoundedRectangleBorder(
                                 borderRadius:
-                                    BorderRadius.circular(8),
+                                    BorderRadius.circular(
+                                  8,
+                                ),
                               ),
                             ),
                             child: _isLoading
@@ -436,6 +485,8 @@ class _AddBlockPageState extends State<AddBlockPage> {
                                   ),
                           ),
                         ),
+
+                        const SizedBox(height: 20),
                       ],
                     ),
                   ),
@@ -448,9 +499,99 @@ class _AddBlockPageState extends State<AddBlockPage> {
     );
   }
 
-  // ==============================================================
-  // FIELD
-  // ==============================================================
+  // ============================================================
+  // FARM INFORMATION
+  // ============================================================
+
+  Widget _farmInformation() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF4F9F5),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: fieldBorder,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: primaryGreen.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.agriculture_outlined,
+              color: primaryGreen,
+              size: 20,
+            ),
+          ),
+
+          const SizedBox(width: 11),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Farm',
+                  style: TextStyle(
+                    color: textGrey,
+                    fontSize: 8,
+                  ),
+                ),
+
+                const SizedBox(height: 4),
+
+                Text(
+                  widget.farmName,
+                  style: const TextStyle(
+                    color: textDark,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+
+                const SizedBox(height: 3),
+
+                Text(
+                  'Farm ID: $_farmDisplayId',
+                  style: const TextStyle(
+                    color: textGrey,
+                    fontSize: 8,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  // FIELD LABEL
+  // ============================================================
+
+  Widget _fieldLabel(String label) {
+    return Text(
+      label,
+      style: const TextStyle(
+        color: textDark,
+        fontSize: 9,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+
+  // ============================================================
+  // INPUT FIELD
+  // ============================================================
+
   Widget _buildField({
     required TextEditingController controller,
     required String hint,
@@ -460,6 +601,7 @@ class _AddBlockPageState extends State<AddBlockPage> {
     VoidCallback? onTap,
     int minLines = 1,
     int maxLines = 1,
+    TextInputAction? textInputAction,
   }) {
     return TextFormField(
       controller: controller,
@@ -469,9 +611,11 @@ class _AddBlockPageState extends State<AddBlockPage> {
       onTap: onTap,
       minLines: minLines,
       maxLines: maxLines,
+      textInputAction: textInputAction,
+      enabled: !_isLoading,
       style: const TextStyle(
         fontSize: 11,
-        color: Color(0xFF304438),
+        color: textDark,
       ),
       decoration: InputDecoration(
         hintText: hint,
@@ -487,6 +631,12 @@ class _AddBlockPageState extends State<AddBlockPage> {
           vertical: maxLines > 1 ? 15 : 14,
         ),
         enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(
+            color: fieldBorder,
+          ),
+        ),
+        disabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(
             color: fieldBorder,
@@ -519,6 +669,8 @@ class _AddBlockPageState extends State<AddBlockPage> {
   }
 
   Widget _gap() {
-    return const SizedBox(height: 12);
+    return const SizedBox(
+      height: 14,
+    );
   }
 }

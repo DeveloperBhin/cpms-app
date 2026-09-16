@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+
 import 'addtrees_page.dart';
 import 'treesdetails_page.dart';
+import '../services/api_services/tree_api_services.dart';
 
 class BlockDetailsPage extends StatefulWidget {
   final String farmId;
@@ -26,28 +28,58 @@ class _BlockDetailsPageState extends State<BlockDetailsPage> {
   static const Color textDark = Color(0xFF25402D);
   static const Color textGrey = Color(0xFF718078);
 
-  // Temporary data.
-  // Later this will come from the API using blockId.
-  final List<Map<String, String>> trees = [
-    {
-      'id': 'TR-0001',
-      'variety': 'Common',
-      'age': '5 years',
-      'status': 'Active',
-    },
-    {
-      'id': 'TR-0002',
-      'variety': 'Improved',
-      'age': '4 years',
-      'status': 'Active',
-    },
-    {
-      'id': 'TR-0003',
-      'variety': 'Common',
-      'age': '5 years',
-      'status': 'Active',
-    },
-  ];
+  List<Map<String, dynamic>> trees = [];
+
+  bool _isLoadingTrees = true;
+  String? _treeError;
+
+  // ===============================================================
+  // INIT
+  // ===============================================================
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTrees();
+  }
+
+  // ===============================================================
+  // LOAD TREES
+  // ===============================================================
+
+  Future<void> _loadTrees() async {
+    if (mounted) {
+      setState(() {
+        _isLoadingTrees = true;
+        _treeError = null;
+      });
+    }
+
+    try {
+      final result = await TreeApiServices.getTreesByBlock(
+        farmId: widget.farmId,
+        blockId: widget.blockId,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        trees = result;
+        _isLoadingTrees = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoadingTrees = false;
+        _treeError = e.toString();
+      });
+    }
+  }
+
+  // ===============================================================
+  // BUILD
+  // ===============================================================
 
   @override
   Widget build(BuildContext context) {
@@ -60,6 +92,7 @@ class _BlockDetailsPageState extends State<BlockDetailsPage> {
             // =====================================================
             // HEADER
             // =====================================================
+
             Container(
               width: double.infinity,
               height: 52,
@@ -103,113 +136,128 @@ class _BlockDetailsPageState extends State<BlockDetailsPage> {
             // =====================================================
             // CONTENT
             // =====================================================
+
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(
-                  13,
-                  20,
-                  13,
-                  25,
-                ),
-                child: Column(
-                  children: [
-                    // BLOCK INFORMATION
-                    _blockInformation(),
+              child: RefreshIndicator(
+                color: primaryGreen,
+                onRefresh: _loadTrees,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(
+                    13,
+                    20,
+                    13,
+                    25,
+                  ),
+                  child: Column(
+                    children: [
+                      // BLOCK INFORMATION
+                      _blockInformation(),
 
-                    const SizedBox(height: 18),
+                      const SizedBox(height: 18),
 
-                    // BLOCK SUMMARY
-                    _blockSummary(),
+                      // BLOCK SUMMARY
+                      _blockSummary(),
 
-                    const SizedBox(height: 22),
+                      const SizedBox(height: 22),
 
-                    // TREES HEADER
-                    Row(
-                      mainAxisAlignment:
-                          MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Trees',
-                          style: TextStyle(
-                            color: textDark,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                      // =================================================
+                      // TREES HEADER
+                      // =================================================
 
-                        SizedBox(
-                          height: 38,
-                          child: ElevatedButton.icon(
-                           onPressed: () async {
-  final added = await Navigator.push<bool>(
-    context,
-    MaterialPageRoute(
-      builder: (context) => AddTreePage(
-        farmId: widget.farmId,
-        blockId: widget.blockId,
-        blockName: widget.blockName,
-      ),
-    ),
-  );
-
-  if (added == true) {
-    // Later reload trees from API.
-    setState(() {});
-  }
-},
-                            icon: const Icon(
-                              Icons.add,
-                              size: 15,
-                            ),
-                            label: const Text(
-                              'Add Tree',
-                              style: TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: primaryGreen,
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              padding:
-                                  const EdgeInsets.symmetric(
-                                horizontal: 14,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(8),
-                              ),
+                      Row(
+                        mainAxisAlignment:
+                            MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Trees',
+                            style: TextStyle(
+                              color: textDark,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
 
-                    const SizedBox(height: 14),
+                          SizedBox(
+                            height: 38,
+                            child: ElevatedButton.icon(
+                              onPressed: () async {
+                                final added =
+                                    await Navigator.push<bool>(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        AddTreePage(
+                                      farmId: widget.farmId,
+                                      blockId: widget.blockId,
+                                      blockName:
+                                          widget.blockName,
+                                    ),
+                                  ),
+                                );
 
-                    // TREE LIST
-                    ...trees.map(
-                      (tree) => Padding(
-                        padding:
-                            const EdgeInsets.only(bottom: 12),
-                        child: _treeCard(tree),
+                                if (added == true) {
+                                  await _loadTrees();
+                                }
+                              },
+                              icon: const Icon(
+                                Icons.add,
+                                size: 15,
+                              ),
+                              label: const Text(
+                                'Add Tree',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight:
+                                      FontWeight.w700,
+                                ),
+                              ),
+                              style:
+                                  ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    primaryGreen,
+                                foregroundColor:
+                                    Colors.white,
+                                elevation: 0,
+                                padding:
+                                    const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                ),
+                                shape:
+                                    RoundedRectangleBorder(
+                                  borderRadius:
+                                      BorderRadius.circular(
+                                    8,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
+
+                      const SizedBox(height: 14),
+
+                      // =================================================
+                      // TREE LIST
+                      // =================================================
+
+                      _buildTreeList(),
+                    ],
+                  ),
                 ),
               ),
             ),
           ],
         ),
       ),
-
     );
   }
 
   // ===============================================================
   // BLOCK INFORMATION
   // ===============================================================
+
   Widget _blockInformation() {
     return Container(
       width: double.infinity,
@@ -230,7 +278,7 @@ class _BlockDetailsPageState extends State<BlockDetailsPage> {
           const SizedBox(height: 14),
 
           Text(
-            'Block ID: ${widget.blockId}',
+            'Block ID: BL-${widget.blockId.padLeft(4, '0')}',
             style: const TextStyle(
               color: textDark,
               fontSize: 9,
@@ -252,7 +300,7 @@ class _BlockDetailsPageState extends State<BlockDetailsPage> {
           const SizedBox(height: 8),
 
           Text(
-            'Farm ID: ${widget.farmId}',
+            'Farm ID: FM-${widget.farmId.padLeft(4, '0')}',
             style: const TextStyle(
               color: textGrey,
               fontSize: 8,
@@ -266,6 +314,7 @@ class _BlockDetailsPageState extends State<BlockDetailsPage> {
   // ===============================================================
   // BLOCK SUMMARY
   // ===============================================================
+
   Widget _blockSummary() {
     return Container(
       width: double.infinity,
@@ -289,20 +338,25 @@ class _BlockDetailsPageState extends State<BlockDetailsPage> {
             children: [
               Expanded(
                 child: _summaryItem(
-                  label: 'Size',
-                  value: '4 Acres',
+                  label: 'Block',
+                  value:
+                      'BL-${widget.blockId.padLeft(4, '0')}',
                 ),
               ),
+
               Expanded(
                 child: _summaryItem(
                   label: 'Trees',
-                  value: '200',
+                  value: _isLoadingTrees
+                      ? '...'
+                      : trees.length.toString(),
                 ),
               ),
+
               Expanded(
                 child: _summaryItem(
-                  label: 'Variety',
-                  value: 'Common',
+                  label: 'Varieties',
+                  value: _varietyCount().toString(),
                 ),
               ),
             ],
@@ -311,6 +365,10 @@ class _BlockDetailsPageState extends State<BlockDetailsPage> {
       ),
     );
   }
+
+  // ===============================================================
+  // SUMMARY ITEM
+  // ===============================================================
 
   Widget _summaryItem({
     required String label,
@@ -340,9 +398,176 @@ class _BlockDetailsPageState extends State<BlockDetailsPage> {
   }
 
   // ===============================================================
+  // VARIETY COUNT
+  // ===============================================================
+
+  int _varietyCount() {
+    final varieties = trees
+        .map(
+          (tree) =>
+              tree['variety']?.toString().trim() ?? '',
+        )
+        .where((value) => value.isNotEmpty)
+        .toSet();
+
+    return varieties.length;
+  }
+
+  // ===============================================================
+  // TREE LIST
+  // ===============================================================
+
+  Widget _buildTreeList() {
+    if (_isLoadingTrees) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(
+          vertical: 35,
+        ),
+        child: Center(
+          child: CircularProgressIndicator(
+            color: primaryGreen,
+          ),
+        ),
+      );
+    }
+
+    if (_treeError != null) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: _cardDecoration(),
+        child: Column(
+          children: [
+            const Icon(
+              Icons.error_outline,
+              color: Colors.redAccent,
+              size: 30,
+            ),
+
+            const SizedBox(height: 10),
+
+            const Text(
+              'Unable to load trees',
+              style: TextStyle(
+                color: textDark,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+
+            const SizedBox(height: 6),
+
+            Text(
+              _treeError!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: textGrey,
+                fontSize: 8,
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            TextButton.icon(
+              onPressed: _loadTrees,
+              icon: const Icon(
+                Icons.refresh,
+                size: 16,
+              ),
+              label: const Text(
+                'Try Again',
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (trees.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(
+          vertical: 30,
+          horizontal: 16,
+        ),
+        decoration: _cardDecoration(),
+        child: const Column(
+          children: [
+            Icon(
+              Icons.park_outlined,
+              color: textGrey,
+              size: 34,
+            ),
+
+            SizedBox(height: 10),
+
+            Text(
+              'No trees registered in this block',
+              style: TextStyle(
+                color: textDark,
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+
+            SizedBox(height: 5),
+
+            Text(
+              'Tap Add Tree to register the first tree.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: textGrey,
+                fontSize: 8,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      children: trees
+          .map(
+            (tree) => Padding(
+              padding:
+                  const EdgeInsets.only(bottom: 12),
+              child: _treeCard(tree),
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  // ===============================================================
   // TREE CARD
   // ===============================================================
-  Widget _treeCard(Map<String, String> tree) {
+
+  Widget _treeCard(Map<String, dynamic> tree) {
+    final rawId =
+        tree['id']?.toString() ?? '';
+
+    final treeCode =
+        tree['treeCode']?.toString() ??
+            'TR-${rawId.padLeft(6, '0')}';
+
+    final variety =
+        tree['variety']?.toString() ?? '-';
+
+    final status =
+        tree['status']?.toString() ?? '-';
+
+    final plantingYear =
+        tree['plantingYear']?.toString() ?? '-';
+
+    final formattedStatus =
+        _formatStatus(status);
+
+    final statusColor =
+        _getStatusColor(status);
+
+    final statusBackground =
+        _getStatusBackground(status);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -356,13 +581,13 @@ class _BlockDetailsPageState extends State<BlockDetailsPage> {
               Container(
                 width: 34,
                 height: 34,
-                decoration: const BoxDecoration(
-                  color: lightGreen,
+                decoration: BoxDecoration(
+                  color: statusBackground,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.park_outlined,
-                  color: primaryGreen,
+                  color: statusColor,
                   size: 18,
                 ),
               ),
@@ -375,16 +600,19 @@ class _BlockDetailsPageState extends State<BlockDetailsPage> {
                       CrossAxisAlignment.start,
                   children: [
                     Text(
-                      tree['id']!,
+                      treeCode,
                       style: const TextStyle(
                         color: textDark,
                         fontSize: 10,
-                        fontWeight: FontWeight.w700,
+                        fontWeight:
+                            FontWeight.w700,
                       ),
                     ),
+
                     const SizedBox(height: 4),
+
                     Text(
-                      '${tree['variety']} • ${tree['age']}',
+                      '$variety • Planted $plantingYear',
                       style: const TextStyle(
                         color: textGrey,
                         fontSize: 8,
@@ -396,20 +624,23 @@ class _BlockDetailsPageState extends State<BlockDetailsPage> {
 
               // STATUS
               Container(
-                padding: const EdgeInsets.symmetric(
+                padding:
+                    const EdgeInsets.symmetric(
                   horizontal: 8,
                   vertical: 5,
                 ),
                 decoration: BoxDecoration(
-                  color: lightGreen,
-                  borderRadius: BorderRadius.circular(6),
+                  color: statusBackground,
+                  borderRadius:
+                      BorderRadius.circular(6),
                 ),
                 child: Text(
-                  tree['status']!,
-                  style: const TextStyle(
-                    color: primaryGreen,
+                  formattedStatus,
+                  style: TextStyle(
+                    color: statusColor,
                     fontSize: 7,
-                    fontWeight: FontWeight.w600,
+                    fontWeight:
+                        FontWeight.w600,
                   ),
                 ),
               ),
@@ -421,21 +652,20 @@ class _BlockDetailsPageState extends State<BlockDetailsPage> {
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(
-            onPressed: () {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => TreeDetailsPage(
-        farmId: widget.farmId,
-        blockId: widget.blockId,
-        treeId: tree['id']!,
-        variety: tree['variety']!,
-        age: tree['age']!,
-        status: tree['status']!,
-      ),
-    ),
-  );
-},
+              onPressed: rawId.isEmpty
+                  ? null
+                  : () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                      builder: (context) => TreeDetailsPage(
+  farmId: widget.farmId,
+  blockId: widget.blockId,
+  treeId: rawId,
+),
+                        ),
+                      );
+                    },
               child: const Text(
                 'View Tree ›',
                 style: TextStyle(
@@ -451,55 +681,76 @@ class _BlockDetailsPageState extends State<BlockDetailsPage> {
     );
   }
 
-  BoxDecoration _cardDecoration() {
-    return BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(13),
-      border: Border.all(
-        color: borderColor,
-      ),
-    );
+  // ===============================================================
+  // FORMAT STATUS
+  // ===============================================================
+
+  String _formatStatus(String status) {
+    if (status.trim().isEmpty ||
+        status == '-') {
+      return '-';
+    }
+
+    final value =
+        status.trim().toLowerCase();
+
+    return value[0].toUpperCase() +
+        value.substring(1);
   }
 
   // ===============================================================
-  // BOTTOM NAVIGATION
+  // STATUS COLOR
   // ===============================================================
- 
 
-  Widget _navItem({
-    required IconData icon,
-    required String label,
-    required bool selected,
-    required VoidCallback onTap,
-  }) {
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 17,
-              color: selected
-                  ? primaryGreen
-                  : const Color(0xFF9AA39D),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 8,
-                fontWeight: selected
-                    ? FontWeight.w700
-                    : FontWeight.w500,
-                color: selected
-                    ? primaryGreen
-                    : const Color(0xFF9AA39D),
-              ),
-            ),
-          ],
-        ),
+  Color _getStatusColor(String status) {
+    switch (status.toUpperCase()) {
+      case 'HEALTHY':
+        return primaryGreen;
+
+      case 'DISEASED':
+        return const Color(0xFFD97706);
+
+      case 'DEAD':
+        return const Color(0xFFB91C1C);
+
+      default:
+        return textGrey;
+    }
+  }
+
+  // ===============================================================
+  // STATUS BACKGROUND
+  // ===============================================================
+
+  Color _getStatusBackground(
+    String status,
+  ) {
+    switch (status.toUpperCase()) {
+      case 'HEALTHY':
+        return lightGreen;
+
+      case 'DISEASED':
+        return const Color(0xFFFFF3D6);
+
+      case 'DEAD':
+        return const Color(0xFFFFE4E4);
+
+      default:
+        return const Color(0xFFF0F2F1);
+    }
+  }
+
+  // ===============================================================
+  // CARD DECORATION
+  // ===============================================================
+
+  BoxDecoration _cardDecoration() {
+    return BoxDecoration(
+      color: Colors.white,
+      borderRadius:
+          BorderRadius.circular(13),
+      border: Border.all(
+        color: borderColor,
       ),
     );
   }

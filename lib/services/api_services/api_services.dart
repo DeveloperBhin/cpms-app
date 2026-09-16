@@ -133,6 +133,8 @@ static Future<Map<String, dynamic>> login({
       response.statusCode < 300) {
 
     final data = responseData['data'];
+    print('LOGIN FULL RESPONSE: $responseData');
+    print('LOGIN DATA: $data');
 
     if (data == null || data is! Map) {
       throw Exception(
@@ -184,7 +186,7 @@ static Future<Map<String, dynamic>> login({
     }
 
     final response = await http.get(
-      Uri.parse('$baseUrl/users/me'),
+      Uri.parse('$baseUrl/auth/me'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',

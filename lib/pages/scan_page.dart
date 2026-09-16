@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import 'treesdetails_page.dart';
+import '../services/api_services/tree_api_services.dart';
 
 class ScanPage extends StatefulWidget {
   const ScanPage({super.key});
@@ -31,31 +32,9 @@ class _ScanPageState extends State<ScanPage> {
   //
   // ApiServices.getTreeByCode(code)
   // ==============================================================
-  final Map<String, Map<String, String>> _demoTrees = {
-    'TR-0001': {
-      'farmId': 'FM-0001',
-      'blockId': 'BL-0001',
-      'variety': 'Common',
-      'age': '5 years',
-      'status': 'Active',
-    },
-    'TR-0002': {
-      'farmId': 'FM-0001',
-      'blockId': 'BL-0001',
-      'variety': 'Improved',
-      'age': '4 years',
-      'status': 'Active',
-    },
-    'TR-0003': {
-      'farmId': 'FM-0001',
-      'blockId': 'BL-0002',
-      'variety': 'Common',
-      'age': '5 years',
-      'status': 'Active',
-    },
-  };
 
-  @override
+
+ @override
   void initState() {
     super.initState();
 
@@ -106,36 +85,62 @@ class _ScanPageState extends State<ScanPage> {
       return;
     }
 
-    _findTree(code);
-  }
+await _findTree(code);  }
 
   // ==============================================================
   // FIND TREE
   // ==============================================================
-  void _findTree(String code) {
-    final tree = _demoTrees[code];
+Future<void> _findTree(String code) async {
+  try {
+    final tree =
+        await TreeApiServices.getTreeByCode(
+      treeCode: code,
+    );
 
-    if (tree == null) {
-      _showTreeNotFound(code);
+    if (!mounted) {
       return;
     }
 
-    Navigator.pushReplacement(
+    final treeId =
+        tree['id']?.toString() ?? '';
+
+    final farmId =
+        tree['farmId']?.toString() ?? '';
+
+    final blockId =
+        tree['blockId']?.toString() ?? '';
+
+    if (treeId.isEmpty ||
+        farmId.isEmpty ||
+        blockId.isEmpty) {
+      await _showTreeNotFound(code);
+      return;
+    }
+
+    await Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) => TreeDetailsPage(
-          farmId: tree['farmId']!,
-          blockId: tree['blockId']!,
-          treeId: code,
-          variety: tree['variety']!,
-          age: tree['age']!,
-          status: tree['status']!,
+        builder: (context) =>
+            TreeDetailsPage(
+          farmId: farmId,
+          blockId: blockId,
+          treeId: treeId,
         ),
       ),
     );
-  }
+  } catch (e) {
+    debugPrint(
+      'TREE LOOKUP ERROR: $e',
+    );
 
-  // ==============================================================
+    if (!mounted) {
+      return;
+    }
+
+    await _showTreeNotFound(code);
+  }
+}
+ // ==============================================================
   // TREE NOT FOUND
   // ==============================================================
   Future<void> _showTreeNotFound(
@@ -343,7 +348,7 @@ class _ScanPageState extends State<ScanPage> {
       _lastScannedCode = result;
     });
 
-    _findTree(result);
+await _findTree(result);
   }
 
   // ==============================================================
