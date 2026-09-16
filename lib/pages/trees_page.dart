@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
 import 'treesdetails_page.dart';
+
 import '../services/api_services/tree_api_services.dart';
+import '../services/api_services/tree_activity_api_services.dart';
+import '../services/api_services/farm_harvest_api_services.dart';
 
 class TreePage extends StatefulWidget {
   final VoidCallback onBack;
@@ -39,28 +42,37 @@ class _TreePageState extends State<TreePage> {
       _searchController =
       TextEditingController();
 
-  List<Map<String, dynamic>> trees = [];
+  // ============================================================
+  // DATA
+  // ============================================================
 
-  String _searchText = '';
+List<Map<String, dynamic>> trees = [];
 
-  bool _isLoading = true;
+List<Map<String, dynamic>> activities = [];
 
-  String? _error;
+// Farm-level harvest records
+List<Map<String, dynamic>> farmHarvests = [];
 
-  // ==============================================================
+String _searchText = '';
+
+bool _isLoading = true;
+
+String? _error;
+
+  // ============================================================
   // INIT
-  // ==============================================================
+  // ============================================================
 
   @override
   void initState() {
     super.initState();
 
-    _loadTrees();
+    _loadDashboard();
   }
 
-  // ==============================================================
+  // ============================================================
   // DISPOSE
-  // ==============================================================
+  // ============================================================
 
   @override
   void dispose() {
@@ -69,49 +81,86 @@ class _TreePageState extends State<TreePage> {
     super.dispose();
   }
 
-  // ==============================================================
-  // LOAD TREES
-  // ==============================================================
-
-  Future<void> _loadTrees() async {
-    if (mounted) {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
-    }
-
-    try {
-      final result =
-          await TreeApiServices.getMyTrees();
-
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        trees = result;
-        _isLoading = false;
-      });
-    } catch (e) {
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _isLoading = false;
-        _error = e.toString();
-      });
-    }
+  // ============================================================
+  // LOAD TREES + ACTIVITIES
+  // ============================================================
+Future<void> _loadDashboard() async {
+  if (mounted) {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
   }
 
-  // ==============================================================
+  try {
+    final results = await Future.wait([
+      TreeApiServices.getMyTrees(),
+      TreeActivityApiServices
+          .getMyActivities(),
+      FarmHarvestApiServices
+          .getMyHarvests(),
+    ]);
+
+    if (!mounted) {
+      return;
+    }
+
+    final treeResult = results[0];
+    final activityResult = results[1];
+    final harvestResult = results[2];
+
+    setState(() {
+      trees = treeResult;
+      activities = activityResult;
+      farmHarvests = harvestResult;
+
+      _isLoading = false;
+    });
+
+    debugPrint(
+      'TREES: ${trees.length}',
+    );
+
+    debugPrint(
+      'TREE ACTIVITIES: '
+      '${activities.length}',
+    );
+
+    debugPrint(
+      'FARM HARVESTS: '
+      '${farmHarvests.length}',
+    );
+
+    debugPrint(
+      'TOTAL HARVESTED: '
+      '$totalHarvestedKg KG',
+    );
+
+    debugPrint(
+      'TOTAL COST: '
+      '$totalCost',
+    );
+  } catch (e) {
+    debugPrint(
+      'LOAD DASHBOARD ERROR: $e',
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = false;
+      _error = e.toString();
+    });
+  }
+}
+  // ============================================================
   // FILTER TREES
-  // ==============================================================
+  // ============================================================
 
   List<Map<String, dynamic>>
       get filteredTrees {
-
     if (_searchText.trim().isEmpty) {
       return trees;
     }
@@ -121,7 +170,9 @@ class _TreePageState extends State<TreePage> {
 
     return trees.where((tree) {
       final id =
-          tree['id']?.toString().toLowerCase() ??
+          tree['id']
+                  ?.toString()
+                  .toLowerCase() ??
               '';
 
       final treeCode =
@@ -170,45 +221,135 @@ class _TreePageState extends State<TreePage> {
     }).toList();
   }
 
-  // ==============================================================
-  // COUNTS
-  // ==============================================================
+  // ============================================================
+  // DASHBOARD STATISTICS
+  // ============================================================
 
-  int get healthyTrees {
-    return trees.where((tree) {
-      return tree['status']
-              ?.toString()
-              .toUpperCase() ==
-          'HEALTHY';
-    }).length;
+  int get totalActivities {
+    return activities.length;
   }
 
-  int get diseasedTrees {
-    return trees.where((tree) {
-      return tree['status']
-              ?.toString()
-              .toUpperCase() ==
-          'DISEASED';
-    }).length;
+  double get totalTreeHarvestedKg {
+  double total = 0;
+
+  for (final activity in activities) {
+    final type =
+        activity['activityType']
+                ?.toString()
+                .toUpperCase() ??
+            '';
+
+    if (type != 'HARVESTING') {
+      continue;
+    }
+
+    final kg =
+        double.tryParse(
+              activity['harvestedKg']
+                      ?.toString() ??
+                  '0',
+            ) ??
+            0;
+
+    total += kg;
   }
 
-  int get deadTrees {
-    return trees.where((tree) {
-      return tree['status']
-              ?.toString()
-              .toUpperCase() ==
-          'DEAD';
-    }).length;
+  return total;
+}
+
+double get totalFarmHarvestedKg {
+  double total = 0;
+
+  for (final harvest in farmHarvests) {
+    // Prefer total returned by backend.
+    final apiTotal =
+        double.tryParse(
+      harvest['totalHarvestedKg']
+              ?.toString() ??
+          '',
+    );
+
+    if (apiTotal != null) {
+      total += apiTotal;
+      continue;
+    }
+
+    // Fallback calculation.
+    final buckets =
+        int.tryParse(
+              harvest['bucketCount']
+                      ?.toString() ??
+                  '0',
+            ) ??
+            0;
+
+    final kgPerBucket =
+        double.tryParse(
+              harvest['kgPerBucket']
+                      ?.toString() ??
+                  '0',
+            ) ??
+            0;
+
+    total += buckets * kgPerBucket;
   }
 
-  // ==============================================================
+  return total;
+}
+
+double get totalHarvestedKg {
+  return totalTreeHarvestedKg +
+      totalFarmHarvestedKg;
+}
+
+  double get totalTreeActivityCost {
+  double total = 0;
+
+  for (final activity in activities) {
+    final cost =
+        double.tryParse(
+              activity['cost']
+                      ?.toString() ??
+                  '0',
+            ) ??
+            0;
+
+    total += cost;
+  }
+
+  return total;
+}
+
+double get totalFarmHarvestCost {
+  double total = 0;
+
+  for (final harvest in farmHarvests) {
+    final cost =
+        double.tryParse(
+              harvest['cost']
+                      ?.toString() ??
+                  '0',
+            ) ??
+            0;
+
+    total += cost;
+  }
+
+  return total;
+}
+
+double get totalCost {
+  return totalTreeActivityCost +
+      totalFarmHarvestCost;
+}
+
+  // ============================================================
   // OPEN TREE
-  // ==============================================================
+  // ============================================================
 
   Future<void> _openTree(
     Map<String, dynamic> tree,
   ) async {
-
     final farmId =
         tree['farmId']?.toString() ?? '';
 
@@ -221,7 +362,6 @@ class _TreePageState extends State<TreePage> {
     if (farmId.isEmpty ||
         blockId.isEmpty ||
         treeId.isEmpty) {
-
       _showMessage(
         'Unable to open this tree because '
         'its farm, block or tree ID is missing.',
@@ -243,13 +383,13 @@ class _TreePageState extends State<TreePage> {
     );
 
     if (mounted) {
-      await _loadTrees();
+      await _loadDashboard();
     }
   }
 
-  // ==============================================================
+  // ============================================================
   // BUILD
-  // ==============================================================
+  // ============================================================
 
   @override
   Widget build(BuildContext context) {
@@ -262,9 +402,9 @@ class _TreePageState extends State<TreePage> {
         bottom: false,
         child: Column(
           children: [
-            // =====================================================
+            // ==================================================
             // HEADER
-            // =====================================================
+            // ==================================================
 
             Container(
               width: double.infinity,
@@ -319,7 +459,8 @@ class _TreePageState extends State<TreePage> {
                   ),
 
                   IconButton(
-                    onPressed: _loadTrees,
+                    onPressed:
+                        _loadDashboard,
                     tooltip: 'Refresh',
                     icon: const Icon(
                       Icons.refresh,
@@ -331,14 +472,15 @@ class _TreePageState extends State<TreePage> {
               ),
             ),
 
-            // =====================================================
+            // ==================================================
             // CONTENT
-            // =====================================================
+            // ==================================================
 
             Expanded(
               child: RefreshIndicator(
                 color: primaryGreen,
-                onRefresh: _loadTrees,
+                onRefresh:
+                    _loadDashboard,
                 child:
                     SingleChildScrollView(
                   physics:
@@ -352,76 +494,22 @@ class _TreePageState extends State<TreePage> {
                   ),
                   child: Column(
                     crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                        CrossAxisAlignment
+                            .start,
                     children: [
-                      // ===========================================
+                      // ========================================
                       // SUMMARY
-                      // ===========================================
+                      // ========================================
 
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _summaryCard(
-                              title:
-                                  'Total Trees',
-                              value: trees.length
-                                  .toString(),
-                              icon:
-                                  Icons.park_outlined,
-                            ),
-                          ),
-
-                          const SizedBox(
-                            width: 8,
-                          ),
-
-                          Expanded(
-                            child: _summaryCard(
-                              title: 'Healthy',
-                              value: healthyTrees
-                                  .toString(),
-                              icon: Icons
-                                  .check_circle_outline,
-                            ),
-                          ),
-
-                          const SizedBox(
-                            width: 8,
-                          ),
-
-                          Expanded(
-                            child: _summaryCard(
-                              title: 'Diseased',
-                              value: diseasedTrees
-                                  .toString(),
-                              icon: Icons
-                                  .warning_amber_rounded,
-                            ),
-                          ),
-
-                          const SizedBox(
-                            width: 8,
-                          ),
-
-                          Expanded(
-                            child: _summaryCard(
-                              title: 'Dead',
-                              value: deadTrees
-                                  .toString(),
-                              icon: Icons
-                                  .remove_circle_outline,
-                            ),
-                          ),
-                        ],
-                      ),
+                      _buildSummary(),
 
                       const SizedBox(
                         height: 20,
                       ),
 
-                      // ===========================================
+                      // ========================================
                       // SEARCH
-                      // ===========================================
+                      // ========================================
 
                       Container(
                         height: 43,
@@ -479,10 +567,11 @@ class _TreePageState extends State<TreePage> {
                                               .clear();
 
                                           setState(
-                                              () {
-                                            _searchText =
-                                                '';
-                                          });
+                                            () {
+                                              _searchText =
+                                                  '';
+                                            },
+                                          );
                                         },
                                         icon:
                                             const Icon(
@@ -503,9 +592,9 @@ class _TreePageState extends State<TreePage> {
                         height: 22,
                       ),
 
-                      // ===========================================
+                      // ========================================
                       // REGISTERED TREES HEADER
-                      // ===========================================
+                      // ========================================
 
                       Row(
                         mainAxisAlignment:
@@ -542,9 +631,9 @@ class _TreePageState extends State<TreePage> {
                         height: 14,
                       ),
 
-                      // ===========================================
+                      // ========================================
                       // LIST
-                      // ===========================================
+                      // ========================================
 
                       _buildTreeList(
                         visibleTrees,
@@ -560,15 +649,137 @@ class _TreePageState extends State<TreePage> {
     );
   }
 
-  // ==============================================================
+  // ============================================================
+  // SUMMARY
+  // ============================================================
+
+  Widget _buildSummary() {
+    if (_isLoading) {
+      return Row(
+        children: [
+          Expanded(
+            child: _summaryCard(
+              title: 'Total Trees',
+              value: '-',
+              icon:
+                  Icons.park_outlined,
+            ),
+          ),
+
+          const SizedBox(width: 8),
+
+          Expanded(
+            child: _summaryCard(
+              title: 'Activities',
+              value: '-',
+              icon: Icons
+                  .assignment_outlined,
+            ),
+          ),
+
+          const SizedBox(width: 8),
+
+          Expanded(
+            child: _summaryCard(
+              title: 'Harvested',
+              value: '-',
+              icon:
+                  Icons.scale_outlined,
+            ),
+          ),
+
+          const SizedBox(width: 8),
+
+          Expanded(
+            child: _summaryCard(
+              title: 'Total Cost',
+              value: '-',
+              icon: Icons
+                  .payments_outlined,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Row(
+      children: [
+        // ======================================================
+        // TOTAL TREES
+        // ======================================================
+
+        Expanded(
+          child: _summaryCard(
+            title: 'Total Trees',
+            value:
+                trees.length.toString(),
+            icon:
+                Icons.park_outlined,
+          ),
+        ),
+
+        const SizedBox(width: 8),
+
+        // ======================================================
+        // TOTAL ACTIVITIES
+        // ======================================================
+
+        Expanded(
+          child: _summaryCard(
+            title: 'Activities',
+            value:
+                totalActivities
+                    .toString(),
+            icon:
+                Icons.assignment_outlined,
+          ),
+        ),
+
+        const SizedBox(width: 8),
+
+        // ======================================================
+        // TOTAL HARVESTED KG
+        // ======================================================
+
+        Expanded(
+          child: _summaryCard(
+            title: 'Harvested',
+            value:
+                '${_formatKg(totalHarvestedKg)} kg',
+            icon:
+                Icons.scale_outlined,
+          ),
+        ),
+
+        const SizedBox(width: 8),
+
+        // ======================================================
+        // TOTAL ACTIVITY COST
+        // ======================================================
+
+        Expanded(
+          child: _summaryCard(
+            title: 'Total Cost',
+            value:
+             _formatCompactMoney(
+  totalCost,
+),
+            icon:
+                Icons.payments_outlined,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ============================================================
   // TREE LIST
-  // ==============================================================
+  // ============================================================
 
   Widget _buildTreeList(
     List<Map<String, dynamic>>
         visibleTrees,
   ) {
-
     if (_isLoading) {
       return const Padding(
         padding:
@@ -600,25 +811,23 @@ class _TreePageState extends State<TreePage> {
                   const EdgeInsets.only(
                 bottom: 12,
               ),
-              child: _treeCard(
-                tree,
-              ),
+              child:
+                  _treeCard(tree),
             ),
           )
           .toList(),
     );
   }
 
-  // ==============================================================
+  // ============================================================
   // SUMMARY CARD
-  // ==============================================================
+  // ============================================================
 
   Widget _summaryCard({
     required String title,
     required String value,
     required IconData icon,
   }) {
-
     return Container(
       height: 83,
       padding:
@@ -669,14 +878,19 @@ class _TreePageState extends State<TreePage> {
             ],
           ),
 
-          Text(
-            value,
-            style:
-                const TextStyle(
-              color: textDark,
-              fontSize: 17,
-              fontWeight:
-                  FontWeight.w800,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment:
+                Alignment.centerLeft,
+            child: Text(
+              value,
+              style:
+                  const TextStyle(
+                color: textDark,
+                fontSize: 17,
+                fontWeight:
+                    FontWeight.w800,
+              ),
             ),
           ),
         ],
@@ -684,17 +898,15 @@ class _TreePageState extends State<TreePage> {
     );
   }
 
-  // ==============================================================
+  // ============================================================
   // TREE CARD
-  // ==============================================================
+  // ============================================================
 
   Widget _treeCard(
     Map<String, dynamic> tree,
   ) {
-
     final rawId =
-        tree['id']?.toString() ??
-            '';
+        tree['id']?.toString() ?? '';
 
     final treeCode =
         tree['treeCode']
@@ -761,9 +973,9 @@ class _TreePageState extends State<TreePage> {
           crossAxisAlignment:
               CrossAxisAlignment.start,
           children: [
-            // ===========================================
+            // ================================================
             // TOP
-            // ===========================================
+            // ================================================
 
             Row(
               children: [
@@ -779,7 +991,8 @@ class _TreePageState extends State<TreePage> {
                   ),
                   child: Icon(
                     Icons.park_outlined,
-                    color: statusColor,
+                    color:
+                        statusColor,
                     size: 20,
                   ),
                 ),
@@ -869,9 +1082,9 @@ class _TreePageState extends State<TreePage> {
               height: 12,
             ),
 
-            // ===========================================
+            // ================================================
             // FARM / BLOCK
-            // ===========================================
+            // ================================================
 
             Row(
               children: [
@@ -899,14 +1112,14 @@ class _TreePageState extends State<TreePage> {
               height: 13,
             ),
 
-            // ===========================================
+            // ================================================
             // TREE CODE / VIEW
-            // ===========================================
+            // ================================================
 
             Row(
               children: [
                 const Icon(
-                  Icons.barcode_reader,
+                  Icons.qr_code_scanner,
                   color: primaryGreen,
                   size: 18,
                 ),
@@ -966,15 +1179,14 @@ class _TreePageState extends State<TreePage> {
     );
   }
 
-  // ==============================================================
+  // ============================================================
   // TREE INFORMATION
-  // ==============================================================
+  // ============================================================
 
   Widget _treeInfo({
     required String title,
     required String value,
   }) {
-
     return Column(
       crossAxisAlignment:
           CrossAxisAlignment.start,
@@ -1009,9 +1221,83 @@ class _TreePageState extends State<TreePage> {
     );
   }
 
-  // ==============================================================
+  // ============================================================
+  // FORMAT KG
+  // ============================================================
+
+  String _formatKg(
+    double value,
+  ) {
+    if (value ==
+        value.truncateToDouble()) {
+      return value
+          .toInt()
+          .toString();
+    }
+
+    return value
+        .toStringAsFixed(2)
+        .replaceFirst(
+          RegExp(r'0+$'),
+          '',
+        )
+        .replaceFirst(
+          RegExp(r'\.$'),
+          '',
+        );
+  }
+
+  // ============================================================
+  // FORMAT MONEY
+  // ============================================================
+
+  String _formatCompactMoney(
+    double value,
+  ) {
+    if (value >= 1000000000) {
+      return 'TZS '
+          '${_cleanNumber(value / 1000000000)}B';
+    }
+
+    if (value >= 1000000) {
+      return 'TZS '
+          '${_cleanNumber(value / 1000000)}M';
+    }
+
+    if (value >= 1000) {
+      return 'TZS '
+          '${_cleanNumber(value / 1000)}K';
+    }
+
+    return 'TZS '
+        '${value.toStringAsFixed(0)}';
+  }
+
+  String _cleanNumber(
+    double value,
+  ) {
+    if (value ==
+        value.truncateToDouble()) {
+      return value
+          .toInt()
+          .toString();
+    }
+
+    return value
+        .toStringAsFixed(1)
+        .replaceFirst(
+          RegExp(r'0+$'),
+          '',
+        )
+        .replaceFirst(
+          RegExp(r'\.$'),
+          '',
+        );
+  }
+
+  // ============================================================
   // ERROR STATE
-  // ==============================================================
+  // ============================================================
 
   Widget _errorState() {
     return Container(
@@ -1072,7 +1358,8 @@ class _TreePageState extends State<TreePage> {
           ),
 
           TextButton.icon(
-            onPressed: _loadTrees,
+            onPressed:
+                _loadDashboard,
             icon: const Icon(
               Icons.refresh,
               size: 16,
@@ -1087,9 +1374,9 @@ class _TreePageState extends State<TreePage> {
     );
   }
 
-  // ==============================================================
+  // ============================================================
   // EMPTY STATE
-  // ==============================================================
+  // ============================================================
 
   Widget _emptyState() {
     final searching =
@@ -1161,14 +1448,13 @@ class _TreePageState extends State<TreePage> {
     );
   }
 
-  // ==============================================================
+  // ============================================================
   // STATUS
-  // ==============================================================
+  // ============================================================
 
   String _formatStatus(
     String status,
   ) {
-
     final value =
         status.trim();
 
@@ -1188,10 +1474,8 @@ class _TreePageState extends State<TreePage> {
   Color _statusColor(
     String status,
   ) {
-
     switch (
         status.toUpperCase()) {
-
       case 'HEALTHY':
         return primaryGreen;
 
@@ -1213,10 +1497,8 @@ class _TreePageState extends State<TreePage> {
   Color _statusBackground(
     String status,
   ) {
-
     switch (
         status.toUpperCase()) {
-
       case 'HEALTHY':
         return lightGreen;
 
@@ -1237,14 +1519,13 @@ class _TreePageState extends State<TreePage> {
     }
   }
 
-  // ==============================================================
+  // ============================================================
   // MESSAGE
-  // ==============================================================
+  // ============================================================
 
   void _showMessage(
     String message,
   ) {
-
     ScaffoldMessenger.of(context)
         .showSnackBar(
       SnackBar(
