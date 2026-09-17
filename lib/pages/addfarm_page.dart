@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import '../services/api_services/farm_api_services.dart';
+import '../services/local_data_service.dart';
 import 'package:flutter/foundation.dart';
+import '../theme/app_text_styles.dart';
+import '../l10n/app_localizations.dart';
 import '../services/api_services/api_services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
@@ -209,12 +211,31 @@ class _AddFarmPageState
       _isLoading = true;
     });
 
+    try {
+      // ========================================================
+      // GET LOGGED-IN USER
+      //
+      // We only need the user's profile location.
+      // We DO NOT extract or send farmerId.
+      // Farm ownership is determined by the JWT/backend.
+      // ========================================================
+
+      final currentUserResponse =
+          await ApiServices
+              .getCurrentUser();
   try {
     // ==========================================
     // 1. GET ACTUAL LOGGED-IN USER
     // ==========================================
-    final currentUserResponse =
-        await ApiServices.getCurrentUser();
+    Map<String, dynamic> currentUserResponse;
+    try {
+      currentUserResponse = await ApiServices.getCurrentUser();
+      await LocalDataService.instance.cacheProfile(currentUserResponse);
+    } catch (_) {
+      currentUserResponse =
+          await LocalDataService.instance.getCachedProfile() ??
+              (throw Exception('No cached profile is available offline'));
+    }
 
       debugPrint(
         'CURRENT USER RESPONSE: '
@@ -282,32 +303,71 @@ class _AddFarmPageState
         );
       }
 
+      // ========================================================
+      // CREATE FARM
+      // ========================================================
+
+      final result =
+          await FarmApiServices
+              .createFarm(
+        name:
+            _farmNameController
+                .text
+                .trim(),
+
+        acreage: acreage,
+
+        plantingDate:
+            _plantingDateController
+                .text
+                .trim(),
+
+        farmType:
+            _farmTypeController
+                .text
+                .trim()
+                .toUpperCase(),
     // ==========================================
     // 4. CREATE FARM
     // ==========================================
     final result =
-        await FarmApiServices.createFarm(
-      name: _farmNameController.text.trim(),
-      farmerId: farmerId,
-      acreage: acreage,
-      plantingDate:
+        await LocalDataService.instance.createFarm(
+      values: {
+        'name': _farmNameController.text.trim(),
+        'farmerId': farmerId,
+        'acreage': acreage,
+        'plantingDate':
           _plantingDateController.text.trim(),
-      farmType:
+        'farmType':
           _farmTypeController.text
               .trim()
               .toUpperCase(),
 
-      farmLocation:
-          _notesController.text.trim(),
+        farmLocation:
+            _notesController
+                .text
+                .trim(),
+        'farmLocation':
+          _farmBoundaryWkt ?? _notesController.text.trim(),
 
-      region: region,
-      district: district,
-      ward: ward,
-      village: village,
+        region: region,
+        district: district,
+        ward: ward,
+        village: village,
+        'region': region,
+        'district': district,
+        'ward': ward,
+        'village': village,
 
+        // Keep these only if your current
+        // FarmApiServices signature still requires them.
+        latitude: 0.0,
+        longitude: 0.0,
+      );
       // GPS will be connected next.
-      latitude: 0.0,
-      longitude: 0.0,
+        'latitude': _currentLocation?.latitude ?? 0.0,
+      'longitude': _currentLocation?.longitude ?? 0.0,
+      },
     );
 
       debugPrint(
@@ -317,10 +377,23 @@ class _AddFarmPageState
 
       if (!mounted) return;
 
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n
+                .farmAddedSuccessfully,
+          ),
+          backgroundColor:
+              primaryGreen,
+        ),
+      );
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
         content: Text(
-          'Farm added successfully',
+          result['_pendingSync'] == true
+              ? 'Farm saved offline and will sync when connected'
+              : 'Farm added successfully',
         ),
         backgroundColor: primaryGreen,
       ),
@@ -651,16 +724,87 @@ class _AddFarmPageState
                           height: 18,
                         ),
 
+                        // =======================================
+                        // FARM SIZE
+                        // =======================================
+
+                        _buildLabel(
+                          l10n
+                              .farmSize,
+                        ),
+
+                        const SizedBox(
+                          height: 7,
+                        ),
       // FARM SIZE
       _buildLabel('Farm Size'),
       const SizedBox(height: 7),
 
+      SizedBox(
+        width: double.infinity,
+        height: 42,
+        child: OutlinedButton.icon(
+          onPressed: _isLoading ? null : _startFarmMapping,
+          icon: const Icon(Icons.map_outlined, size: 18),
+          label: Text(_farmBoundary.length >= 3
+              ? 'Redraw Farm Boundary'
+              : 'Draw Farm Boundary on Map'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: primaryGreen,
+            side: const BorderSide(color: primaryGreen),
+          ),
+        ),
+      ),
+      const SizedBox(height: 7),
+
+                        _buildField(
+                          controller:
+                              _farmSizeController,
+
+                          hint:
+                              l10n
+                                  .farmSize,
+
+                          keyboardType:
+                              const TextInputType
+                                  .numberWithOptions(
+                            decimal:
+                                true,
+                          ),
+
+                          suffixText:
+                              l10n
+                                  .acres,
+
+                          validator:
+                              (value) {
+                            if (value ==
+                                    null ||
+                                value
+                                    .trim()
+                                    .isEmpty) {
+                              return l10n
+                                  .farmSizeRequired;
+                            }
+
+                            final size =
+                                double
+                                    .tryParse(
+                              value
+                                  .trim(),
+                            );
+
+                            if (size ==
+                                    null ||
+                                size <=
+                                    0) {
+                              return l10n
+                                  .validFarmSizeRequired;
+                            }
       _buildField(
         controller: _farmSizeController,
         hint: 'Farm Size',
-        keyboardType: const TextInputType.numberWithOptions(
-          decimal: true,
-        ),
+        readOnly: true,
         suffixText: 'Acres',
         validator: (value) {
           if (value == null || value.trim().isEmpty) {
@@ -1115,6 +1259,191 @@ class _AddFarmPageState
   Widget _gap() {
     return const SizedBox(
       height: 12,
+    );
+  }
+}
+
+class _FarmMapSheet extends StatefulWidget {
+  const _FarmMapSheet({
+    required this.initialLocation,
+    required this.onBoundaryChanged,
+  });
+
+  final LatLng initialLocation;
+  final ValueChanged<List<LatLng>> onBoundaryChanged;
+
+  @override
+  State<_FarmMapSheet> createState() => _FarmMapSheetState();
+}
+
+class _FarmMapSheetState extends State<_FarmMapSheet> {
+  static const Color primaryGreen = Color(0xFF087A2F);
+  final List<LatLng> _points = [];
+  GoogleMapController? _mapController;
+  LatLng? _gpsLocation;
+  bool _isLocating = false;
+
+  void _addPoint(LatLng point) {
+    setState(() {
+      _points.add(point);
+    });
+    widget.onBoundaryChanged(List<LatLng>.from(_points));
+  }
+
+  void _clearPoints() {
+    setState(() {
+      _points.clear();
+    });
+    widget.onBoundaryChanged(const []);
+  }
+
+  Future<void> _pickGpsLocation() async {
+    setState(() {
+      _isLocating = true;
+    });
+
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        throw Exception('Please enable GPS location services');
+      }
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        throw Exception('Location permission is required');
+      }
+
+      final position = await Geolocator.getCurrentPosition();
+      final location = LatLng(position.latitude, position.longitude);
+      setState(() {
+        _gpsLocation = location;
+      });
+      await _mapController?.animateCamera(
+        CameraUpdate.newLatLngZoom(location, 18),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLocating = false;
+        });
+      }
+    }
+  }
+
+  String _toWktPolygon() {
+    final closedPoints = [..._points, _points.first];
+    final coordinates = closedPoints
+        .map((point) => '${point.longitude} ${point.latitude}')
+        .join(', ');
+    return 'POLYGON (($coordinates))';
+  }
+
+  void _finish() {
+    if (_points.length < 3) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tap at least three points on the map')),
+      );
+      return;
+    }
+    widget.onBoundaryChanged(List<LatLng>.from(_points));
+    Navigator.pop(context, _toWktPolygon());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final polygon = _points.length >= 3
+        ? <Polygon>{
+            Polygon(
+              polygonId: const PolygonId('farm-boundary'),
+              points: _points,
+              fillColor: primaryGreen.withOpacity(0.2),
+              strokeColor: primaryGreen,
+              strokeWidth: 2,
+            ),
+          }
+        : <Polygon>{};
+
+    return SafeArea(
+      child: SizedBox(
+        height: MediaQuery.sizeOf(context).height * 0.78,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 8, 8),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Draw Farm Boundary',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: _isLocating ? null : _pickGpsLocation,
+                    tooltip: 'Use GPS location',
+                    icon: _isLocating
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.my_location),
+                  ),
+                  TextButton(
+                    onPressed: _clearPoints,
+                    child: const Text('Clear'),
+                  ),
+                  ElevatedButton(
+                    onPressed: _finish,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryGreen,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('Done'),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: GoogleMap(
+                initialCameraPosition: CameraPosition(
+                  target: widget.initialLocation,
+                  zoom: 17,
+                ),
+                myLocationEnabled: true,
+                myLocationButtonEnabled: true,
+                onMapCreated: (controller) => _mapController = controller,
+                polygons: polygon,
+                markers: {
+                  if (_gpsLocation != null)
+                    Marker(
+                      markerId: const MarkerId('selected-gps-location'),
+                      position: _gpsLocation!,
+                      icon: BitmapDescriptor.defaultMarkerWithHue(
+                        BitmapDescriptor.hueAzure,
+                      ),
+                    ),
+                  for (var i = 0; i < _points.length; i++)
+                    Marker(
+                      markerId: MarkerId('boundary-$i'),
+                      position: _points[i],
+                    ),
+                },
+                onTap: _addPoint,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
