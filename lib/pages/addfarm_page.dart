@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import '../theme/app_text_styles.dart';
-import '../l10n/app_localizations.dart';
+import '../services/api_services/farm_api_services.dart';
+import 'package:flutter/foundation.dart';
 import '../services/api_services/api_services.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
 import '../services/api_services/farm_api_services.dart';
 
 class AddFarmPage extends StatefulWidget {
@@ -35,6 +37,9 @@ class _AddFarmPageState
       TextEditingController();
 
   bool _isLoading = false;
+  final List<LatLng> _farmBoundary = [];
+  String? _farmBoundaryWkt;
+  LatLng? _currentLocation;
 
   static const Color primaryGreen =
       Color(0xFF087A2F);
@@ -96,6 +101,74 @@ class _AddFarmPageState
     });
   }
 
+  Future<void> _startFarmMapping() async {
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        throw Exception('Please enable GPS location services');
+      }
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        throw Exception('Location permission is required to map the farm');
+      }
+      final position = await Geolocator.getCurrentPosition();
+      final location = LatLng(position.latitude, position.longitude);
+      setState(() {
+        _currentLocation = location;
+        _farmBoundary.clear();
+      });
+      if (!mounted) return;
+      final boundaryWkt = await showModalBottomSheet<String>(
+        context: context,
+        isScrollControlled: true,
+        builder: (_) => _FarmMapSheet(
+          initialLocation: location,
+          onBoundaryChanged: (points) {
+            setState(() {
+              _farmBoundary
+                ..clear()
+                ..addAll(points);
+              if (points.length >= 3) {
+                _farmSizeController.text =
+                    _areaInAcres(points).toStringAsFixed(2);
+              } else {
+                _farmSizeController.clear();
+              }
+            });
+          },
+        ),
+      );
+      if (boundaryWkt != null && mounted) {
+        setState(() {
+          _farmBoundaryWkt = boundaryWkt;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        );
+      }
+    }
+  }
+
+  double _areaInAcres(List<LatLng> points) {
+    var area = 0.0;
+    const earthRadius = 6378137.0;
+    for (var i = 0; i < points.length; i++) {
+      final a = points[i];
+      final b = points[(i + 1) % points.length];
+      area += (b.longitude * 0.0174532925199433) *
+          (a.latitude * 0.0174532925199433) -
+          (a.longitude * 0.0174532925199433) *
+              (b.latitude * 0.0174532925199433);
+    }
+    return (area.abs() * earthRadius * earthRadius / 2) / 4046.8564224;
+  }
+
   // ============================================================
   // SUBMIT FARM
   // ============================================================
@@ -136,18 +209,12 @@ class _AddFarmPageState
       _isLoading = true;
     });
 
-    try {
-      // ========================================================
-      // GET LOGGED-IN USER
-      //
-      // We only need the user's profile location.
-      // We DO NOT extract or send farmerId.
-      // Farm ownership is determined by the JWT/backend.
-      // ========================================================
-
-      final currentUserResponse =
-          await ApiServices
-              .getCurrentUser();
+  try {
+    // ==========================================
+    // 1. GET ACTUAL LOGGED-IN USER
+    // ==========================================
+    final currentUserResponse =
+        await ApiServices.getCurrentUser();
 
       debugPrint(
         'CURRENT USER RESPONSE: '
@@ -215,46 +282,33 @@ class _AddFarmPageState
         );
       }
 
-      // ========================================================
-      // CREATE FARM
-      // ========================================================
+    // ==========================================
+    // 4. CREATE FARM
+    // ==========================================
+    final result =
+        await FarmApiServices.createFarm(
+      name: _farmNameController.text.trim(),
+      farmerId: farmerId,
+      acreage: acreage,
+      plantingDate:
+          _plantingDateController.text.trim(),
+      farmType:
+          _farmTypeController.text
+              .trim()
+              .toUpperCase(),
 
-      final result =
-          await FarmApiServices
-              .createFarm(
-        name:
-            _farmNameController
-                .text
-                .trim(),
+      farmLocation:
+          _notesController.text.trim(),
 
-        acreage: acreage,
+      region: region,
+      district: district,
+      ward: ward,
+      village: village,
 
-        plantingDate:
-            _plantingDateController
-                .text
-                .trim(),
-
-        farmType:
-            _farmTypeController
-                .text
-                .trim()
-                .toUpperCase(),
-
-        farmLocation:
-            _notesController
-                .text
-                .trim(),
-
-        region: region,
-        district: district,
-        ward: ward,
-        village: village,
-
-        // Keep these only if your current
-        // FarmApiServices signature still requires them.
-        latitude: 0.0,
-        longitude: 0.0,
-      );
+      // GPS will be connected next.
+      latitude: 0.0,
+      longitude: 0.0,
+    );
 
       debugPrint(
         'CREATE FARM RESULT: '
@@ -263,17 +317,14 @@ class _AddFarmPageState
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-        SnackBar(
-          content: Text(
-            l10n
-                .farmAddedSuccessfully,
-          ),
-          backgroundColor:
-              primaryGreen,
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Farm added successfully',
         ),
-      );
+        backgroundColor: primaryGreen,
+      ),
+    );
 
       // Tell FarmsPage to reload.
       Navigator.pop(
@@ -600,63 +651,27 @@ class _AddFarmPageState
                           height: 18,
                         ),
 
-                        // =======================================
-                        // FARM SIZE
-                        // =======================================
+      // FARM SIZE
+      _buildLabel('Farm Size'),
+      const SizedBox(height: 7),
 
-                        _buildLabel(
-                          l10n
-                              .farmSize,
-                        ),
+      _buildField(
+        controller: _farmSizeController,
+        hint: 'Farm Size',
+        keyboardType: const TextInputType.numberWithOptions(
+          decimal: true,
+        ),
+        suffixText: 'Acres',
+        validator: (value) {
+          if (value == null || value.trim().isEmpty) {
+            return 'Farm size is required';
+          }
 
-                        const SizedBox(
-                          height: 7,
-                        ),
+          final size = double.tryParse(value.trim());
 
-                        _buildField(
-                          controller:
-                              _farmSizeController,
-
-                          hint:
-                              l10n
-                                  .farmSize,
-
-                          keyboardType:
-                              const TextInputType
-                                  .numberWithOptions(
-                            decimal:
-                                true,
-                          ),
-
-                          suffixText:
-                              l10n
-                                  .acres,
-
-                          validator:
-                              (value) {
-                            if (value ==
-                                    null ||
-                                value
-                                    .trim()
-                                    .isEmpty) {
-                              return l10n
-                                  .farmSizeRequired;
-                            }
-
-                            final size =
-                                double
-                                    .tryParse(
-                              value
-                                  .trim(),
-                            );
-
-                            if (size ==
-                                    null ||
-                                size <=
-                                    0) {
-                              return l10n
-                                  .validFarmSizeRequired;
-                            }
+          if (size == null || size <= 0) {
+            return 'Enter a valid farm size';
+          }
 
                             return null;
                           },

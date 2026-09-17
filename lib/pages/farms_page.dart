@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../services/local_data_service.dart';
 import '../l10n/app_localizations.dart';
 import '../services/api_services/farm_api_services.dart';
 import '../theme/app_text_styles.dart';
@@ -80,6 +81,8 @@ Future<void> _loadFarms() async {
     });
   }
 
+    try {
+      final farms = await LocalDataService.instance.getFarms();
   try {
     final results = await Future.wait([
       FarmApiServices.getMyFarms(),
@@ -945,6 +948,11 @@ Future<void> _loadFarms() async {
             CrossAxisAlignment.start,
 
         children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  farmName,
           // =====================================================
           // FARM NAME
           // =====================================================
@@ -962,6 +970,18 @@ Future<void> _loadFarms() async {
               fontWeight:
                   FontWeight.w800,
             ),
+                ),
+              ),
+              if (farm['_pendingSync'] == true)
+                const Tooltip(
+                  message: 'Waiting to sync',
+                  child: Icon(
+                    Icons.cloud_upload_outlined,
+                    color: Colors.orange,
+                    size: 17,
+                  ),
+                ),
+            ],
           ),
 
           const SizedBox(

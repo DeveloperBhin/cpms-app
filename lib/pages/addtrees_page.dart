@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+
+import '../services/local_data_service.dart';
 import '../theme/app_text_styles.dart';
 import '../l10n/app_localizations.dart';
 import '../services/api_services/tree_api_services.dart';
@@ -39,6 +42,9 @@ class _AddTreePageState extends State<AddTreePage> {
       TextEditingController();
 
   bool _isLoading = false;
+  bool _isFetchingLocation = false;
+  double? _locationSpeed;
+  double? _locationAccuracy;
 
   // Keep backend enum values here.
   String _status = 'HEALTHY';
@@ -169,6 +175,61 @@ class _AddTreePageState extends State<AddTreePage> {
   // ============================================================
   // SUBMIT TREE
   // ============================================================
+  Future<void> _captureLocation() async {
+    if (_isFetchingLocation || _isLoading) {
+      return;
+    }
+
+    setState(() => _isFetchingLocation = true);
+
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        _showError('Please enable location services.');
+        return;
+      }
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        _showError('Location permission is required to get GPS coordinates.');
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.best,
+        ),
+      );
+
+      if (position.accuracy >= 5) {
+        _showError(
+          'GPS accuracy is low (${position.accuracy.toStringAsFixed(1)} m). '
+          'Move to an open area and try again.',
+        );
+        return;
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _latitudeController.text = position.latitude.toString();
+        _longitudeController.text = position.longitude.toString();
+        _locationSpeed = position.speed;
+        _locationAccuracy = position.accuracy;
+      });
+    } catch (e) {
+      _showError('Unable to get GPS location: $e');
+    } finally {
+      if (mounted) setState(() => _isFetchingLocation = false);
+    }
+  }
+
+Future<void> _submitTree() async {
+  if (_isLoading) {
+    return;
+  }
 
   Future<void> _submitTree() async {
     final l10n =
@@ -266,6 +327,18 @@ class _AddTreePageState extends State<AddTreePage> {
       _isLoading = true;
     });
 
+  try {
+    final result =
+      await LocalDataService.instance.createTree(
+      farmId: widget.farmId,
+      blockId: widget.blockId,
+      variety: _varietyController.text.trim(),
+      plantingYear: plantingYear,
+      status: _status.toUpperCase(),
+      latitude: latitude,
+      longitude: longitude,
+      notes: _notesController.text.trim(),
+    );
     try {
       final result =
           await TreeApiServices.createTree(
@@ -717,6 +790,25 @@ class _AddTreePageState extends State<AddTreePage> {
                           height: 13,
                         ),
 
+                        SizedBox(
+                          width: double.infinity,
+                          height: 44,
+                          child: OutlinedButton.icon(
+                            onPressed: (_isLoading || _isFetchingLocation)
+                                ? null
+                                : _captureLocation,
+                            icon: _isFetchingLocation
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : const Icon(Icons.my_location, size: 17),
+                            label: Text(
+                              _locationAccuracy == null
+                                  ? 'Get GPS Location'
+                                  : 'GPS captured • ${_locationAccuracy!.toStringAsFixed(1)} m accuracy',
+                              style: const TextStyle(fontSize: 10),
                         Row(
                           children: [
                             Expanded(
@@ -749,6 +841,11 @@ class _AddTreePageState extends State<AddTreePage> {
                             const SizedBox(
                               width: 10,
                             ),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: primaryGreen,
+                              side: const BorderSide(color: primaryGreen),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
 
                             Expanded(
                               child:
@@ -776,7 +873,7 @@ class _AddTreePageState extends State<AddTreePage> {
                                     _longitudeValidator,
                               ),
                             ),
-                          ],
+                          ),
                         ),
 
                         const SizedBox(

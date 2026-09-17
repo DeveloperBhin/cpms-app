@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../services/api_services/block_api_services.dart';
 import '../theme/app_text_styles.dart';
+import '../services/local_data_service.dart';
 import 'addblocks_page.dart';
 import 'blocksdetails_page.dart';
 
@@ -64,10 +65,7 @@ class _BlocksPageState extends State<BlocksPage> {
     });
 
     try {
-      final blocks =
-          await BlockApiServices.getBlocksByFarm(
-        widget.farmId,
-      );
+      final blocks = await LocalDataService.instance.getBlocks(widget.farmId);
 
       if (!mounted) return;
 
@@ -924,6 +922,15 @@ class _BlocksPageState extends State<BlocksPage> {
                   ),
                 ),
               ),
+              if (block['_pendingSync'] == true)
+                const Tooltip(
+                  message: 'Waiting to sync',
+                  child: Icon(
+                    Icons.cloud_upload_outlined,
+                    color: Colors.orange,
+                    size: 17,
+                  ),
+                ),
 
               Container(
                 padding:

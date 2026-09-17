@@ -5,6 +5,7 @@ import '../services/api_services/tree_api_services.dart';
 import '../theme/app_text_styles.dart';
 import 'addtrees_page.dart';
 import 'treesdetails_page.dart';
+import '../services/local_data_service.dart';
 
 class BlockDetailsPage extends StatefulWidget {
   final String farmId;
@@ -76,6 +77,9 @@ class _BlockDetailsPageState
     }
 
     try {
+      final result = await LocalDataService.instance.getTrees(
+        widget.farmId,
+        widget.blockId,
       final result =
           await TreeApiServices.getTreesByBlock(
         farmId: widget.farmId,
@@ -927,6 +931,18 @@ class _BlockDetailsPageState
               ),
 
               // STATUS
+              if (tree['_pendingSync'] == true)
+                const Padding(
+                  padding: EdgeInsets.only(right: 7),
+                  child: Tooltip(
+                    message: 'Waiting to sync',
+                    child: Icon(
+                      Icons.cloud_upload_outlined,
+                      color: Colors.orange,
+                      size: 17,
+                    ),
+                  ),
+                ),
 
               Container(
                 padding:

@@ -57,6 +57,7 @@
 //     delete(rootProject.layout.buildDirectory)
 // }
 
+import org.gradle.api.tasks.compile.JavaCompile
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -97,12 +98,12 @@ project(":file_picker") {
 
 /*
  * tflite_flutter:
- * Java = 17, therefore Kotlin must also use JVM 17.
+ * Its Android plugin compiles Java at 11, therefore Kotlin must also use JVM 11.
  */
 project(":tflite_flutter") {
     tasks.withType<KotlinCompile>().configureEach {
         compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
+            jvmTarget.set(JvmTarget.JVM_11)
         }
     }
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import '../theme/app_text_styles.dart';
-import '../l10n/app_localizations.dart';
-import '../services/api_services/block_api_services.dart';
+
+import '../services/local_data_service.dart';
 
 class AddBlockPage extends StatefulWidget {
   final String farmId;
@@ -118,8 +117,8 @@ class _AddBlockPageState extends State<AddBlockPage> {
     });
 
     try {
-      final result =
-          await BlockApiServices.createBlock(
+        final result =
+          await LocalDataService.instance.createBlock(
         farmId: widget.farmId,
         name:
             _blockNameController.text.trim(),
