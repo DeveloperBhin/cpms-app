@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
-
+import '../l10n/app_localizations.dart';
 import '../services/api_services/tree_activity_api_services.dart';
 import '../services/api_services/tree_api_services.dart';
+import '../theme/app_text_styles.dart';
 
 class TreeActivityPage extends StatefulWidget {
   final String treeId;
@@ -17,137 +18,127 @@ class TreeActivityPage extends StatefulWidget {
   });
 
   @override
-  State<TreeActivityPage> createState() =>
-      _TreeActivityPageState();
+  State<TreeActivityPage> createState() => _TreeActivityPageState();
 }
 
-class _TreeActivityPageState
-    extends State<TreeActivityPage> {
-  static const Color primaryGreen =
-      Color(0xFF087A2F);
+class _TreeActivityPageState extends State<TreeActivityPage> {
+  static const Color primaryGreen = Color(0xFF087A2F);
+  static const Color backgroundColor = Color(0xFFF8FAF8);
+  static const Color borderColor = Color(0xFFDCE8DF);
+  static const Color lightGreen = Color(0xFFE7F3EB);
+  static const Color textDark = Color(0xFF25402D);
+  static const Color textGrey = Color(0xFF718078);
 
-  static const Color backgroundColor =
-      Color(0xFFF8FAF8);
-
-  static const Color borderColor =
-      Color(0xFFDCE8DF);
-
-  static const Color lightGreen =
-      Color(0xFFE7F3EB);
-
-  static const Color textDark =
-      Color(0xFF25402D);
-
-  static const Color textGrey =
-      Color(0xFF718078);
-
-  // ============================================================
-  // DATA
-  // ============================================================
-
-  List<Map<String, dynamic>> activities = [];
-
-  bool _isLoading = true;
-  String? _error;
-
+  List<Map<String, dynamic>> _activities = [];
   Map<String, dynamic>? _tree;
 
-bool _isLoadingTree = true;
-String? _treeError;
+  bool _isLoadingActivities = true;
+  bool _isLoadingTree = true;
 
-  // ============================================================
-  // INIT
-  // ============================================================
+  String? _activitiesError;
+  String? _treeError;
 
- @override
-void initState() {
-  super.initState();
-
-  _loadTree();
-  _loadActivities();
-}
-
-  // ============================================================
-  // LOAD ACTIVITIES
-  // ============================================================
-Future<void> _loadTree() async {
-  if (mounted) {
-    setState(() {
-      _isLoadingTree = true;
-      _treeError = null;
-    });
+  @override
+  void initState() {
+    super.initState();
+    _loadTree();
+    _loadActivities();
   }
 
-  try {
-    final result =
-        await TreeApiServices.getTree(
-      farmId: widget.farmId,
-      blockId: widget.blockId,
-      treeId: widget.treeId,
-    );
+  // ============================================================
+  // LOAD TREE
+  // ============================================================
 
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      _tree = result;
-      _isLoadingTree = false;
-    });
-  } catch (e) {
-    debugPrint(
-      'LOAD TREE ERROR: $e',
-    );
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      _treeError = e.toString();
-      _isLoadingTree = false;
-    });
-  }
-}
-  Future<void> _loadActivities() async {
+  Future<void> _loadTree() async {
     if (mounted) {
       setState(() {
-        _isLoading = true;
-        _error = null;
+        _isLoadingTree = true;
+        _treeError = null;
       });
     }
 
     try {
-      final result =
-          await TreeActivityApiServices
-              .getTreeActivities(
+      final result = await TreeApiServices.getTree(
         farmId: widget.farmId,
         blockId: widget.blockId,
         treeId: widget.treeId,
       );
 
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       setState(() {
-        activities = result;
-        _isLoading = false;
+        _tree = result;
+        _isLoadingTree = false;
       });
     } catch (e) {
-      debugPrint(
-        'LOAD TREE ACTIVITIES ERROR: $e',
-      );
+      debugPrint('LOAD TREE ERROR: $e');
 
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       setState(() {
-        _error = e.toString();
-        _isLoading = false;
+        _treeError = e.toString();
+        _isLoadingTree = false;
       });
     }
+  }
+
+  // ============================================================
+  // LOAD ACTIVITIES
+  // ============================================================
+
+ Future<void> _loadActivities() async {
+  if (mounted) {
+    setState(() {
+      _isLoadingActivities = true;
+      _activitiesError = null;
+    });
+  }
+
+  try {
+    final result =
+        await TreeActivityApiServices.getTreeActivities(
+      farmId: widget.farmId,
+      blockId: widget.blockId,
+      treeId: widget.treeId,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _activities =
+          List<Map<String, dynamic>>.from(result);
+
+      _isLoadingActivities = false;
+    });
+
+    debugPrint(
+      'TREE ${widget.treeId} ACTIVITIES: ${_activities.length}',
+    );
+  } catch (e) {
+    debugPrint(
+      'LOAD TREE ACTIVITIES ERROR: $e',
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _activitiesError =
+          _cleanError(e.toString());
+
+      _isLoadingActivities = false;
+    });
+  }
+}
+
+  // ============================================================
+  // REFRESH
+  // ============================================================
+
+  Future<void> _refresh() async {
+    await Future.wait([
+      _loadTree(),
+      _loadActivities(),
+    ]);
   }
 
   // ============================================================
@@ -156,172 +147,34 @@ Future<void> _loadTree() async {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: backgroundColor,
       body: SafeArea(
         bottom: false,
         child: Column(
           children: [
-            // ==================================================
-            // HEADER
-            // ==================================================
-
-            Container(
-              width: double.infinity,
-              height: 55,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14,
-              ),
-              decoration: const BoxDecoration(
-                color: primaryGreen,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(18),
-                  bottomRight: Radius.circular(18),
-                ),
-              ),
-              child: Row(
-                children: [
-                  InkWell(
-                    onTap: () {
-                      Navigator.pop(context);
-                    },
-                    borderRadius:
-                        BorderRadius.circular(20),
-                    child: const Padding(
-                      padding: EdgeInsets.all(4),
-                      child: Icon(
-                        Icons.arrow_back_ios_new,
-                        color: Colors.white,
-                        size: 15,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Expanded(
-                    child: Text(
-                      'Tree Activities',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // ==================================================
-            // BODY
-            // ==================================================
-
+            _buildHeader(l10n),
             Expanded(
               child: RefreshIndicator(
                 color: primaryGreen,
-                onRefresh: _loadActivities,
+                onRefresh: _refresh,
                 child: SingleChildScrollView(
-                  physics:
-                      const AlwaysScrollableScrollPhysics(),
-                  padding:
-                      const EdgeInsets.fromLTRB(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(
                     14,
-                    20,
+                    18,
                     14,
                     30,
                   ),
                   child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // ========================================
-                      // TREE INFORMATION
-                      // ========================================
-
-                      _treeCard(),
-
-                      const SizedBox(height: 18),
-
-                      // ========================================
-                      // TITLE + ADD ACTIVITY
-                      // ========================================
-
-                      Row(
-                        children: [
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment
-                                      .start,
-                              children: [
-                                Text(
-                                  'Activities',
-                                  style: TextStyle(
-                                    color: textDark,
-                                    fontSize: 14,
-                                    fontWeight:
-                                        FontWeight.w800,
-                                  ),
-                                ),
-                                SizedBox(height: 3),
-                                Text(
-                                  'Activities performed on this tree',
-                                  style: TextStyle(
-                                    color: textGrey,
-                                    fontSize: 8,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          SizedBox(
-                            height: 38,
-                            child:
-                                ElevatedButton.icon(
-                              onPressed:
-                                  _showAddActivity,
-                              icon: const Icon(
-                                Icons.add,
-                                size: 15,
-                              ),
-                              label: const Text(
-                                'Add Activity',
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  fontWeight:
-                                      FontWeight.w700,
-                                ),
-                              ),
-                              style:
-                                  ElevatedButton
-                                      .styleFrom(
-                                backgroundColor:
-                                    primaryGreen,
-                                foregroundColor:
-                                    Colors.white,
-                                elevation: 0,
-                                padding:
-                                    const EdgeInsets
-                                        .symmetric(
-                                  horizontal: 13,
-                                ),
-                                shape:
-                                    RoundedRectangleBorder(
-                                  borderRadius:
-                                      BorderRadius
-                                          .circular(8),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 15),
-
-                      // ========================================
-                      // ACTIVITIES
-                      // ========================================
-
+                      _buildTreeCard(),
+                      const SizedBox(height: 22),
+                      _buildActivitiesHeader(l10n),
+                      const SizedBox(height: 14),
                       _buildActivitiesContent(),
                     ],
                   ),
@@ -335,35 +188,57 @@ Future<void> _loadTree() async {
   }
 
   // ============================================================
-  // ACTIVITIES CONTENT
+  // HEADER
   // ============================================================
 
-  Widget _buildActivitiesContent() {
-    if (_isLoading) {
-      return _loadingActivities();
-    }
-
-    if (_error != null) {
-      return _errorActivities();
-    }
-
-    if (activities.isEmpty) {
-      return _emptyActivities();
-    }
-
-    return Column(
-      children: activities
-          .map(
-            (activity) => Padding(
-              padding:
-                  const EdgeInsets.only(
-                bottom: 12,
+  Widget _buildHeader(AppLocalizations l10n) {
+    return Container(
+      width: double.infinity,
+      height: 55,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: const BoxDecoration(
+        color: primaryGreen,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(18),
+          bottomRight: Radius.circular(18),
+        ),
+      ),
+      child: Row(
+        children: [
+          InkWell(
+            onTap: () => Navigator.pop(context),
+            borderRadius: BorderRadius.circular(20),
+            child: const Padding(
+              padding: EdgeInsets.all(4),
+              child: Icon(
+                Icons.arrow_back_ios_new,
+                color: Colors.white,
+                size: 15,
               ),
-              child:
-                  _activityCard(activity),
             ),
-          )
-          .toList(),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              l10n.treeActivities,
+              style: const TextStyle(
+                color: Colors.white,
+  fontSize: AppTextStyles.bodyLarge,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          IconButton(
+            tooltip: l10n.refresh,
+            onPressed: _refresh,
+            icon: const Icon(
+              Icons.refresh,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -371,921 +246,677 @@ Future<void> _loadTree() async {
   // TREE CARD
   // ============================================================
 
- Widget _treeCard() {
-  if (_isLoadingTree) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: _cardDecoration(),
-      child: const Row(
-        children: [
-          SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: primaryGreen,
-            ),
-          ),
-          SizedBox(width: 12),
-          Text(
-            'Loading tree information...',
-            style: TextStyle(
-              color: textGrey,
-              fontSize: 9,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildTreeCard() {
+    final l10n = AppLocalizations.of(context)!;
 
-  if (_treeError != null ||
-      _tree == null) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: _cardDecoration(),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.error_outline,
-            color: Colors.red,
-            size: 22,
-          ),
-
-          const SizedBox(width: 10),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Unable to load tree information',
-                  style: TextStyle(
-                    color: textDark,
-                    fontSize: 10,
-                    fontWeight:
-                        FontWeight.w700,
-                  ),
-                ),
-
-                const SizedBox(height: 3),
-
-                Text(
-                  _treeError ?? '',
-                  style: const TextStyle(
-                    color: textGrey,
-                    fontSize: 8,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          IconButton(
-            onPressed: _loadTree,
-            icon: const Icon(
-              Icons.refresh,
-              color: primaryGreen,
-              size: 19,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  final tree = _tree!;
-
-  final treeCode =
-      tree['treeCode']?.toString() ??
-          _formatTreeId(widget.treeId);
-
-  final variety =
-      tree['variety']?.toString() ??
-          '-';
-
-  final plantingYear =
-      tree['plantingYear']?.toString() ??
-          '-';
-
-  final status =
-      tree['status']?.toString() ??
-          '-';
-
-  final farmName =
-      tree['farmName']?.toString() ??
-          _formatFarmId(widget.farmId);
-
-  final blockName =
-      tree['blockName']?.toString() ??
-          _formatBlockId(widget.blockId);
-
-  final latitude =
-      tree['latitude']?.toString() ??
-          '-';
-
-  final longitude =
-      tree['longitude']?.toString() ??
-          '-';
-
-  final notes =
-      tree['notes']?.toString() ?? '';
-
-  return Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(15),
-    decoration: _cardDecoration(),
-    child: Column(
-      crossAxisAlignment:
-          CrossAxisAlignment.start,
-      children: [
-        // ======================================================
-        // HEADER
-        // ======================================================
-
-        Row(
+    if (_isLoadingTree) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: _cardDecoration(),
+        child: Row(
           children: [
-            Container(
-              width: 46,
-              height: 46,
-              decoration:
-                  const BoxDecoration(
-                color: lightGreen,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.park_outlined,
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
                 color: primaryGreen,
-                size: 24,
               ),
             ),
-
             const SizedBox(width: 12),
+            Text(
+              l10n.loadingTreeInformation,
+              style: const TextStyle(
+                color: textGrey,
+                fontSize: AppTextStyles.bodySmall,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
+    if (_treeError != null || _tree == null) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: _cardDecoration(),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.error_outline,
+              color: Colors.red,
+              size: 22,
+            ),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    treeCode,
-                    style:
-                        const TextStyle(
+                    l10n.unableToLoadTreeInformation,
+                    style: const TextStyle(
                       color: textDark,
-                      fontSize: 14,
-                      fontWeight:
-                          FontWeight.w800,
+                      fontSize: AppTextStyles.bodySmall,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-
-                  const SizedBox(
-                    height: 3,
-                  ),
-
+                  const SizedBox(height: 3),
                   Text(
-                    variety,
-                    style:
-                        const TextStyle(
+                    _cleanError(_treeError ?? ''),
+                    style: const TextStyle(
                       color: textGrey,
-                      fontSize: 9,
+                      fontSize: AppTextStyles.bodySmall,
                     ),
                   ),
                 ],
               ),
             ),
-
-            _treeStatusBadge(
-              status,
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 15),
-
-        const Divider(
-          color: borderColor,
-          height: 1,
-        ),
-
-        const SizedBox(height: 14),
-
-        // ======================================================
-        // FARM + BLOCK
-        // ======================================================
-
-        Row(
-          children: [
-            Expanded(
-              child: _treeInfoItem(
-                icon:
-                    Icons.landscape_outlined,
-                label: 'Farm',
-                value: farmName,
-              ),
-            ),
-
-            const SizedBox(width: 12),
-
-            Expanded(
-              child: _treeInfoItem(
-                icon:
-                    Icons.grid_view_outlined,
-                label: 'Block',
-                value: blockName,
+            IconButton(
+              onPressed: _loadTree,
+              icon: const Icon(
+                Icons.refresh,
+                color: primaryGreen,
+                size: 19,
               ),
             ),
           ],
         ),
+      );
+    }
 
-        const SizedBox(height: 14),
+    final tree = _tree!;
 
-        // ======================================================
-        // VARIETY + PLANTING YEAR
-        // ======================================================
+    final treeCode =
+        tree['treeCode']?.toString() ??
+            _formatTreeId(widget.treeId);
 
-        Row(
-          children: [
-            Expanded(
-              child: _treeInfoItem(
-                icon: Icons.eco_outlined,
-                label: 'Variety',
-                value: variety,
+    final variety =
+        tree['variety']?.toString() ?? '-';
+
+    final plantingYear =
+        tree['plantingYear']?.toString() ?? '-';
+
+    final status =
+        tree['status']?.toString() ?? '-';
+
+    final farmName =
+        tree['farmName']?.toString() ??
+            _formatFarmId(widget.farmId);
+
+    final blockName =
+        tree['blockName']?.toString() ??
+            _formatBlockId(widget.blockId);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(15),
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: const BoxDecoration(
+                  color: lightGreen,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.park_outlined,
+                  color: primaryGreen,
+                  size: 25,
+                ),
               ),
-            ),
-
-            const SizedBox(width: 12),
-
-            Expanded(
-              child: _treeInfoItem(
-                icon:
-                    Icons.calendar_month_outlined,
-                label: 'Planting Year',
-                value: plantingYear,
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 14),
-
-        // ======================================================
-        // LOCATION
-        // ======================================================
-
-        Row(
-          children: [
-            Expanded(
-              child: _treeInfoItem(
-                icon:
-                    Icons.location_on_outlined,
-                label: 'Latitude',
-                value: latitude,
-              ),
-            ),
-
-            const SizedBox(width: 12),
-
-            Expanded(
-              child: _treeInfoItem(
-                icon:
-                    Icons.location_on_outlined,
-                label: 'Longitude',
-                value: longitude,
-              ),
-            ),
-          ],
-        ),
-
-        // ======================================================
-        // NOTES
-        // ======================================================
-
-        if (notes.trim().isNotEmpty) ...[
-          const SizedBox(height: 14),
-
-          Container(
-            width: double.infinity,
-            padding:
-                const EdgeInsets.all(11),
-            decoration: BoxDecoration(
-              color: backgroundColor,
-              borderRadius:
-                  BorderRadius.circular(9),
-            ),
-            child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
-              children: [
-                const Row(
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons
-                          .description_outlined,
-                      color: primaryGreen,
-                      size: 14,
-                    ),
-                    SizedBox(width: 5),
                     Text(
-                      'Notes',
-                      style: TextStyle(
+                      treeCode,
+                      style: const TextStyle(
+                        color: textDark,
+                        fontSize: AppTextStyles.bodyLarge,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      variety,
+                      style: const TextStyle(
                         color: textGrey,
-                        fontSize: 8,
-                        fontWeight:
-                            FontWeight.w600,
+                        fontSize: AppTextStyles.bodySmall,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
+              ),
+              _treeStatusBadge(status),
+            ],
+          ),
 
-                const SizedBox(height: 5),
+          const SizedBox(height: 15),
 
-                Text(
-                  notes,
-                  style:
-                      const TextStyle(
-                    color: textDark,
-                    fontSize: 9,
-                    height: 1.4,
-                  ),
+          const Divider(
+            color: borderColor,
+            height: 1,
+          ),
+
+          const SizedBox(height: 14),
+
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _treeInfoItem(
+                  icon: Icons.qr_code_2_outlined,
+                  label: 'Tree ID',
+                  value: treeCode,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _treeInfoItem(
+                  icon: Icons.eco_outlined,
+                  label: l10n.variety,
+                  value: variety,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 14),
+
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _treeInfoItem(
+                  icon: Icons.landscape_outlined,
+                  label: l10n.farm,
+                  value: farmName,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _treeInfoItem(
+                  icon: Icons.grid_view_outlined,
+                  label: l10n.block,
+                  value: blockName,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 14),
+
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _treeInfoItem(
+                  icon: Icons.calendar_month_outlined,
+                  label: l10n.plantingYear,
+                  value: plantingYear,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _treeInfoItem(
+                  icon: Icons.health_and_safety_outlined,
+                  label: 'Status',
+                  value: _formatTreeStatus(status),
+                ),
+              ),
+            ],
           ),
         ],
-      ],
-    ),
-  );
-}
-
-Widget _treeInfoItem({
-  required IconData icon,
-  required String label,
-  required String value,
-}) {
-  return Row(
-    crossAxisAlignment:
-        CrossAxisAlignment.start,
-    children: [
-      Container(
-        width: 30,
-        height: 30,
-        decoration: BoxDecoration(
-          color: lightGreen,
-          borderRadius:
-              BorderRadius.circular(7),
-        ),
-        child: Icon(
-          icon,
-          color: primaryGreen,
-          size: 15,
-        ),
       ),
-
-      const SizedBox(width: 8),
-
-      Expanded(
-        child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                color: textGrey,
-                fontSize: 7,
-              ),
-            ),
-
-            const SizedBox(height: 2),
-
-            Text(
-              value,
-              maxLines: 2,
-              overflow:
-                  TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: textDark,
-                fontSize: 9,
-                fontWeight:
-                    FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ),
-    ],
-  );
-}
-
-Widget _treeStatusBadge(
-  String status,
-) {
-  Color color;
-
-  switch (status.toUpperCase()) {
-    case 'HEALTHY':
-      color = primaryGreen;
-      break;
-
-    case 'DISEASED':
-      color = Colors.orange;
-      break;
-
-    case 'DEAD':
-      color = Colors.red;
-      break;
-
-    default:
-      color = textGrey;
+    );
   }
 
-  return Container(
-    padding:
-        const EdgeInsets.symmetric(
-      horizontal: 9,
-      vertical: 5,
-    ),
-    decoration: BoxDecoration(
-      color: color.withValues(
-        alpha: 0.10,
-      ),
-      borderRadius:
-          BorderRadius.circular(7),
-    ),
-    child: Text(
-      _capitalizeWords(
-        status.replaceAll('_', ' '),
-      ),
-      style: TextStyle(
-        color: color,
-        fontSize: 8,
-        fontWeight:
-            FontWeight.w700,
-      ),
-    ),
-  );
-}
+  Widget _treeInfoItem({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            color: lightGreen,
+            borderRadius: BorderRadius.circular(7),
+          ),
+          child: Icon(
+            icon,
+            color: primaryGreen,
+            size: 15,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  color: textGrey,
+                  fontSize: AppTextStyles.bodySmall,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: textDark,
+                  fontSize: AppTextStyles.bodySmall,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ============================================================
+  // ACTIVITIES HEADER
+  // ============================================================
+
+  Widget _buildActivitiesHeader(
+    AppLocalizations l10n,
+  ) {
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.activities,
+                style: const TextStyle(
+                  color: textDark,
+                  fontSize: AppTextStyles.bodyLarge,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                l10n.activitiesPerformedOnTree,
+                style: const TextStyle(
+                  color: textGrey,
+                  fontSize: AppTextStyles.bodySmall,
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: 38,
+          child: ElevatedButton.icon(
+            onPressed: _showAddActivity,
+            icon: const Icon(
+              Icons.add,
+              size: 15,
+            ),
+            label: Text(
+              l10n.addActivity,
+              style: const TextStyle(
+                fontSize: AppTextStyles.bodySmall,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryGreen,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 13,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ============================================================
+  // ACTIVITIES CONTENT
+  // ============================================================
+
+  Widget _buildActivitiesContent() {
+    if (_isLoadingActivities) {
+      return _loadingActivities();
+    }
+
+    if (_activitiesError != null) {
+      return _errorActivities();
+    }
+
+    if (_activities.isEmpty) {
+      return _emptyActivities();
+    }
+
+    return Column(
+      children: _activities.map((activity) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _activityCard(activity),
+        );
+      }).toList(),
+    );
+  }
 
   // ============================================================
   // ACTIVITY CARD
   // ============================================================
 
   Widget _activityCard(
-  Map<String, dynamic> activity,
-) {
-  final type =
-      activity['activityType']
-              ?.toString() ??
-          '';
+    Map<String, dynamic> activity,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
 
-  final title =
-      _formatActivityType(type);
+    final rawType =
+        activity['activityType']?.toString() ?? '';
 
-  final status =
-      _formatStatus(
-    activity['status']?.toString() ??
-        '',
-  );
+    final rawStatus =
+        activity['status']?.toString() ?? '';
 
-  final description =
-      activity['description']
-              ?.toString() ??
-          '';
+    final description =
+        activity['description']?.toString() ?? '';
 
-  final date =
-      _formatDate(
-    activity['activityDate']
-        ?.toString(),
-  );
+    final date = _formatDate(
+      activity['activityDate']?.toString(),
+    );
 
-  // ============================================================
-  // COST
-  // ============================================================
+    final cost =
+        double.tryParse(
+          activity['cost']?.toString() ?? '0',
+        ) ??
+        0;
 
-  final cost =
-      double.tryParse(
-        activity['cost']
-                ?.toString() ??
-            '0',
-      ) ??
-      0;
+    final harvestedKg =
+        double.tryParse(
+          activity['harvestedKg']?.toString() ?? '0',
+        ) ??
+        0;
 
-  // ============================================================
-  // HARVEST
-  // ============================================================
+    final isHarvesting =
+        rawType.toUpperCase() == 'HARVESTING';
 
-  final isHarvesting =
-      type.toUpperCase() ==
-          'HARVESTING';
-
-  final harvestedKg =
-      double.tryParse(
-        activity['harvestedKg']
-                ?.toString() ??
-            '0',
-      ) ??
-      0;
-
-  return Container(
-    width: double.infinity,
-    padding:
-        const EdgeInsets.all(14),
-    decoration: _cardDecoration(),
-    child: Row(
-      crossAxisAlignment:
-          CrossAxisAlignment.start,
-      children: [
-        // ======================================================
-        // ICON
-        // ======================================================
-
-        Container(
-          width: 38,
-          height: 38,
-          decoration:
-              const BoxDecoration(
-            color: lightGreen,
-            shape: BoxShape.circle,
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: _cardDecoration(),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(
+              color: lightGreen,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              _activityIcon(rawType),
+              color: primaryGreen,
+              size: 20,
+            ),
           ),
-          child: Icon(
-            _activityIcon(title),
-            color: primaryGreen,
-            size: 19,
-          ),
-        ),
 
-        const SizedBox(width: 12),
+          const SizedBox(width: 12),
 
-        // ======================================================
-        // CONTENT
-        // ======================================================
-
-        Expanded(
-          child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
-            children: [
-              // =================================================
-              // TITLE + STATUS
-              // =================================================
-
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      title,
-                      style:
-                          const TextStyle(
-                        color: textDark,
-                        fontSize: 10,
-                        fontWeight:
-                            FontWeight.w700,
-                      ),
-                    ),
-                  ),
-
-                  Container(
-                    padding:
-                        const EdgeInsets
-                            .symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration:
-                        BoxDecoration(
-                      color:
-                          _statusBackground(
-                        status,
-                      ),
-                      borderRadius:
-                          BorderRadius
-                              .circular(6),
-                    ),
-                    child: Text(
-                      status,
-                      style: TextStyle(
-                        color:
-                            _statusColor(
-                          status,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _formatActivityType(rawType),
+                        style: const TextStyle(
+                          color: textDark,
+                          fontSize: AppTextStyles.bodySmall,
+                          fontWeight: FontWeight.w700,
                         ),
-                        fontSize: 7,
-                        fontWeight:
-                            FontWeight.w700,
                       ),
+                    ),
+                    const SizedBox(width: 8),
+                    _activityStatusBadge(rawStatus),
+                  ],
+                ),
+
+                if (description.trim().isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    description,
+                    style: const TextStyle(
+                      color: textGrey,
+                      fontSize: AppTextStyles.bodySmall,
+                      height: 1.4,
                     ),
                   ),
                 ],
-              ),
 
-              // =================================================
-              // DESCRIPTION
-              // =================================================
+                const SizedBox(height: 11),
 
-              if (description
-                  .isNotEmpty) ...[
-                const SizedBox(
-                  height: 6,
-                ),
-                Text(
-                  description,
-                  style:
-                      const TextStyle(
-                    color: textGrey,
-                    fontSize: 8,
-                    height: 1.4,
-                  ),
-                ),
-              ],
+                Wrap(
+                  spacing: 14,
+                  runSpacing: 8,
+                  children: [
+                    _activityDetail(
+                      icon: Icons.calendar_today_outlined,
+                      value: date,
+                    ),
 
-              const SizedBox(
-                height: 10,
-              ),
+                    _activityDetail(
+                      icon: Icons.payments_outlined,
+                      value: _formatMoney(cost),
+                      color: primaryGreen,
+                    ),
 
-              // =================================================
-              // DATE
-              // =================================================
-
-              _activityInfoRow(
-                icon: Icons
-                    .calendar_today_outlined,
-                label: date,
-              ),
-
-              const SizedBox(
-                height: 7,
-              ),
-
-              // =================================================
-              // COST
-              // =================================================
-
-              _activityInfoRow(
-                icon:
-                    Icons.payments_outlined,
-                label:
-                    'Cost: ${_formatMoney(cost)}',
-                valueColor:
-                    primaryGreen,
-              ),
-
-              // =================================================
-              // HARVESTED KG
-              // Only show for HARVESTING
-              // =================================================
-
-              if (isHarvesting) ...[
-                const SizedBox(
-                  height: 7,
-                ),
-
-                _activityInfoRow(
-                  icon:
-                      Icons.scale_outlined,
-                  label:
-                      'Harvested: ${_formatKg(harvestedKg)} kg',
-                  valueColor:
-                      primaryGreen,
+                    if (isHarvesting)
+                      _activityDetail(
+                        icon: Icons.scale_outlined,
+                        value:
+                            '${_formatKg(harvestedKg)} Kg',
+                        color: primaryGreen,
+                      ),
+                  ],
                 ),
               ],
-            ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _activityDetail({
+    required IconData icon,
+    required String value,
+    Color color = textGrey,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          color: color,
+          size: 13,
+        ),
+        const SizedBox(width: 5),
+        Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontSize: AppTextStyles.bodySmall,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
-    ),
-  );
-}
-
-Widget _activityInfoRow({
-  required IconData icon,
-  required String label,
-  Color valueColor = textGrey,
-}) {
-  return Row(
-    children: [
-      Icon(
-        icon,
-        color: valueColor,
-        size: 13,
-      ),
-
-      const SizedBox(width: 6),
-
-      Expanded(
-        child: Text(
-          label,
-          style: TextStyle(
-            color: valueColor,
-            fontSize: 8,
-            fontWeight:
-                FontWeight.w600,
-          ),
-        ),
-      ),
-    ],
-  );
-}
-
-
-String _formatMoney(
-  double amount,
-) {
-  final rounded =
-      amount.round();
-
-  final value =
-      rounded.toString();
-
-  final buffer =
-      StringBuffer();
-
-  for (int i = 0;
-      i < value.length;
-      i++) {
-    final position =
-        value.length - i;
-
-    buffer.write(value[i]);
-
-    if (position > 1 &&
-        position % 3 == 1) {
-      buffer.write(',');
-    }
-  }
-
-  return 'TZS ${buffer.toString()}';
-}
-
-String _formatKg(
-  double kg,
-) {
-  if (kg ==
-      kg.truncateToDouble()) {
-    return kg
-        .toInt()
-        .toString();
-  }
-
-  return kg
-      .toStringAsFixed(2)
-      .replaceFirst(
-        RegExp(r'0+$'),
-        '',
-      )
-      .replaceFirst(
-        RegExp(r'\.$'),
-        '',
-      );
-}
-  // ============================================================
-  // ACTIVITY ICON
-  // ============================================================
-
-  IconData _activityIcon(
-    String title,
-  ) {
-    final value =
-        title.toLowerCase();
-
-    if (value.contains('weed')) {
-      return Icons.grass_outlined;
-    }
-
-    if (value.contains('pesticide') ||
-        value.contains('spray')) {
-      return Icons.water_drop_outlined;
-    }
-
-    if (value.contains('prun')) {
-      return Icons.content_cut;
-    }
-
-    if (value.contains('harvest')) {
-      return Icons.agriculture_outlined;
-    }
-
-    if (value.contains('fertil')) {
-      return Icons.eco_outlined;
-    }
-
-    return Icons.task_alt;
+    );
   }
 
   // ============================================================
   // ADD ACTIVITY
   // ============================================================
+Future<void> _showAddActivity() async {
+  final result =
+      await showModalBottomSheet<Map<String, dynamic>>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) {
+      return _AddActivitySheet(
+        treeId:
+            _tree?['treeCode']?.toString() ??
+            _formatTreeId(widget.treeId),
+      );
+    },
+  );
 
-  Future<void>
-      _showAddActivity() async {
-    final result =
-        await showModalBottomSheet<
-            Map<String, String>>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor:
-          Colors.transparent,
-      builder: (context) {
-        return _AddActivitySheet(
-          treeId:
-              _formatTreeId(
-            widget.treeId,
-          ),
-        );
-      },
+  if (result == null || !mounted) {
+    return;
+  }
+
+  try {
+    debugPrint(
+      'CREATING ACTIVITY FOR '
+      'FARM=${widget.farmId}, '
+      'BLOCK=${widget.blockId}, '
+      'TREE=${widget.treeId}',
     );
 
-    if (result == null ||
-        !mounted) {
-      return;
-    }
+    debugPrint(
+      'ACTIVITY REQUEST: $result',
+    );
 
-    try {
-      await TreeActivityApiServices
-          .createActivity(
-        farmId: widget.farmId,
-        blockId: widget.blockId,
-        treeId: widget.treeId,
-        activityType:
-            result['activityType']!,
-        activityDate:
-            result['activityDate']!,
-        description:
-            result['description'] ?? '',
-        status:
-            result['status'] ??
-                'COMPLETED',
-      );
+    await TreeActivityApiServices.createActivity(
+      farmId: widget.farmId,
+      blockId: widget.blockId,
+      treeId: widget.treeId,
 
-      await _loadActivities();
+      // Backend ActivityType enum
+      activityType:
+          result['activityType'].toString(),
 
-      if (!mounted) {
-        return;
-      }
+      activityDate:
+          result['activityDate'].toString(),
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Tree activity added successfully',
-          ),
-          backgroundColor:
-              primaryGreen,
-        ),
-      );
-    } catch (e) {
-      debugPrint(
-        'CREATE ACTIVITY ERROR: $e',
-      );
+      // Backend ActivityStatus enum
+      status:
+          result['status'].toString(),
 
-      if (!mounted) {
-        return;
-      }
+      description:
+          result['description']?.toString() ?? '',
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
+      cost:
+          (result['cost'] as num).toDouble(),
+
+      // Only supplied for HARVESTING
+      harvestMethod:
+          result['harvestMethod']?.toString(),
+
+      harvestedKg:
+          result['harvestedKg'] == null
+              ? null
+              : (result['harvestedKg'] as num)
+                  .toDouble(),
+    );
+
+    debugPrint(
+      'TREE ACTIVITY SAVED SUCCESSFULLY',
+    );
+
+    // Reload from backend.
+    await _loadActivities();
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
         SnackBar(
           content: Text(
-            'Failed to save activity: $e',
+            AppLocalizations.of(context)!
+                .treeActivityAddedSuccessfully,
           ),
-          backgroundColor:
-              Colors.red,
+          backgroundColor: primaryGreen,
         ),
       );
-    }
+  } catch (e) {
+    debugPrint(
+      'CREATE TREE ACTIVITY ERROR: $e',
+    );
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!
+                .failedToSaveActivity(
+              _cleanError(e.toString()),
+            ),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
   }
+}
 
   // ============================================================
   // LOADING
   // ============================================================
 
   Widget _loadingActivities() {
+    final l10n = AppLocalizations.of(context)!;
+
     return Container(
       width: double.infinity,
-      padding:
-          const EdgeInsets.symmetric(
+      padding: const EdgeInsets.symmetric(
         vertical: 45,
         horizontal: 20,
       ),
       decoration: _cardDecoration(),
-      child: const Column(
+      child: Column(
         children: [
-          SizedBox(
+          const SizedBox(
             width: 25,
             height: 25,
-            child:
-                CircularProgressIndicator(
+            child: CircularProgressIndicator(
               strokeWidth: 2.5,
               color: primaryGreen,
             ),
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           Text(
-            'Loading activities...',
-            style: TextStyle(
+            l10n.loadingActivities,
+            style: const TextStyle(
               color: textGrey,
-              fontSize: 9,
+              fontSize: AppTextStyles.bodySmall,
             ),
           ),
         ],
@@ -1298,10 +929,11 @@ String _formatKg(
   // ============================================================
 
   Widget _errorActivities() {
+    final l10n = AppLocalizations.of(context)!;
+
     return Container(
       width: double.infinity,
-      padding:
-          const EdgeInsets.symmetric(
+      padding: const EdgeInsets.symmetric(
         vertical: 30,
         horizontal: 20,
       ),
@@ -1314,47 +946,43 @@ String _formatKg(
             size: 32,
           ),
           const SizedBox(height: 10),
-          const Text(
-            'Unable to load activities',
-            style: TextStyle(
+          Text(
+            l10n.unableToLoadActivities,
+            style: const TextStyle(
               color: textDark,
-              fontSize: 11,
-              fontWeight:
-                  FontWeight.w700,
+  fontSize: AppTextStyles.body,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 5),
           Text(
-            _error ?? '',
+            _cleanError(
+              _activitiesError ?? '',
+            ),
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: textGrey,
-              fontSize: 8,
+              fontSize: AppTextStyles.bodySmall,
             ),
           ),
           const SizedBox(height: 12),
           SizedBox(
             height: 34,
-            child:
-                ElevatedButton.icon(
-              onPressed:
-                  _loadActivities,
+            child: ElevatedButton.icon(
+              onPressed: _loadActivities,
               icon: const Icon(
                 Icons.refresh,
                 size: 14,
               ),
-              label: const Text(
-                'Retry',
-                style: TextStyle(
-                  fontSize: 9,
+              label: Text(
+                l10n.retry,
+                style: const TextStyle(
+                  fontSize: AppTextStyles.bodySmall,
                 ),
               ),
-              style:
-                  ElevatedButton.styleFrom(
-                backgroundColor:
-                    primaryGreen,
-                foregroundColor:
-                    Colors.white,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryGreen,
+                foregroundColor: Colors.white,
                 elevation: 0,
               ),
             ),
@@ -1369,37 +997,73 @@ String _formatKg(
   // ============================================================
 
   Widget _emptyActivities() {
+    final l10n = AppLocalizations.of(context)!;
+
     return Container(
       width: double.infinity,
-      padding:
-          const EdgeInsets.symmetric(
+      padding: const EdgeInsets.symmetric(
         vertical: 40,
         horizontal: 20,
       ),
       decoration: _cardDecoration(),
-      child: const Column(
+      child: Column(
         children: [
-          Icon(
-            Icons.assignment_outlined,
-            color: textGrey,
-            size: 35,
-          ),
-          SizedBox(height: 10),
-          Text(
-            'No activities recorded',
-            style: TextStyle(
-              color: textDark,
-              fontSize: 11,
-              fontWeight:
-                  FontWeight.w700,
+          Container(
+            width: 55,
+            height: 55,
+            decoration: const BoxDecoration(
+              color: lightGreen,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.assignment_outlined,
+              color: primaryGreen,
+              size: 27,
             ),
           ),
-          SizedBox(height: 5),
+          const SizedBox(height: 12),
           Text(
-            'Add the first activity for this tree.',
-            style: TextStyle(
+            l10n.noActivitiesRecorded,
+            style: const TextStyle(
+              color: textDark,
+              fontSize: AppTextStyles.body,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            l10n.addFirstTreeActivity,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
               color: textGrey,
-              fontSize: 8,
+              fontSize: AppTextStyles.bodySmall,
+            ),
+          ),
+          const SizedBox(height: 15),
+          SizedBox(
+            height: 36,
+            child: ElevatedButton.icon(
+              onPressed: _showAddActivity,
+              icon: const Icon(
+                Icons.add,
+                size: 14,
+              ),
+              label: Text(
+                l10n.addActivity,
+                style: const TextStyle(
+                  fontSize: AppTextStyles.bodySmall,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryGreen,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius:
+                      BorderRadius.circular(8),
+                ),
+              ),
             ),
           ),
         ],
@@ -1408,87 +1072,144 @@ String _formatKg(
   }
 
   // ============================================================
-  // FORMATTING
+  // TREE STATUS
   // ============================================================
 
-  String _formatTreeId(
-    String value,
-  ) {
-    if (value
-        .toUpperCase()
-        .startsWith('TR-')) {
-      return value.toUpperCase();
+  String _formatTreeStatus(String status) {
+    final l10n = AppLocalizations.of(context)!;
+
+    switch (status.toUpperCase()) {
+      case 'HEALTHY':
+        return l10n.healthy;
+
+      case 'DISEASED':
+        return l10n.diseased;
+
+      case 'DEAD':
+        return l10n.dead;
+
+      default:
+        return _capitalizeWords(
+          status.replaceAll('_', ' '),
+        );
     }
-
-    final number =
-        int.tryParse(value);
-
-    if (number == null) {
-      return value;
-    }
-
-    return 'TR-${number.toString().padLeft(6, '0')}';
   }
 
-  String _formatFarmId(
-    String value,
-  ) {
-    if (value
-        .toUpperCase()
-        .startsWith('FM-')) {
-      return value.toUpperCase();
+  Widget _treeStatusBadge(String status) {
+    Color color;
+
+    switch (status.toUpperCase()) {
+      case 'HEALTHY':
+        color = primaryGreen;
+        break;
+
+      case 'DISEASED':
+        color = Colors.orange;
+        break;
+
+      case 'DEAD':
+        color = Colors.red;
+        break;
+
+      default:
+        color = textGrey;
     }
 
-    final number =
-        int.tryParse(value);
-
-    if (number == null) {
-      return value;
-    }
-
-    return 'FM-${number.toString().padLeft(4, '0')}';
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 9,
+        vertical: 5,
+      ),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(7),
+      ),
+      child: Text(
+        _formatTreeStatus(status),
+        style: TextStyle(
+          color: color,
+          fontSize: AppTextStyles.bodySmall,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
   }
 
-  String _formatBlockId(
-    String value,
-  ) {
-    if (value
-        .toUpperCase()
-        .startsWith('BL-')) {
-      return value.toUpperCase();
-    }
+  // ============================================================
+  // ACTIVITY STATUS
+  // ============================================================
 
-    final number =
-        int.tryParse(value);
+  Widget _activityStatusBadge(String status) {
+    final color = _statusColor(status);
 
-    if (number == null) {
-      return value;
-    }
-
-    return 'BL-${number.toString().padLeft(4, '0')}';
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 8,
+        vertical: 4,
+      ),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        _formatStatus(status),
+        style: TextStyle(
+          color: color,
+          fontSize: AppTextStyles.bodySmall,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
   }
 
-  String _formatActivityType(
-    String value,
-  ) {
+  Color _statusColor(String status) {
+    final normalized =
+        status.toUpperCase().replaceAll(' ', '_');
+
+    switch (normalized) {
+      case 'COMPLETED':
+        return primaryGreen;
+
+      case 'PLANNED':
+        return Colors.blue;
+
+      case 'IN_PROGRESS':
+        return Colors.orange;
+
+      case 'CANCELLED':
+      case 'CANCELED':
+        return Colors.red;
+
+      default:
+        return textGrey;
+    }
+  }
+
+  // ============================================================
+  // ACTIVITY TYPE
+  // ============================================================
+
+  String _formatActivityType(String value) {
+    final l10n = AppLocalizations.of(context)!;
+
     switch (value.toUpperCase()) {
       case 'WEEDING':
-        return 'Weeding';
+        return l10n.weeding;
 
       case 'PRUNING':
-        return 'Pruning';
+        return l10n.pruning;
 
       case 'PESTICIDE_APPLICATION':
-        return 'Pesticide Application';
+        return l10n.pesticideApplication;
 
       case 'FERTILIZER_APPLICATION':
-        return 'Fertilizer Application';
+        return l10n.fertilizerApplication;
 
       case 'HARVESTING':
-        return 'Harvesting';
+        return l10n.harvesting;
 
       case 'OTHER':
-        return 'Other';
+        return l10n.other;
 
       default:
         return _capitalizeWords(
@@ -1497,27 +1218,164 @@ String _formatKg(
     }
   }
 
-  String _formatStatus(
-    String value,
-  ) {
-    if (value.isEmpty) {
+  IconData _activityIcon(String type) {
+    switch (type.toUpperCase()) {
+      case 'WEEDING':
+        return Icons.grass_outlined;
+
+      case 'PRUNING':
+        return Icons.content_cut;
+
+      case 'PESTICIDE_APPLICATION':
+        return Icons.water_drop_outlined;
+
+      case 'FERTILIZER_APPLICATION':
+        return Icons.eco_outlined;
+
+      case 'HARVESTING':
+        return Icons.agriculture_outlined;
+
+      default:
+        return Icons.task_alt;
+    }
+  }
+
+  // ============================================================
+  // STATUS FORMAT
+  // ============================================================
+
+  String _formatStatus(String value) {
+    final l10n = AppLocalizations.of(context)!;
+
+    final normalized =
+        value.toUpperCase().replaceAll(' ', '_');
+
+    switch (normalized) {
+      case 'COMPLETED':
+        return l10n.completed;
+
+      case 'PLANNED':
+        return l10n.planned;
+
+      case 'IN_PROGRESS':
+        return l10n.inProgress;
+
+      case 'CANCELLED':
+      case 'CANCELED':
+        return l10n.cancelled;
+
+      default:
+        if (value.trim().isEmpty) {
+          return '-';
+        }
+
+        return _capitalizeWords(
+          value.replaceAll('_', ' '),
+        );
+    }
+  }
+
+  // ============================================================
+  // FORMATTERS
+  // ============================================================
+
+  String _formatTreeId(String value) {
+    if (value.toUpperCase().startsWith('TR-')) {
+      return value.toUpperCase();
+    }
+
+    final number = int.tryParse(value);
+
+    if (number == null) {
+      return value;
+    }
+
+    return 'TR-${number.toString().padLeft(6, '0')}';
+  }
+
+  String _formatFarmId(String value) {
+    if (value.toUpperCase().startsWith('FM-')) {
+      return value.toUpperCase();
+    }
+
+    final number = int.tryParse(value);
+
+    if (number == null) {
+      return value;
+    }
+
+    return 'FM-${number.toString().padLeft(4, '0')}';
+  }
+
+  String _formatBlockId(String value) {
+    if (value.toUpperCase().startsWith('BL-')) {
+      return value.toUpperCase();
+    }
+
+    final number = int.tryParse(value);
+
+    if (number == null) {
+      return value;
+    }
+
+    return 'BL-${number.toString().padLeft(4, '0')}';
+  }
+
+  String _formatDate(String? value) {
+    if (value == null || value.trim().isEmpty) {
       return '-';
     }
 
-    return _capitalizeWords(
-      value.replaceAll('_', ' '),
-    );
+    final date = DateTime.tryParse(value);
+
+    if (date == null) {
+      return value;
+    }
+
+    return MaterialLocalizations.of(
+      context,
+    ).formatMediumDate(date);
   }
 
-  String _capitalizeWords(
-    String value,
-  ) {
+  String _formatMoney(double amount) {
+    final value = amount.round().toString();
+    final buffer = StringBuffer();
+
+    for (int i = 0; i < value.length; i++) {
+      final position = value.length - i;
+
+      buffer.write(value[i]);
+
+      if (position > 1 && position % 3 == 1) {
+        buffer.write(',');
+      }
+    }
+
+    return 'TZS ${buffer.toString()}';
+  }
+
+  String _formatKg(double kg) {
+    if (kg == kg.truncateToDouble()) {
+      return kg.toInt().toString();
+    }
+
+    return kg
+        .toStringAsFixed(2)
+        .replaceFirst(
+          RegExp(r'0+$'),
+          '',
+        )
+        .replaceFirst(
+          RegExp(r'\.$'),
+          '',
+        );
+  }
+
+  String _capitalizeWords(String value) {
     return value
         .toLowerCase()
         .split(' ')
-        .where(
-          (word) => word.isNotEmpty,
-        )
+        .where((word) => word.isNotEmpty)
         .map(
           (word) =>
               '${word[0].toUpperCase()}'
@@ -1526,99 +1384,20 @@ String _formatKg(
         .join(' ');
   }
 
-  String _formatDate(
-    String? value,
-  ) {
-    if (value == null ||
-        value.trim().isEmpty) {
-      return '-';
-    }
-
-    final date =
-        DateTime.tryParse(value);
-
-    if (date == null) {
-      return value;
-    }
-
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-
-    return '${date.day.toString().padLeft(2, '0')} '
-        '${months[date.month - 1]} '
-        '${date.year}';
+  String _cleanError(String value) {
+    return value.replaceFirst(
+      RegExp(
+        r'^Exception:\s*',
+        caseSensitive: false,
+      ),
+      '',
+    );
   }
-
-  // ============================================================
-  // STATUS COLORS
-  // ============================================================
-
-  Color _statusColor(
-    String status,
-  ) {
-    switch (status.toLowerCase()) {
-      case 'completed':
-        return primaryGreen;
-
-      case 'planned':
-        return Colors.blue;
-
-      case 'in progress':
-        return Colors.orange;
-
-      case 'cancelled':
-        return Colors.red;
-
-      default:
-        return textGrey;
-    }
-  }
-
-  Color _statusBackground(
-    String status,
-  ) {
-    switch (status.toLowerCase()) {
-      case 'completed':
-        return lightGreen;
-
-      case 'planned':
-        return Colors.blue
-            .withValues(alpha: 0.10);
-
-      case 'in progress':
-        return Colors.orange
-            .withValues(alpha: 0.10);
-
-      case 'cancelled':
-        return Colors.red
-            .withValues(alpha: 0.10);
-
-      default:
-        return backgroundColor;
-    }
-  }
-
-  // ============================================================
-  // CARD DECORATION
-  // ============================================================
 
   BoxDecoration _cardDecoration() {
     return BoxDecoration(
       color: Colors.white,
-      borderRadius:
-          BorderRadius.circular(13),
+      borderRadius: BorderRadius.circular(13),
       border: Border.all(
         color: borderColor,
       ),
@@ -1627,11 +1406,10 @@ String _formatKg(
 }
 
 // =================================================================
-// ADD ACTIVITY BOTTOM SHEET
+// ADD TREE ACTIVITY SHEET
 // =================================================================
 
-class _AddActivitySheet
-    extends StatefulWidget {
+class _AddActivitySheet extends StatefulWidget {
   final String treeId;
 
   const _AddActivitySheet({
@@ -1639,62 +1417,84 @@ class _AddActivitySheet
   });
 
   @override
-  State<_AddActivitySheet>
-      createState() =>
-          _AddActivitySheetState();
+  State<_AddActivitySheet> createState() =>
+      _AddActivitySheetState();
 }
 
 class _AddActivitySheetState
     extends State<_AddActivitySheet> {
-  static const Color primaryGreen =
-      Color(0xFF087A2F);
+  static const Color primaryGreen = Color(0xFF087A2F);
+  static const Color backgroundColor = Color(0xFFF8FAF8);
+  static const Color borderColor = Color(0xFFDCE8DF);
+  static const Color lightGreen = Color(0xFFE7F3EB);
+  static const Color textDark = Color(0xFF25402D);
+  static const Color textGrey = Color(0xFF718078);
 
-  static const Color backgroundColor =
-      Color(0xFFF8FAF8);
-
-  static const Color borderColor =
-      Color(0xFFDCE8DF);
-
-  static const Color textDark =
-      Color(0xFF25402D);
-
-  static const Color textGrey =
-      Color(0xFF718078);
-
-  final _formKey =
+  final GlobalKey<FormState> _formKey =
       GlobalKey<FormState>();
 
+  final TextEditingController _dateController =
+      TextEditingController();
+
+  final TextEditingController _costController =
+      TextEditingController();
+
+  final TextEditingController _harvestedKgController =
+      TextEditingController();
+
+  final TextEditingController _descriptionController =
+      TextEditingController();
+
   String? _selectedActivity;
+  String? _selectedStatus;
 
   DateTime? _selectedDate;
 
-  final TextEditingController
-      _dateController =
-      TextEditingController();
-
-  final TextEditingController
-      _descriptionController =
-      TextEditingController();
-
+  // RAW BACKEND ENUM VALUES
   final List<String> _activityTypes = [
-    'Weeding',
-    'Pruning',
-    'Pesticide Application',
-    'Fertilizer Application',
-    'Harvesting',
-    'Other',
+    'WEEDING',
+    'PRUNING',
+    'PESTICIDE_APPLICATION',
+    'FERTILIZER_APPLICATION',
+    'HARVESTING',
+    'OTHER',
   ];
 
-  // ============================================================
-  // DISPOSE
-  // ============================================================
+  // RAW BACKEND ENUM VALUES
+  final List<String> _statuses = [
+    'PLANNED',
+    'IN_PROGRESS',
+    'COMPLETED',
+    'CANCELLED',
+  ];
+
+  bool get _isHarvesting =>
+      _selectedActivity == 'HARVESTING';
 
   @override
   void dispose() {
     _dateController.dispose();
+    _costController.dispose();
+    _harvestedKgController.dispose();
     _descriptionController.dispose();
 
     super.dispose();
+  }
+
+  // ============================================================
+  // LOCAL TEXT
+  // ============================================================
+
+  String _text({
+    required String en,
+    required String sw,
+  }) {
+    final language =
+        Localizations.localeOf(context)
+            .languageCode
+            .toLowerCase();
+
+    return language == 'sw' ? sw : en;
   }
 
   // ============================================================
@@ -1702,19 +1502,15 @@ class _AddActivitySheetState
   // ============================================================
 
   Future<void> _selectDate() async {
-    final date =
-        await showDatePicker(
+    final date = await showDatePicker(
       context: context,
       initialDate:
-          _selectedDate ??
-              DateTime.now(),
-      firstDate:
-          DateTime(2020),
-      lastDate:
-          DateTime(2100),
+          _selectedDate ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
     );
 
-    if (date == null) {
+    if (date == null || !mounted) {
       return;
     }
 
@@ -1722,37 +1518,64 @@ class _AddActivitySheetState
       _selectedDate = date;
 
       _dateController.text =
-          '${date.day.toString().padLeft(2, '0')}/'
-          '${date.month.toString().padLeft(2, '0')}/'
-          '${date.year}';
+          MaterialLocalizations.of(context)
+              .formatMediumDate(date);
     });
   }
 
   // ============================================================
-  // CONVERT ACTIVITY TYPE TO BACKEND ENUM
+  // ACTIVITY LABEL
   // ============================================================
 
-  String _toApiActivityType(
-    String value,
-  ) {
+  String _activityLabel(String value) {
+    final l10n = AppLocalizations.of(context)!;
+
     switch (value) {
-      case 'Weeding':
-        return 'WEEDING';
+      case 'WEEDING':
+        return l10n.weeding;
 
-      case 'Pruning':
-        return 'PRUNING';
+      case 'PRUNING':
+        return l10n.pruning;
 
-      case 'Pesticide Application':
-        return 'PESTICIDE_APPLICATION';
+      case 'PESTICIDE_APPLICATION':
+        return l10n.pesticideApplication;
 
-      case 'Fertilizer Application':
-        return 'FERTILIZER_APPLICATION';
+      case 'FERTILIZER_APPLICATION':
+        return l10n.fertilizerApplication;
 
-      case 'Harvesting':
-        return 'HARVESTING';
+      case 'HARVESTING':
+        return l10n.harvesting;
+
+      case 'OTHER':
+        return l10n.other;
 
       default:
-        return 'OTHER';
+        return value;
+    }
+  }
+
+  // ============================================================
+  // STATUS LABEL
+  // ============================================================
+
+  String _statusLabel(String value) {
+    final l10n = AppLocalizations.of(context)!;
+
+    switch (value) {
+      case 'PLANNED':
+        return l10n.planned;
+
+      case 'IN_PROGRESS':
+        return l10n.inProgress;
+
+      case 'COMPLETED':
+        return l10n.completed;
+
+      case 'CANCELLED':
+        return l10n.cancelled;
+
+      default:
+        return value;
     }
   }
 
@@ -1761,14 +1584,35 @@ class _AddActivitySheetState
   // ============================================================
 
   void _submit() {
-    if (!_formKey
-        .currentState!
-        .validate()) {
+    final valid =
+        _formKey.currentState?.validate() ??
+            false;
+
+    if (!valid ||
+        _selectedActivity == null ||
+        _selectedDate == null ||
+        _selectedStatus == null) {
       return;
     }
 
-    if (_selectedDate == null) {
-      return;
+    final cost =
+        double.tryParse(
+          _costController.text.trim(),
+        ) ??
+        0;
+
+    double? harvestedKg;
+
+    if (_isHarvesting) {
+      harvestedKg =
+          double.tryParse(
+        _harvestedKgController.text.trim(),
+      );
+
+      if (harvestedKg == null ||
+          harvestedKg <= 0) {
+        return;
+      }
     }
 
     final apiDate =
@@ -1778,17 +1622,20 @@ class _AddActivitySheetState
 
     Navigator.pop(
       context,
-      <String, String>{
-        'activityType':
-            _toApiActivityType(
-          _selectedActivity!,
-        ),
+      <String, dynamic>{
+        'activityType': _selectedActivity!,
         'activityDate': apiDate,
+        'status': _selectedStatus!,
+        'cost': cost,
         'description':
-            _descriptionController
-                .text
-                .trim(),
-        'status': 'COMPLETED',
+            _descriptionController.text.trim(),
+
+        // Only TREE harvesting
+        'harvestMethod':
+            _isHarvesting ? 'TREE' : null,
+
+        'harvestedKg':
+            _isHarvesting ? harvestedKg : null,
       },
     );
   }
@@ -1798,289 +1645,605 @@ class _AddActivitySheetState
   // ============================================================
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Container(
-      padding:
-          EdgeInsets.fromLTRB(
+      constraints: BoxConstraints(
+        maxHeight:
+            MediaQuery.of(context).size.height *
+                0.90,
+      ),
+      padding: EdgeInsets.fromLTRB(
         18,
         12,
         18,
-        MediaQuery.of(context)
-                .viewInsets
-                .bottom +
+        MediaQuery.of(context).viewInsets.bottom +
             25,
       ),
-      decoration:
-          const BoxDecoration(
+      decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius:
-            BorderRadius.only(
-          topLeft:
-              Radius.circular(22),
-          topRight:
-              Radius.circular(22),
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(22),
+          topRight: Radius.circular(22),
         ),
       ),
-      child:
-          SingleChildScrollView(
+      child: SingleChildScrollView(
         child: Form(
           key: _formKey,
           child: Column(
-            mainAxisSize:
-                MainAxisSize.min,
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment:
-                CrossAxisAlignment
-                    .start,
+                CrossAxisAlignment.start,
             children: [
-              // ================================================
-              // HANDLE
-              // ================================================
-
               Center(
                 child: Container(
                   width: 42,
                   height: 4,
-                  decoration:
-                      BoxDecoration(
+                  decoration: BoxDecoration(
                     color: borderColor,
                     borderRadius:
-                        BorderRadius
-                            .circular(5),
+                        BorderRadius.circular(5),
                   ),
                 ),
               ),
 
-              const SizedBox(
-                height: 18,
-              ),
+              const SizedBox(height: 18),
 
-              // ================================================
+              // ==================================================
               // TITLE
-              // ================================================
+              // ==================================================
 
-              const Text(
-                'Add Tree Activity',
-                style: TextStyle(
-                  color: textDark,
-                  fontSize: 15,
-                  fontWeight:
-                      FontWeight.w800,
+              Row(
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration:
+                        const BoxDecoration(
+                      color: lightGreen,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.add_task_outlined,
+                      color: primaryGreen,
+                      size: 21,
+                    ),
+                  ),
+                  const SizedBox(width: 11),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.addTreeActivity,
+                          style:
+                              const TextStyle(
+                            color: textDark,
+                            fontSize: AppTextStyles.bodyLarge,
+                            fontWeight:
+                                FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          l10n.recordActivityForTree(
+                            widget.treeId,
+                          ),
+                          style:
+                              const TextStyle(
+                            color: textGrey,
+                            fontSize: AppTextStyles.bodySmall,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 18),
+
+              // ==================================================
+              // TREE
+              // ==================================================
+
+              Container(
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: lightGreen,
+                  borderRadius:
+                      BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.park_outlined,
+                      color: primaryGreen,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment:
+                            CrossAxisAlignment
+                                .start,
+                        children: [
+                          Text(
+                            _text(
+                              en: 'Tree ID',
+                              sw: 'Namba ya Mkorosho',
+                            ),
+                            style:
+                                const TextStyle(
+                              color: textGrey,
+                              fontSize: AppTextStyles.bodySmall,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            widget.treeId,
+                            style:
+                                const TextStyle(
+                              color: textDark,
+                              fontSize: AppTextStyles.bodySmall,
+                              fontWeight:
+                                  FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
 
-              const SizedBox(
-                height: 5,
-              ),
+              const SizedBox(height: 18),
 
-              Text(
-                'Record activity for ${widget.treeId}',
-                style:
-                    const TextStyle(
-                  color: textGrey,
-                  fontSize: 9,
-                ),
-              ),
-
-              const SizedBox(
-                height: 20,
-              ),
-
-              // ================================================
+              // ==================================================
               // ACTIVITY TYPE
-              // ================================================
+              // ==================================================
 
-              const Text(
-                'Activity Type',
-                style: TextStyle(
-                  color: textDark,
-                  fontSize: 9,
-                  fontWeight:
-                      FontWeight.w700,
-                ),
+              _fieldLabel(
+                l10n.activityType,
+                required: true,
               ),
 
-              const SizedBox(
-                height: 7,
-              ),
+              const SizedBox(height: 7),
 
-              DropdownButtonFormField<
-                  String>(
-                initialValue:
-                    _selectedActivity,
-                hint: const Text(
-                  'Select activity',
-                  style: TextStyle(
-                    fontSize: 9,
+              DropdownButtonFormField<String>(
+                value: _selectedActivity,
+                isExpanded: true,
+                hint: Text(
+                  l10n.selectActivity,
+                  style: const TextStyle(
+                    fontSize: AppTextStyles.bodySmall,
                     color: textGrey,
                   ),
                 ),
-                items: _activityTypes
-                    .map(
-                      (activity) =>
-                          DropdownMenuItem<
-                              String>(
-                        value: activity,
-                        child: Text(
+                items:
+                    _activityTypes.map(
+                  (activity) {
+                    return DropdownMenuItem<
+                        String>(
+                      value: activity,
+                      child: Text(
+                        _activityLabel(
                           activity,
-                          style:
-                              const TextStyle(
-                            fontSize: 10,
-                          ),
+                        ),
+                        style:
+                            const TextStyle(
+                          fontSize: AppTextStyles.bodySmall,
+                          color: textDark,
                         ),
                       ),
-                    )
-                    .toList(),
+                    );
+                  },
+                ).toList(),
                 onChanged: (value) {
                   setState(() {
-                    _selectedActivity =
-                        value;
+                    _selectedActivity = value;
+
+                    if (value !=
+                        'HARVESTING') {
+                      _harvestedKgController
+                          .clear();
+                    }
                   });
                 },
                 validator: (value) {
                   if (value == null ||
                       value.isEmpty) {
-                    return 'Select activity';
+                    return l10n
+                        .selectActivity;
                   }
 
                   return null;
                 },
                 decoration:
-                    _inputDecoration(),
-              ),
-
-              const SizedBox(
-                height: 15,
-              ),
-
-              // ================================================
-              // ACTIVITY DATE
-              // ================================================
-
-              const Text(
-                'Activity Date',
-                style: TextStyle(
-                  color: textDark,
-                  fontSize: 9,
-                  fontWeight:
-                      FontWeight.w700,
+                    _inputDecoration(
+                  prefixIcon:
+                      Icons.assignment_outlined,
                 ),
               ),
 
-              const SizedBox(
-                height: 7,
+              const SizedBox(height: 15),
+
+              // ==================================================
+              // ACTIVITY DATE
+              // ==================================================
+
+              _fieldLabel(
+                l10n.activityDate,
+                required: true,
               ),
+
+              const SizedBox(height: 7),
 
               TextFormField(
-                controller:
-                    _dateController,
+                controller: _dateController,
                 readOnly: true,
                 onTap: _selectDate,
-                style:
-                    const TextStyle(
-                  fontSize: 10,
+                style: const TextStyle(
+                  fontSize: AppTextStyles.bodySmall,
+                  color: textDark,
                 ),
-                decoration:
-                    _inputDecoration(
-                  hint: 'Select date',
-                  suffixIcon:
-                      const Icon(
-                    Icons
-                        .calendar_today_outlined,
-                    size: 17,
-                    color:
-                        primaryGreen,
+                decoration: _inputDecoration(
+                  hint: l10n.selectDate,
+                  prefixIcon:
+                      Icons.calendar_today_outlined,
+                  suffixIcon: const Icon(
+                    Icons.chevron_right,
+                    color: textGrey,
+                    size: 18,
                   ),
                 ),
+                validator: (_) {
+                  if (_selectedDate == null) {
+                    return l10n
+                        .selectActivityDate;
+                  }
+
+                  return null;
+                },
+              ),
+
+              const SizedBox(height: 15),
+
+              // ==================================================
+              // STATUS
+              // ==================================================
+
+              _fieldLabel(
+                _text(
+                  en: 'Status',
+                  sw: 'Hali',
+                ),
+                required: true,
+              ),
+
+              const SizedBox(height: 7),
+
+              DropdownButtonFormField<String>(
+                value: _selectedStatus,
+                isExpanded: true,
+                hint: Text(
+                  _text(
+                    en: 'Select status',
+                    sw: 'Chagua hali',
+                  ),
+                  style: const TextStyle(
+                    fontSize: AppTextStyles.bodySmall,
+                    color: textGrey,
+                  ),
+                ),
+                items: _statuses.map(
+                  (status) {
+                    return DropdownMenuItem<
+                        String>(
+                      value: status,
+                      child: Text(
+                        _statusLabel(status),
+                        style:
+                            const TextStyle(
+                          fontSize: AppTextStyles.bodySmall,
+                          color: textDark,
+                        ),
+                      ),
+                    );
+                  },
+                ).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedStatus = value;
+                  });
+                },
                 validator: (value) {
                   if (value == null ||
                       value.isEmpty) {
-                    return 'Select activity date';
+                    return _text(
+                      en: 'Status is required',
+                      sw: 'Hali inahitajika',
+                    );
+                  }
+
+                  return null;
+                },
+                decoration:
+                    _inputDecoration(
+                  prefixIcon:
+                      Icons.flag_outlined,
+                ),
+              ),
+
+              const SizedBox(height: 15),
+
+              // ==================================================
+              // COST
+              // ==================================================
+
+              _fieldLabel(
+                _text(
+                  en: 'Cost (TZS)',
+                  sw: 'Gharama (TZS)',
+                ),
+                required: true,
+              ),
+
+              const SizedBox(height: 7),
+
+              TextFormField(
+                controller: _costController,
+                keyboardType:
+                    const TextInputType
+                        .numberWithOptions(
+                  decimal: true,
+                ),
+                style: const TextStyle(
+                  fontSize: AppTextStyles.bodySmall,
+                  color: textDark,
+                ),
+                decoration:
+                    _inputDecoration(
+                  hint: _text(
+                    en: 'Example: 25000',
+                    sw: 'Mfano: 25000',
+                  ),
+                  prefixIcon:
+                      Icons.payments_outlined,
+                ),
+                validator: (value) {
+                  if (value == null ||
+                      value.trim().isEmpty) {
+                    return _text(
+                      en: 'Cost is required',
+                      sw: 'Gharama inahitajika',
+                    );
+                  }
+
+                  final cost =
+                      double.tryParse(
+                    value.trim(),
+                  );
+
+                  if (cost == null) {
+                    return _text(
+                      en:
+                          'Enter a valid cost',
+                      sw:
+                          'Weka gharama sahihi',
+                    );
+                  }
+
+                  if (cost < 0) {
+                    return _text(
+                      en:
+                          'Cost cannot be negative',
+                      sw:
+                          'Gharama haiwezi kuwa hasi',
+                    );
                   }
 
                   return null;
                 },
               ),
 
-              const SizedBox(
-                height: 15,
-              ),
+              // ==================================================
+              // HARVESTING FIELDS
+              // ==================================================
 
-              // ================================================
-              // DESCRIPTION
-              // ================================================
+              if (_isHarvesting) ...[
+                const SizedBox(height: 15),
 
-              const Text(
-                'Description',
-                style: TextStyle(
-                  color: textDark,
-                  fontSize: 9,
-                  fontWeight:
-                      FontWeight.w700,
+                Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.all(11),
+                  decoration: BoxDecoration(
+                    color: lightGreen,
+                    borderRadius:
+                        BorderRadius.circular(9),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons
+                            .agriculture_outlined,
+                        color: primaryGreen,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 9),
+                      Expanded(
+                        child: Text(
+                          _text(
+                            en:
+                                'Enter the amount harvested from this tree.',
+                            sw:
+                                'Weka kiasi kilichovunwa kutoka kwenye mkorosho huu.',
+                          ),
+                          style:
+                              const TextStyle(
+                            color: textDark,
+                            fontSize: AppTextStyles.bodySmall,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+
+                const SizedBox(height: 12),
+
+                _fieldLabel(
+                  _text(
+                    en:
+                        'Amount Harvested (Kg)',
+                    sw:
+                        'Kiasi Kilichovunwa (Kg)',
+                  ),
+                  required: true,
+                ),
+
+                const SizedBox(height: 7),
+
+                TextFormField(
+                  controller:
+                      _harvestedKgController,
+                  keyboardType:
+                      const TextInputType
+                          .numberWithOptions(
+                    decimal: true,
+                  ),
+                  style:
+                      const TextStyle(
+                    fontSize: AppTextStyles.bodySmall,
+                    color: textDark,
+                  ),
+                  decoration:
+                      _inputDecoration(
+                    hint: _text(
+                      en: 'Example: 18.5',
+                      sw: 'Mfano: 18.5',
+                    ),
+                    prefixIcon:
+                        Icons.scale_outlined,
+                  ),
+                  validator: (value) {
+                    if (!_isHarvesting) {
+                      return null;
+                    }
+
+                    if (value == null ||
+                        value
+                            .trim()
+                            .isEmpty) {
+                      return _text(
+                        en:
+                            'Harvested amount is required',
+                        sw:
+                            'Kiasi kilichovunwa kinahitajika',
+                      );
+                    }
+
+                    final kg =
+                        double.tryParse(
+                      value.trim(),
+                    );
+
+                    if (kg == null) {
+                      return _text(
+                        en:
+                            'Enter a valid amount',
+                        sw:
+                            'Weka kiasi sahihi',
+                      );
+                    }
+
+                    if (kg <= 0) {
+                      return _text(
+                        en:
+                            'Amount must be greater than zero',
+                        sw:
+                            'Kiasi lazima kiwe zaidi ya sifuri',
+                      );
+                    }
+
+                    return null;
+                  },
+                ),
+              ],
+
+              const SizedBox(height: 15),
+
+              // ==================================================
+              // DESCRIPTION
+              // ==================================================
+
+              _fieldLabel(
+                l10n.description,
+                required: true,
               ),
 
-              const SizedBox(
-                height: 7,
-              ),
+              const SizedBox(height: 7),
 
               TextFormField(
                 controller:
                     _descriptionController,
-                maxLines: 4,
-                style:
-                    const TextStyle(
-                  fontSize: 10,
+                minLines: 3,
+                maxLines: 5,
+                style: const TextStyle(
+                  fontSize: AppTextStyles.bodySmall,
+                  color: textDark,
                 ),
                 decoration:
                     _inputDecoration(
-                  hint:
-                      'Describe the activity performed...',
+                  hint: l10n
+                      .describeActivityPerformed,
+                  prefixIcon:
+                      Icons.description_outlined,
                 ),
                 validator: (value) {
                   if (value == null ||
-                      value
-                          .trim()
-                          .isEmpty) {
-                    return 'Description is required';
+                      value.trim().isEmpty) {
+                    return l10n
+                        .descriptionRequired;
                   }
 
                   return null;
                 },
               ),
 
-              const SizedBox(
-                height: 22,
-              ),
+              const SizedBox(height: 22),
 
-              // ================================================
-              // SAVE BUTTON
-              // ================================================
+              // ==================================================
+              // SAVE
+              // ==================================================
 
               SizedBox(
-                width:
-                    double.infinity,
-                height: 44,
-                child:
-                    ElevatedButton.icon(
+                width: double.infinity,
+                height: 45,
+                child: ElevatedButton.icon(
                   onPressed: _submit,
                   icon: const Icon(
-                    Icons.add_task,
+                    Icons
+                        .check_circle_outline,
                     size: 17,
                   ),
-                  label: const Text(
-                    'Save Activity',
-                    style: TextStyle(
-                      fontSize: 10,
+                  label: Text(
+                    l10n.saveActivity,
+                    style:
+                        const TextStyle(
+                      fontSize: AppTextStyles.bodySmall,
                       fontWeight:
-                          FontWeight
-                              .w700,
+                          FontWeight.w700,
                     ),
                   ),
                   style:
-                      ElevatedButton
-                          .styleFrom(
+                      ElevatedButton.styleFrom(
                     backgroundColor:
                         primaryGreen,
                     foregroundColor:
@@ -2089,8 +2252,9 @@ class _AddActivitySheetState
                     shape:
                         RoundedRectangleBorder(
                       borderRadius:
-                          BorderRadius
-                              .circular(9),
+                          BorderRadius.circular(
+                        9,
+                      ),
                     ),
                   ),
                 ),
@@ -2103,53 +2267,85 @@ class _AddActivitySheetState
   }
 
   // ============================================================
+  // FIELD LABEL
+  // ============================================================
+
+  Widget _fieldLabel(
+    String value, {
+    bool required = false,
+  }) {
+    return RichText(
+      text: TextSpan(
+        style: const TextStyle(
+          color: textDark,
+          fontSize: AppTextStyles.bodySmall,
+          fontWeight: FontWeight.w700,
+        ),
+        children: [
+          TextSpan(
+            text: value,
+          ),
+          if (required)
+            const TextSpan(
+              text: ' *',
+              style: TextStyle(
+                color: Colors.red,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
   // INPUT DECORATION
   // ============================================================
 
   InputDecoration _inputDecoration({
     String? hint,
+    IconData? prefixIcon,
     Widget? suffixIcon,
   }) {
     return InputDecoration(
       hintText: hint,
-      hintStyle:
-          const TextStyle(
+      hintStyle: const TextStyle(
         color: textGrey,
-        fontSize: 9,
+        fontSize: AppTextStyles.bodySmall,
       ),
+      prefixIcon: prefixIcon == null
+          ? null
+          : Icon(
+              prefixIcon,
+              color: primaryGreen,
+              size: 17,
+            ),
       suffixIcon: suffixIcon,
       filled: true,
-      fillColor:
-          backgroundColor,
+      fillColor: backgroundColor,
       contentPadding:
           const EdgeInsets.symmetric(
         horizontal: 12,
         vertical: 12,
       ),
-      enabledBorder:
-          OutlineInputBorder(
+      enabledBorder: OutlineInputBorder(
         borderRadius:
             BorderRadius.circular(9),
-        borderSide:
-            const BorderSide(
+        borderSide: const BorderSide(
           color: borderColor,
         ),
       ),
-      focusedBorder:
-          OutlineInputBorder(
+      focusedBorder: OutlineInputBorder(
         borderRadius:
             BorderRadius.circular(9),
-        borderSide:
-            const BorderSide(
+        borderSide: const BorderSide(
           color: primaryGreen,
+          width: 1.2,
         ),
       ),
-      errorBorder:
-          OutlineInputBorder(
+      errorBorder: OutlineInputBorder(
         borderRadius:
             BorderRadius.circular(9),
-        borderSide:
-            const BorderSide(
+        borderSide: const BorderSide(
           color: Colors.red,
         ),
       ),
@@ -2157,9 +2353,9 @@ class _AddActivitySheetState
           OutlineInputBorder(
         borderRadius:
             BorderRadius.circular(9),
-        borderSide:
-            const BorderSide(
+        borderSide: const BorderSide(
           color: Colors.red,
+          width: 1.2,
         ),
       ),
     );

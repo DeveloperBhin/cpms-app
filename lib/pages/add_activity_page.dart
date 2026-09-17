@@ -1,5 +1,7 @@
-import 'package:flutter/material.dart';
 
+import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
+import '../theme/app_text_styles.dart';
 import '../services/api_services/farm_api_services.dart';
 import '../services/api_services/block_api_services.dart';
 import '../services/api_services/tree_api_services.dart';
@@ -106,7 +108,11 @@ class _AddActivityPageState extends State<AddActivityPage> {
   String? _farmError;
 
   // ============================================================
-  // ACTIVITY TYPES
+  // BACKEND ACTIVITY TYPES
+  //
+  // IMPORTANT:
+  // DO NOT TRANSLATE THESE VALUES.
+  // They are sent directly to the backend.
   // ============================================================
 
   final List<String> _activityTypes = [
@@ -124,7 +130,6 @@ class _AddActivityPageState extends State<AddActivityPage> {
   @override
   void initState() {
     super.initState();
-
     _loadFarms();
   }
 
@@ -144,19 +149,47 @@ class _AddActivityPageState extends State<AddActivityPage> {
   }
 
   // ============================================================
+  // LOCALIZATION
+  // ============================================================
+
+  AppLocalizations get _l10n =>
+      AppLocalizations.of(context)!;
+
+  // ============================================================
   // PAGE TITLE
   // ============================================================
 
-  String get _title {
+  String _title(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     switch (widget.mode) {
       case AddActivityMode.treeActivity:
-        return 'Add Tree Activity';
+        return l10n.addTreeActivity;
 
       case AddActivityMode.farmHarvest:
-        return 'Farm Harvesting';
+        return l10n.farmHarvesting;
 
       case AddActivityMode.treeHarvest:
-        return 'Tree Harvesting';
+        return l10n.treeHarvesting;
+    }
+  }
+
+  // ============================================================
+  // SUBTITLE
+  // ============================================================
+
+  String _subtitle(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    switch (widget.mode) {
+      case AddActivityMode.treeActivity:
+        return l10n.treeActivitySubtitle;
+
+      case AddActivityMode.farmHarvest:
+        return l10n.farmHarvestSubtitle;
+
+      case AddActivityMode.treeHarvest:
+        return l10n.treeHarvestSubtitle;
     }
   }
 
@@ -173,8 +206,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
     }
 
     try {
-      final result =
-          await FarmApiServices.getMyFarms();
+      final result = await FarmApiServices.getMyFarms();
 
       if (!mounted) {
         return;
@@ -221,9 +253,9 @@ class _AddActivityPageState extends State<AddActivityPage> {
 
     try {
       final result =
-    await BlockApiServices.getBlocksByFarm(
-  farmId,
-);
+          await BlockApiServices.getBlocksByFarm(
+        farmId,
+      );
 
       if (!mounted) {
         return;
@@ -247,7 +279,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
       });
 
       _showMessage(
-        'Unable to load blocks: $e',
+        '${_l10n.unableToLoadBlocks}: ${_cleanError(e)}',
         error: true,
       );
     }
@@ -266,6 +298,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
         _loadingTrees = true;
 
         _trees = [];
+
         _selectedTreeId = null;
       });
     }
@@ -299,7 +332,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
       });
 
       _showMessage(
-        'Unable to load trees: $e',
+        '${_l10n.unableToLoadTrees}: ${_cleanError(e)}',
         error: true,
       );
     }
@@ -350,6 +383,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
 
     setState(() {
       _selectedBlockId = blockId;
+
       _selectedTreeId = null;
       _trees = [];
     });
@@ -404,6 +438,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
   // ============================================================
 
   Future<void> _save() async {
+    final l10n = _l10n;
+
     if (_isSaving) {
       return;
     }
@@ -414,7 +450,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
 
     if (_selectedFarmId == null) {
       _showMessage(
-        'Please select a farm.',
+        l10n.pleaseSelectFarm,
         error: true,
       );
 
@@ -425,7 +461,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
         AddActivityMode.farmHarvest) {
       if (_selectedBlockId == null) {
         _showMessage(
-          'Please select a block.',
+          l10n.pleaseSelectBlock,
           error: true,
         );
 
@@ -434,7 +470,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
 
       if (_selectedTreeId == null) {
         _showMessage(
-          'Please select a tree.',
+          l10n.pleaseSelectTree,
           error: true,
         );
 
@@ -466,7 +502,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
       }
 
       _showMessage(
-        _successMessage(),
+        _successMessage(context),
       );
 
       Navigator.pop(
@@ -500,12 +536,14 @@ class _AddActivityPageState extends State<AddActivityPage> {
   // ============================================================
 
   Future<void> _saveTreeActivity() async {
+    final l10n = _l10n;
+
     if (_selectedFarmId == null ||
         _selectedBlockId == null ||
         _selectedTreeId == null ||
         _selectedActivityType == null) {
       throw Exception(
-        'Farm, block, tree and activity type are required.',
+        l10n.farmBlockTreeActivityRequired,
       );
     }
 
@@ -516,7 +554,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
 
     if (cost < 0) {
       throw Exception(
-        'Cost cannot be negative.',
+        l10n.costCannotBeNegative,
       );
     }
 
@@ -524,11 +562,20 @@ class _AddActivityPageState extends State<AddActivityPage> {
       farmId: _selectedFarmId!,
       blockId: _selectedBlockId!,
       treeId: _selectedTreeId!,
+
+      // Backend enum value.
+      // DO NOT TRANSLATE.
       activityType: _selectedActivityType!,
+
       activityDate: _formattedDate,
+
       description:
           _descriptionController.text.trim(),
+
+      // Backend enum value.
+      // DO NOT TRANSLATE.
       status: 'COMPLETED',
+
       cost: cost,
       harvestMethod: null,
       harvestedKg: null,
@@ -540,11 +587,13 @@ class _AddActivityPageState extends State<AddActivityPage> {
   // ============================================================
 
   Future<void> _saveTreeHarvest() async {
+    final l10n = _l10n;
+
     if (_selectedFarmId == null ||
         _selectedBlockId == null ||
         _selectedTreeId == null) {
       throw Exception(
-        'Farm, block and tree are required.',
+        l10n.farmBlockTreeRequired,
       );
     }
 
@@ -555,7 +604,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
     if (harvestedKg == null ||
         harvestedKg <= 0) {
       throw Exception(
-        'Harvested kilograms must be greater than zero.',
+        l10n.harvestKgGreaterThanZero,
       );
     }
 
@@ -566,7 +615,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
 
     if (cost < 0) {
       throw Exception(
-        'Cost cannot be negative.',
+        l10n.costCannotBeNegative,
       );
     }
 
@@ -574,13 +623,26 @@ class _AddActivityPageState extends State<AddActivityPage> {
       farmId: _selectedFarmId!,
       blockId: _selectedBlockId!,
       treeId: _selectedTreeId!,
+
+      // Backend enum value.
+      // DO NOT TRANSLATE.
       activityType: 'HARVESTING',
+
       activityDate: _formattedDate,
+
       description:
           _descriptionController.text.trim(),
+
+      // Backend enum value.
+      // DO NOT TRANSLATE.
       status: 'COMPLETED',
+
       cost: cost,
+
+      // Backend enum value.
+      // DO NOT TRANSLATE.
       harvestMethod: 'TREE',
+
       harvestedKg: harvestedKg,
     );
   }
@@ -590,9 +652,11 @@ class _AddActivityPageState extends State<AddActivityPage> {
   // ============================================================
 
   Future<void> _saveFarmHarvest() async {
+    final l10n = _l10n;
+
     if (_selectedFarmId == null) {
       throw Exception(
-        'Please select a farm.',
+        l10n.pleaseSelectFarm,
       );
     }
 
@@ -612,20 +676,20 @@ class _AddActivityPageState extends State<AddActivityPage> {
     if (bucketCount == null ||
         bucketCount <= 0) {
       throw Exception(
-        'Number of buckets must be greater than zero.',
+        l10n.bucketCountGreaterThanZero,
       );
     }
 
     if (kgPerBucket == null ||
         kgPerBucket <= 0) {
       throw Exception(
-        'Kg per bucket must be greater than zero.',
+        l10n.kgPerBucketGreaterThanZero,
       );
     }
 
     if (cost < 0) {
       throw Exception(
-        'Cost cannot be negative.',
+        l10n.costCannotBeNegative,
       );
     }
 
@@ -644,16 +708,20 @@ class _AddActivityPageState extends State<AddActivityPage> {
   // SUCCESS MESSAGE
   // ============================================================
 
-  String _successMessage() {
+  String _successMessage(
+    BuildContext context,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+
     switch (widget.mode) {
       case AddActivityMode.treeActivity:
-        return 'Tree activity saved successfully.';
+        return l10n.treeActivitySaved;
 
       case AddActivityMode.farmHarvest:
-        return 'Farm harvest saved successfully.';
+        return l10n.farmHarvestSaved;
 
       case AddActivityMode.treeHarvest:
-        return 'Tree harvest saved successfully.';
+        return l10n.treeHarvestSaved;
     }
   }
 
@@ -663,6 +731,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: backgroundColor,
 
@@ -675,9 +745,9 @@ class _AddActivityPageState extends State<AddActivityPage> {
         foregroundColor: Colors.white,
         elevation: 0,
         title: Text(
-          _title,
+          _title(context),
           style: const TextStyle(
-            fontSize: 15,
+            fontSize: AppTextStyles.bodyLarge,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -702,15 +772,15 @@ class _AddActivityPageState extends State<AddActivityPage> {
                     30,
                   ),
                   children: [
-                    // ============================================
+                    // ==========================================
                     // INTRO
-                    // ============================================
+                    // ==========================================
 
                     Text(
-                      _title,
+                      _title(context),
                       style: const TextStyle(
                         color: textDark,
-                        fontSize: 17,
+                        fontSize: AppTextStyles.bodyLarge,
                         fontWeight:
                             FontWeight.w800,
                       ),
@@ -719,83 +789,79 @@ class _AddActivityPageState extends State<AddActivityPage> {
                     const SizedBox(height: 5),
 
                     Text(
-                      _subtitle(),
+                      _subtitle(context),
                       style: const TextStyle(
                         color: textGrey,
-                        fontSize: 9,
+                        fontSize: AppTextStyles.bodySmall,
                         height: 1.4,
                       ),
                     ),
 
                     const SizedBox(height: 22),
 
-                    // ============================================
+                    // ==========================================
                     // LOCATION
-                    // ============================================
+                    // ==========================================
 
                     _sectionTitle(
                       widget.mode ==
                               AddActivityMode
                                   .farmHarvest
-                          ? 'Farm'
-                          : 'Tree Location',
+                          ? l10n.farm
+                          : l10n.treeLocation,
                     ),
 
                     const SizedBox(height: 10),
 
-                    // ============================================
-                    // FARM DROPDOWN
-                    // ============================================
+                    // ==========================================
+                    // FARM
+                    // ==========================================
 
                     _farmDropdown(),
 
-                    // ============================================
+                    // ==========================================
                     // BLOCK + TREE
-                    // ============================================
+                    // ==========================================
 
                     if (widget.mode !=
                         AddActivityMode
                             .farmHarvest) ...[
                       const SizedBox(height: 14),
-
                       _blockDropdown(),
-
                       const SizedBox(height: 14),
-
                       _treeDropdown(),
                     ],
 
                     const SizedBox(height: 24),
 
-                    // ============================================
+                    // ==========================================
                     // ACTIVITY / HARVEST INFORMATION
-                    // ============================================
+                    // ==========================================
 
                     _sectionTitle(
                       widget.mode ==
                               AddActivityMode
                                   .treeActivity
-                          ? 'Activity Information'
-                          : 'Harvest Information',
+                          ? l10n.activityInformation
+                          : l10n.harvestInformation,
                     ),
 
                     const SizedBox(height: 10),
 
-                    // ============================================
+                    // ==========================================
                     // NORMAL TREE ACTIVITY
-                    // ============================================
+                    // ==========================================
 
                     if (widget.mode ==
                         AddActivityMode
                             .treeActivity) ...[
                       _activityTypeDropdown(),
-
                       const SizedBox(height: 14),
                     ],
 
-                    // ============================================
+                    // ==========================================
                     // FARM HARVEST
-                    // ============================================
+                    // ==========================================
 
                     if (widget.mode ==
                         AddActivityMode
@@ -804,8 +870,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
                         controller:
                             _bucketController,
                         label:
-                            'Number of Buckets',
-                        hint: 'Example: 20',
+                            l10n.numberOfBuckets,
+                        hint: l10n.example20,
                         requiredField: true,
                         integerOnly: true,
                         onChanged: (_) {
@@ -818,8 +884,9 @@ class _AddActivityPageState extends State<AddActivityPage> {
                       _numberField(
                         controller:
                             _kgPerBucketController,
-                        label: 'Kg per Bucket',
-                        hint: 'Example: 15',
+                        label:
+                            l10n.kgPerBucket,
+                        hint: l10n.example15,
                         requiredField: true,
                         decimal: true,
                         onChanged: (_) {
@@ -834,9 +901,9 @@ class _AddActivityPageState extends State<AddActivityPage> {
                       const SizedBox(height: 14),
                     ],
 
-                    // ============================================
+                    // ==========================================
                     // TREE HARVEST
-                    // ============================================
+                    // ==========================================
 
                     if (widget.mode ==
                         AddActivityMode
@@ -849,8 +916,9 @@ class _AddActivityPageState extends State<AddActivityPage> {
                         controller:
                             _harvestedKgController,
                         label:
-                            'Harvested Weight (Kg)',
-                        hint: 'Example: 18.5',
+                            l10n.harvestedWeightKg,
+                        hint: l10n
+                            .exampleHarvestWeight,
                         requiredField: true,
                         decimal: true,
                       ),
@@ -858,32 +926,32 @@ class _AddActivityPageState extends State<AddActivityPage> {
                       const SizedBox(height: 14),
                     ],
 
-                    // ============================================
+                    // ==========================================
                     // DATE
-                    // ============================================
+                    // ==========================================
 
                     _dateField(),
 
                     const SizedBox(height: 14),
 
-                    // ============================================
+                    // ==========================================
                     // COST
-                    // ============================================
+                    // ==========================================
 
                     _numberField(
                       controller:
                           _costController,
-                      label: 'Cost (TZS)',
-                      hint: 'Example: 25000',
+                      label: l10n.costTzs,
+                      hint: l10n.exampleCost,
                       decimal: true,
                       allowZero: true,
                     ),
 
                     const SizedBox(height: 14),
 
-                    // ============================================
+                    // ==========================================
                     // DESCRIPTION
-                    // ============================================
+                    // ==========================================
 
                     TextFormField(
                       controller:
@@ -892,37 +960,35 @@ class _AddActivityPageState extends State<AddActivityPage> {
                       maxLines: 5,
                       style: const TextStyle(
                         color: textDark,
-                        fontSize: 10,
+                        fontSize: AppTextStyles.bodySmall,
                       ),
                       decoration:
                           _inputDecoration(
-                        'Description',
+                        l10n.description,
                       ).copyWith(
                         hintText:
-                            'Enter description...',
+                            l10n.enterDescription,
                         hintStyle:
                             const TextStyle(
                           color: textGrey,
-                          fontSize: 9,
+                          fontSize: AppTextStyles.bodySmall,
                         ),
                       ),
                     ),
 
                     const SizedBox(height: 26),
 
-                    // ============================================
+                    // ==========================================
                     // SAVE
-                    // ============================================
+                    // ==========================================
 
                     SizedBox(
                       width: double.infinity,
                       height: 46,
-                      child:
-                          ElevatedButton.icon(
-                        onPressed:
-                            _isSaving
-                                ? null
-                                : _save,
+                      child: ElevatedButton.icon(
+                        onPressed: _isSaving
+                            ? null
+                            : _save,
                         icon: _isSaving
                             ? const SizedBox(
                                 width: 17,
@@ -941,17 +1007,19 @@ class _AddActivityPageState extends State<AddActivityPage> {
                               ),
                         label: Text(
                           _isSaving
-                              ? 'Saving...'
-                              : _saveButtonText(),
+                              ? l10n.saving
+                              : _saveButtonText(
+                                  context,
+                                ),
                           style:
                               const TextStyle(
-                            fontSize: 10,
+                            fontSize: AppTextStyles.bodySmall,
                             fontWeight:
                                 FontWeight.w700,
                           ),
                         ),
-                        style: ElevatedButton
-                            .styleFrom(
+                        style:
+                            ElevatedButton.styleFrom(
                           backgroundColor:
                               primaryGreen,
                           foregroundColor:
@@ -985,9 +1053,12 @@ class _AddActivityPageState extends State<AddActivityPage> {
   // ============================================================
 
   Widget _farmDropdown() {
+    final l10n = _l10n;
+
     if (_loadingFarms) {
       return _loadingInput(
-        'Loading farms...',
+        l10n.loadingFarms,
+        label: l10n.farm,
       );
     }
 
@@ -995,12 +1066,12 @@ class _AddActivityPageState extends State<AddActivityPage> {
       value: _selectedFarmId,
       isExpanded: true,
       decoration:
-          _inputDecoration('Farm'),
-      hint: const Text(
-        'Select farm',
-        style: TextStyle(
+          _inputDecoration(l10n.farm),
+      hint: Text(
+        l10n.selectFarm,
+        style: const TextStyle(
           color: textGrey,
-          fontSize: 10,
+          fontSize: AppTextStyles.bodySmall,
         ),
       ),
       items: _farms.map((farm) {
@@ -1023,7 +1094,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
                 TextOverflow.ellipsis,
             style: const TextStyle(
               color: textDark,
-              fontSize: 10,
+              fontSize: AppTextStyles.bodySmall,
             ),
           ),
         );
@@ -1032,7 +1103,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
       validator: (value) {
         if (value == null ||
             value.isEmpty) {
-          return 'Farm is required';
+          return l10n.farmRequired;
         }
 
         return null;
@@ -1045,25 +1116,26 @@ class _AddActivityPageState extends State<AddActivityPage> {
   // ============================================================
 
   Widget _blockDropdown() {
+    final l10n = _l10n;
+
     if (_selectedFarmId == null) {
       return _disabledInput(
-        label: 'Block',
-        text: 'Select farm first',
+        label: l10n.block,
+        text: l10n.selectFarmFirst,
       );
     }
 
     if (_loadingBlocks) {
       return _loadingInput(
-        'Loading blocks...',
-        label: 'Block',
+        l10n.loadingBlocks,
+        label: l10n.block,
       );
     }
 
     if (_blocks.isEmpty) {
       return _disabledInput(
-        label: 'Block',
-        text:
-            'No blocks found for this farm',
+        label: l10n.block,
+        text: l10n.noBlocksForFarm,
       );
     }
 
@@ -1071,12 +1143,12 @@ class _AddActivityPageState extends State<AddActivityPage> {
       value: _selectedBlockId,
       isExpanded: true,
       decoration:
-          _inputDecoration('Block'),
-      hint: const Text(
-        'Select block',
-        style: TextStyle(
+          _inputDecoration(l10n.block),
+      hint: Text(
+        l10n.selectBlock,
+        style: const TextStyle(
           color: textGrey,
-          fontSize: 10,
+          fontSize: AppTextStyles.bodySmall,
         ),
       ),
       items: _blocks.map((block) {
@@ -1099,7 +1171,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
                 TextOverflow.ellipsis,
             style: const TextStyle(
               color: textDark,
-              fontSize: 10,
+              fontSize: AppTextStyles.bodySmall,
             ),
           ),
         );
@@ -1108,7 +1180,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
       validator: (value) {
         if (value == null ||
             value.isEmpty) {
-          return 'Block is required';
+          return l10n.blockRequired;
         }
 
         return null;
@@ -1121,40 +1193,40 @@ class _AddActivityPageState extends State<AddActivityPage> {
   // ============================================================
 
   Widget _treeDropdown() {
+    final l10n = _l10n;
+
     if (_selectedBlockId == null) {
       return _disabledInput(
-        label: 'Cashew Tree',
-        text: 'Select block first',
+        label: l10n.cashewTree,
+        text: l10n.selectBlockFirst,
       );
     }
 
     if (_loadingTrees) {
       return _loadingInput(
-        'Loading trees...',
-        label: 'Cashew Tree',
+        l10n.loadingTrees,
+        label: l10n.cashewTree,
       );
     }
 
     if (_trees.isEmpty) {
       return _disabledInput(
-        label: 'Cashew Tree',
-        text:
-            'No trees found for this block',
+        label: l10n.cashewTree,
+        text: l10n.noTreesForBlock,
       );
     }
 
     return DropdownButtonFormField<String>(
       value: _selectedTreeId,
       isExpanded: true,
-      decoration:
-          _inputDecoration(
-        'Cashew Tree',
+      decoration: _inputDecoration(
+        l10n.cashewTree,
       ),
-      hint: const Text(
-        'Select tree',
-        style: TextStyle(
+      hint: Text(
+        l10n.selectTree,
+        style: const TextStyle(
           color: textGrey,
-          fontSize: 10,
+          fontSize: AppTextStyles.bodySmall,
         ),
       ),
       items: _trees.map((tree) {
@@ -1191,7 +1263,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
                 TextOverflow.ellipsis,
             style: const TextStyle(
               color: textDark,
-              fontSize: 10,
+              fontSize: AppTextStyles.bodySmall,
             ),
           ),
         );
@@ -1200,7 +1272,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
       validator: (value) {
         if (value == null ||
             value.isEmpty) {
-          return 'Tree is required';
+          return l10n.treeRequired;
         }
 
         return null;
@@ -1213,16 +1285,17 @@ class _AddActivityPageState extends State<AddActivityPage> {
   // ============================================================
 
   Widget _activityTypeDropdown() {
+    final l10n = _l10n;
+
     return DropdownButtonFormField<String>(
       value: _selectedActivityType,
       isExpanded: true,
-      decoration:
-          _inputDecoration(
-        'Activity Type',
+      decoration: _inputDecoration(
+        l10n.activityType,
       ),
-      hint: const Text(
-        'Select activity',
-        style: TextStyle(
+      hint: Text(
+        l10n.selectActivity,
+        style: const TextStyle(
           color: textGrey,
           fontSize: 10,
         ),
@@ -1231,9 +1304,13 @@ class _AddActivityPageState extends State<AddActivityPage> {
           .map(
             (type) =>
                 DropdownMenuItem<String>(
+              // Backend value.
               value: type,
               child: Text(
-                _activityName(type),
+                _activityName(
+                  context,
+                  type,
+                ),
                 style: const TextStyle(
                   color: textDark,
                   fontSize: 10,
@@ -1251,7 +1328,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
       validator: (value) {
         if (value == null ||
             value.isEmpty) {
-          return 'Activity type is required';
+          return l10n
+              .activityTypeRequired;
         }
 
         return null;
@@ -1264,6 +1342,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
   // ============================================================
 
   Widget _treeHarvestMethod() {
+    final l10n = _l10n;
+
     return Container(
       width: double.infinity,
       padding:
@@ -1276,34 +1356,41 @@ class _AddActivityPageState extends State<AddActivityPage> {
           color: borderColor,
         ),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(
+          const Icon(
             Icons.park_outlined,
             color: primaryGreen,
             size: 20,
           ),
-          SizedBox(width: 10),
+
+          const SizedBox(width: 10),
+
           Expanded(
             child: Column(
               crossAxisAlignment:
                   CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Tree Harvesting',
-                  style: TextStyle(
+                  l10n.treeHarvesting,
+                  style:
+                      const TextStyle(
                     color: textDark,
-                    fontSize: 10,
+                    fontSize: AppTextStyles.bodySmall,
                     fontWeight:
                         FontWeight.w700,
                   ),
                 ),
-                SizedBox(height: 2),
+
+                const SizedBox(height: 2),
+
                 Text(
-                  'Harvest will be recorded in kilograms for the selected tree.',
-                  style: TextStyle(
+                  l10n
+                      .treeHarvestRecordDescription,
+                  style:
+                      const TextStyle(
                     color: textGrey,
-                    fontSize: 8,
+                    fontSize: AppTextStyles.bodySmall,
                   ),
                 ),
               ],
@@ -1319,6 +1406,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
   // ============================================================
 
   Widget _farmHarvestTotal() {
+    final l10n = _l10n;
+
     final bucketCount = int.tryParse(
           _bucketController.text.trim(),
         ) ??
@@ -1331,6 +1420,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
         ) ??
         0;
 
+    // Application calculation.
+    // Language does not affect this.
     final total =
         bucketCount * kgPerBucket;
 
@@ -1365,26 +1456,30 @@ class _AddActivityPageState extends State<AddActivityPage> {
 
           const SizedBox(width: 11),
 
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment:
                   CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Total Harvest',
-                  style: TextStyle(
+                  l10n.totalHarvest,
+                  style:
+                      const TextStyle(
                     color: textDark,
-                    fontSize: 9,
+                    fontSize: AppTextStyles.bodySmall,
                     fontWeight:
                         FontWeight.w700,
                   ),
                 ),
-                SizedBox(height: 2),
+
+                const SizedBox(height: 2),
+
                 Text(
-                  'Buckets × Kg per bucket',
-                  style: TextStyle(
+                  l10n.bucketsTimesKg,
+                  style:
+                      const TextStyle(
                     color: textGrey,
-                    fontSize: 7,
+                    fontSize: AppTextStyles.bodySmall,
                   ),
                 ),
               ],
@@ -1395,7 +1490,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
             '${total.toStringAsFixed(2)} Kg',
             style: const TextStyle(
               color: primaryGreen,
-              fontSize: 13,
+              fontSize: AppTextStyles.bodySmall,
               fontWeight:
                   FontWeight.w800,
             ),
@@ -1410,6 +1505,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
   // ============================================================
 
   Widget _dateField() {
+    final l10n = _l10n;
+
     return InkWell(
       onTap: _selectDate,
       borderRadius:
@@ -1420,8 +1517,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
           widget.mode ==
                   AddActivityMode
                       .treeActivity
-              ? 'Activity Date'
-              : 'Harvest Date',
+              ? l10n.activityDate
+              : l10n.harvestDate,
         ),
         child: Row(
           children: [
@@ -1436,9 +1533,10 @@ class _AddActivityPageState extends State<AddActivityPage> {
 
             Text(
               _formattedDate,
-              style: const TextStyle(
+              style:
+                  const TextStyle(
                 color: textDark,
-                fontSize: 10,
+                fontSize: AppTextStyles.bodySmall,
                 fontWeight:
                     FontWeight.w600,
               ),
@@ -1470,6 +1568,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
     bool allowZero = false,
     ValueChanged<String>? onChanged,
   }) {
+    final l10n = _l10n;
+
     return TextFormField(
       controller: controller,
       keyboardType:
@@ -1480,14 +1580,14 @@ class _AddActivityPageState extends State<AddActivityPage> {
       onChanged: onChanged,
       style: const TextStyle(
         color: textDark,
-        fontSize: 10,
+        fontSize: AppTextStyles.bodySmall,
       ),
       decoration:
           _inputDecoration(label).copyWith(
         hintText: hint,
         hintStyle: const TextStyle(
           color: textGrey,
-          fontSize: 9,
+          fontSize: AppTextStyles.bodySmall,
         ),
       ),
       validator: (value) {
@@ -1496,7 +1596,9 @@ class _AddActivityPageState extends State<AddActivityPage> {
 
         if (requiredField &&
             text.isEmpty) {
-          return '$label is required';
+          return l10n.fieldRequired(
+            label,
+          );
         }
 
         if (text.isEmpty) {
@@ -1508,15 +1610,18 @@ class _AddActivityPageState extends State<AddActivityPage> {
               int.tryParse(text);
 
           if (number == null) {
-            return 'Enter a valid whole number';
+            return l10n
+                .enterValidWholeNumber;
           }
 
           if (allowZero) {
             if (number < 0) {
-              return 'Value cannot be negative';
+              return l10n
+                  .valueCannotBeNegative;
             }
           } else if (number <= 0) {
-            return 'Value must be greater than zero';
+            return l10n
+                .valueGreaterThanZero;
           }
 
           return null;
@@ -1526,18 +1631,21 @@ class _AddActivityPageState extends State<AddActivityPage> {
             double.tryParse(text);
 
         if (number == null) {
-          return 'Enter a valid number';
+          return l10n.enterValidNumber;
         }
 
         if (allowZero) {
           if (number < 0) {
-            return 'Value cannot be negative';
+            return l10n
+                .valueCannotBeNegative;
           }
         } else if (requiredField &&
             number <= 0) {
-          return 'Value must be greater than zero';
+          return l10n
+              .valueGreaterThanZero;
         } else if (number < 0) {
-          return 'Value cannot be negative';
+          return l10n
+              .valueCannotBeNegative;
         }
 
         return null;
@@ -1551,7 +1659,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
 
   Widget _loadingInput(
     String text, {
-    String label = 'Farm',
+    required String label,
   }) {
     return InputDecorator(
       decoration:
@@ -1574,7 +1682,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
             text,
             style: const TextStyle(
               color: textGrey,
-              fontSize: 9,
+              fontSize: AppTextStyles.bodySmall,
             ),
           ),
         ],
@@ -1601,7 +1709,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
         text,
         style: const TextStyle(
           color: textGrey,
-          fontSize: 9,
+          fontSize: AppTextStyles.bodySmall,
         ),
       ),
     );
@@ -1612,6 +1720,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
   // ============================================================
 
   Widget _buildFarmError() {
+    final l10n = _l10n;
+
     return Center(
       child: Padding(
         padding:
@@ -1628,11 +1738,12 @@ class _AddActivityPageState extends State<AddActivityPage> {
 
             const SizedBox(height: 12),
 
-            const Text(
-              'Unable to load farms',
-              style: TextStyle(
+            Text(
+              l10n.unableToLoadFarms,
+              style:
+                  const TextStyle(
                 color: textDark,
-                fontSize: 13,
+                fontSize: AppTextStyles.bodySmall,
                 fontWeight:
                     FontWeight.w700,
               ),
@@ -1644,9 +1755,10 @@ class _AddActivityPageState extends State<AddActivityPage> {
               _farmError ?? '',
               textAlign:
                   TextAlign.center,
-              style: const TextStyle(
+              style:
+                  const TextStyle(
                 color: textGrey,
-                fontSize: 9,
+                fontSize: AppTextStyles.bodySmall,
               ),
             ),
 
@@ -1658,8 +1770,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
                 Icons.refresh,
                 size: 16,
               ),
-              label: const Text(
-                'Retry',
+              label: Text(
+                l10n.retry,
               ),
               style:
                   ElevatedButton.styleFrom(
@@ -1687,7 +1799,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
       labelStyle:
           const TextStyle(
         color: textGrey,
-        fontSize: 9,
+        fontSize: AppTextStyles.bodySmall,
       ),
       filled: true,
       fillColor: Colors.white,
@@ -1747,7 +1859,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
       title,
       style: const TextStyle(
         color: textDark,
-        fontSize: 12,
+        fontSize: AppTextStyles.bodySmall,
         fontWeight:
             FontWeight.w800,
       ),
@@ -1755,27 +1867,36 @@ class _AddActivityPageState extends State<AddActivityPage> {
   }
 
   // ============================================================
-  // ACTIVITY NAME
+  // ACTIVITY DISPLAY NAME
+  //
+  // Translate display labels only.
+  // The original enum value remains unchanged.
   // ============================================================
 
   String _activityName(
+    BuildContext context,
     String value,
   ) {
+    final l10n =
+        AppLocalizations.of(context)!;
+
     switch (value) {
       case 'WEEDING':
-        return 'Weeding';
+        return l10n.weeding;
 
       case 'PRUNING':
-        return 'Pruning';
+        return l10n.pruning;
 
       case 'PESTICIDE_APPLICATION':
-        return 'Pesticide Application';
+        return l10n
+            .pesticideApplication;
 
       case 'FERTILIZER_APPLICATION':
-        return 'Fertilizer Application';
+        return l10n
+            .fertilizerApplication;
 
       case 'OTHER':
-        return 'Other';
+        return l10n.other;
 
       default:
         return value;
@@ -1783,36 +1904,24 @@ class _AddActivityPageState extends State<AddActivityPage> {
   }
 
   // ============================================================
-  // SUBTITLE
-  // ============================================================
-
-  String _subtitle() {
-    switch (widget.mode) {
-      case AddActivityMode.treeActivity:
-        return 'Select a farm, block and cashew tree, then record the activity and its cost.';
-
-      case AddActivityMode.farmHarvest:
-        return 'Select a farm and record the number of buckets, kilograms per bucket and harvesting cost.';
-
-      case AddActivityMode.treeHarvest:
-        return 'Select a farm, block and cashew tree, then record the kilograms harvested from the tree.';
-    }
-  }
-
-  // ============================================================
   // SAVE BUTTON TEXT
   // ============================================================
 
-  String _saveButtonText() {
+  String _saveButtonText(
+    BuildContext context,
+  ) {
+    final l10n =
+        AppLocalizations.of(context)!;
+
     switch (widget.mode) {
       case AddActivityMode.treeActivity:
-        return 'Save Activity';
+        return l10n.saveActivity;
 
       case AddActivityMode.farmHarvest:
-        return 'Save Farm Harvest';
+        return l10n.saveFarmHarvest;
 
       case AddActivityMode.treeHarvest:
-        return 'Save Tree Harvest';
+        return l10n.saveTreeHarvest;
     }
   }
 
@@ -1906,3 +2015,4 @@ class _AddActivityPageState extends State<AddActivityPage> {
         );
   }
 }
+

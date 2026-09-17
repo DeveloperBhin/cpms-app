@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:barcode_widget/barcode_widget.dart';
+import '../l10n/app_localizations.dart';
 
 import 'scan_page.dart';
 import 'tree_activity_page.dart';
 import '../services/api_services/tree_api_services.dart';
+import '../theme/app_text_styles.dart';
 
 class TreeDetailsPage extends StatefulWidget {
   final String farmId;
@@ -18,16 +20,25 @@ class TreeDetailsPage extends StatefulWidget {
   });
 
   @override
-  State<TreeDetailsPage> createState() => _TreeDetailsPageState();
+  State<TreeDetailsPage> createState() =>
+      _TreeDetailsPageState();
 }
 
 class _TreeDetailsPageState extends State<TreeDetailsPage> {
+  // ===============================================================
+  // COLORS
+  // ===============================================================
+
   static const Color primaryGreen = Color(0xFF087A2F);
   static const Color backgroundColor = Color(0xFFF8FAF8);
   static const Color borderColor = Color(0xFFDCE8DF);
   static const Color lightGreen = Color(0xFFE7F3EB);
   static const Color textDark = Color(0xFF25402D);
   static const Color textGrey = Color(0xFF718078);
+
+  // ===============================================================
+  // DATA
+  // ===============================================================
 
   Map<String, dynamic>? tree;
 
@@ -43,6 +54,13 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
     super.initState();
     _loadTree();
   }
+
+  // ===============================================================
+  // LOCALIZATION
+  // ===============================================================
+
+  AppLocalizations get _l10n =>
+      AppLocalizations.of(context)!;
 
   // ===============================================================
   // LOAD TREE FROM API
@@ -105,19 +123,17 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
     return tree?['status']?.toString() ?? '-';
   }
 
-  String get _formattedStatus {
-    return _formatStatus(_status);
-  }
-
   String get _plantingYear {
     return tree?['plantingYear']?.toString() ?? '-';
   }
 
-  String get _notes {
+  String _notes(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     final value = tree?['notes']?.toString().trim();
 
     if (value == null || value.isEmpty) {
-      return 'No notes recorded';
+      return l10n.noNotesRecorded;
     }
 
     return value;
@@ -181,7 +197,6 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
         child: Column(
           children: [
             _header(),
-
             Expanded(
               child: _buildBody(),
             ),
@@ -196,6 +211,8 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
   // ===============================================================
 
   Widget _header() {
+    final l10n = _l10n;
+
     return Container(
       width: double.infinity,
       height: 52,
@@ -225,20 +242,17 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
               ),
             ),
           ),
-
           const SizedBox(width: 7),
-
-          const Expanded(
+          Expanded(
             child: Text(
-              'Tree Details',
-              style: TextStyle(
+              l10n.treeDetails,
+              style: const TextStyle(
                 color: Colors.white,
-                fontSize: 14,
+                fontSize: AppTextStyles.bodyLarge,
                 fontWeight: FontWeight.w700,
               ),
             ),
           ),
-
           if (!_isLoading && tree != null)
             IconButton(
               onPressed: _loadTree,
@@ -247,7 +261,7 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
                 color: Colors.white,
                 size: 19,
               ),
-              tooltip: 'Refresh',
+              tooltip: l10n.refresh,
             ),
         ],
       ),
@@ -259,6 +273,8 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
   // ===============================================================
 
   Widget _buildBody() {
+    final l10n = _l10n;
+
     if (_isLoading) {
       return const Center(
         child: CircularProgressIndicator(
@@ -273,7 +289,7 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
 
     if (tree == null) {
       return _errorView(
-        message: 'Tree information was not found.',
+        message: l10n.treeInformationNotFound,
       );
     }
 
@@ -291,25 +307,15 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
         child: Column(
           children: [
             _treeInformation(),
-
             const SizedBox(height: 18),
-
             _scanTreeButton(),
-
             const SizedBox(height: 18),
-
             _treeCodeCard(),
-
             const SizedBox(height: 18),
-
             _locationCard(),
-
             const SizedBox(height: 18),
-
             _notesCard(),
-
             const SizedBox(height: 18),
-
             _activityActions(),
           ],
         ),
@@ -324,6 +330,8 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
   Widget _errorView({
     String? message,
   }) {
+    final l10n = _l10n;
+
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -339,39 +347,35 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
                 color: Colors.redAccent,
                 size: 38,
               ),
-
               const SizedBox(height: 12),
-
-              const Text(
-                'Unable to load tree',
-                style: TextStyle(
+              Text(
+                l10n.unableToLoadTree,
+                style: const TextStyle(
                   color: textDark,
-                  fontSize: 13,
+                  fontSize: AppTextStyles.body,
                   fontWeight: FontWeight.w700,
                 ),
               ),
-
               const SizedBox(height: 7),
-
               Text(
-                message ?? _error ?? 'Unknown error',
+                message ??
+                    _cleanError(_error) ??
+                    l10n.unknownError,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: textGrey,
-                  fontSize: 9,
+                  fontSize: AppTextStyles.bodySmall,
                 ),
               ),
-
               const SizedBox(height: 16),
-
               ElevatedButton.icon(
                 onPressed: _loadTree,
                 icon: const Icon(
                   Icons.refresh,
                   size: 16,
                 ),
-                label: const Text(
-                  'Try Again',
+                label: Text(
+                  l10n.tryAgain,
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryGreen,
@@ -391,6 +395,8 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
   // ===============================================================
 
   Widget _treeInformation() {
+    final l10n = _l10n;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -398,39 +404,31 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Tree Information',
-            style: TextStyle(
+          Text(
+            l10n.treeInformation,
+            style: const TextStyle(
               color: primaryGreen,
-              fontSize: 11,
+              fontSize: AppTextStyles.body,
               fontWeight: FontWeight.w700,
             ),
           ),
-
           const SizedBox(height: 16),
-
           Row(
             children: [
               Container(
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: _statusBackground(
-                    _status,
-                  ),
+                  color: _statusBackground(_status),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   Icons.park_outlined,
-                  color: _statusColor(
-                    _status,
-                  ),
+                  color: _statusColor(_status),
                   size: 24,
                 ),
               ),
-
               const SizedBox(width: 12),
-
               Expanded(
                 child: Column(
                   crossAxisAlignment:
@@ -440,91 +438,70 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
                       _treeCode,
                       style: const TextStyle(
                         color: textDark,
-                        fontSize: 13,
+                        fontSize: AppTextStyles.body,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-
                     const SizedBox(height: 5),
-
                     Text(
-                      '$_variety • Planted $_plantingYear',
+                      '$_variety • ${l10n.plantedYear(_plantingYear)}',
                       style: const TextStyle(
                         color: textGrey,
-                        fontSize: 9,
+                        fontSize: AppTextStyles.bodySmall,
                       ),
                     ),
                   ],
                 ),
               ),
-
               _statusBadge(),
             ],
           ),
-
           const SizedBox(height: 18),
-
           const Divider(
             color: borderColor,
             height: 1,
           ),
-
           const SizedBox(height: 14),
-
           _informationRow(
-            label: 'Tree ID',
+            label: l10n.treeId,
             value: _treeCode,
           ),
-
           const SizedBox(height: 10),
-
           _informationRow(
-            label: 'Farm',
+            label: l10n.farm,
             value: _farmName,
           ),
-
           const SizedBox(height: 10),
-
           _informationRow(
-            label: 'Farm ID',
+            label: l10n.farmId,
             value:
                 'FM-${widget.farmId.padLeft(4, '0')}',
           ),
-
           const SizedBox(height: 10),
-
           _informationRow(
-            label: 'Block',
+            label: l10n.block,
             value: _blockName,
           ),
-
           const SizedBox(height: 10),
-
           _informationRow(
-            label: 'Block ID',
+            label: l10n.blockId,
             value:
                 'BL-${widget.blockId.padLeft(4, '0')}',
           ),
-
           const SizedBox(height: 10),
-
           _informationRow(
-            label: 'Variety',
+            label: l10n.variety,
             value: _variety,
           ),
-
           const SizedBox(height: 10),
-
           _informationRow(
-            label: 'Planting Year',
+            label: l10n.plantingYear,
             value: _plantingYear,
           ),
-
           const SizedBox(height: 10),
-
           _informationRow(
-            label: 'Status',
-            value: _formattedStatus,
+            label: l10n.status,
+            value: _formattedStatus(context),
           ),
         ],
       ),
@@ -542,18 +519,14 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
         vertical: 6,
       ),
       decoration: BoxDecoration(
-        color: _statusBackground(
-          _status,
-        ),
+        color: _statusBackground(_status),
         borderRadius: BorderRadius.circular(7),
       ),
       child: Text(
-        _formattedStatus,
+        _formattedStatus(context),
         style: TextStyle(
-          color: _statusColor(
-            _status,
-          ),
-          fontSize: 8,
+          color: _statusColor(_status),
+          fontSize: AppTextStyles.bodySmall,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -569,8 +542,7 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
     required String value,
   }) {
     return Row(
-      crossAxisAlignment:
-          CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
           width: 90,
@@ -578,17 +550,16 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
             label,
             style: const TextStyle(
               color: textGrey,
-              fontSize: 8,
+              fontSize: AppTextStyles.bodySmall,
             ),
           ),
         ),
-
         Expanded(
           child: Text(
             value,
             style: const TextStyle(
               color: textDark,
-              fontSize: 9,
+              fontSize: AppTextStyles.bodySmall,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -602,6 +573,8 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
   // ===============================================================
 
   Widget _scanTreeButton() {
+    final l10n = _l10n;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -609,27 +582,23 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Scan Tree',
-            style: TextStyle(
+          Text(
+            l10n.scanTree,
+            style: const TextStyle(
               color: primaryGreen,
-              fontSize: 11,
+              fontSize: AppTextStyles.body,
               fontWeight: FontWeight.w700,
             ),
           ),
-
           const SizedBox(height: 5),
-
-          const Text(
-            'Scan a tree barcode to identify and view its information.',
-            style: TextStyle(
+          Text(
+            l10n.scanTreeDescription,
+            style: const TextStyle(
               color: textGrey,
-              fontSize: 8,
+              fontSize: AppTextStyles.bodySmall,
             ),
           ),
-
           const SizedBox(height: 14),
-
           SizedBox(
             width: double.infinity,
             height: 44,
@@ -647,10 +616,10 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
                 Icons.barcode_reader,
                 size: 19,
               ),
-              label: const Text(
-                'Scan Tree Barcode',
-                style: TextStyle(
-                  fontSize: 10,
+              label: Text(
+                l10n.scanTreeBarcode,
+                style: const TextStyle(
+                  fontSize: AppTextStyles.bodySmall,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -675,6 +644,8 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
   // ===============================================================
 
   Widget _treeCodeCard() {
+    final l10n = _l10n;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -682,27 +653,23 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Tree Identification',
-            style: TextStyle(
+          Text(
+            l10n.treeIdentification,
+            style: const TextStyle(
               color: primaryGreen,
-              fontSize: 11,
+              fontSize: AppTextStyles.body,
               fontWeight: FontWeight.w700,
             ),
           ),
-
           const SizedBox(height: 5),
-
-          const Text(
-            'Scan this barcode to identify this tree.',
-            style: TextStyle(
+          Text(
+            l10n.scanBarcodeToIdentifyTree,
+            style: const TextStyle(
               color: textGrey,
-              fontSize: 8,
+              fontSize: AppTextStyles.bodySmall,
             ),
           ),
-
           const SizedBox(height: 22),
-
           Center(
             child: Container(
               width: double.infinity,
@@ -721,7 +688,8 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
               child: BarcodeWidget(
                 barcode: Barcode.code128(),
 
-                // User-facing unique tree code.
+                // IMPORTANT:
+                // Do not localize the tree code.
                 data: _treeCode,
 
                 width: 250,
@@ -729,44 +697,38 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
                 drawText: true,
                 style: const TextStyle(
                   color: textDark,
-                  fontSize: 11,
+                  fontSize: AppTextStyles.body,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1,
                 ),
               ),
             ),
           ),
-
           const SizedBox(height: 12),
-
           Center(
             child: Text(
               _treeCode,
               style: const TextStyle(
                 color: textGrey,
-                fontSize: 8,
+                fontSize: AppTextStyles.bodySmall,
                 fontWeight: FontWeight.w600,
               ),
             ),
           ),
-
           const SizedBox(height: 18),
-
           SizedBox(
             width: double.infinity,
             height: 40,
             child: ElevatedButton.icon(
-              onPressed: () {
-                _showTreeBarcode();
-              },
+              onPressed: _showTreeBarcode,
               icon: const Icon(
                 Icons.zoom_out_map,
                 size: 15,
               ),
-              label: const Text(
-                'Enlarge Barcode',
-                style: TextStyle(
-                  fontSize: 9,
+              label: Text(
+                l10n.enlargeBarcode,
+                style: const TextStyle(
+                  fontSize: AppTextStyles.bodySmall,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -791,42 +753,39 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
   // ===============================================================
 
   void _showTreeBarcode() {
+    final l10n = _l10n;
+
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return Dialog(
           backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius:
-                BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Padding(
             padding: const EdgeInsets.all(22),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'Tree Barcode',
-                  style: TextStyle(
+                Text(
+                  l10n.treeBarcode,
+                  style: const TextStyle(
                     color: textDark,
-                    fontSize: 15,
+                    fontSize: AppTextStyles.bodyLarge,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-
                 const SizedBox(height: 6),
-
                 Text(
                   _treeCode,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: textGrey,
-                    fontSize: 9,
+                    fontSize: AppTextStyles.bodySmall,
                   ),
                 ),
-
                 const SizedBox(height: 25),
-
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
@@ -849,43 +808,34 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
                     drawText: true,
                     style: const TextStyle(
                       color: textDark,
-                      fontSize: 13,
+                      fontSize: AppTextStyles.body,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.2,
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 25),
-
                 SizedBox(
                   width: double.infinity,
                   height: 42,
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.pop(context);
+                      Navigator.pop(dialogContext);
                     },
-                    style:
-                        ElevatedButton.styleFrom(
-                      backgroundColor:
-                          primaryGreen,
-                      foregroundColor:
-                          Colors.white,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryGreen,
+                      foregroundColor: Colors.white,
                       elevation: 0,
-                      shape:
-                          RoundedRectangleBorder(
+                      shape: RoundedRectangleBorder(
                         borderRadius:
-                            BorderRadius.circular(
-                          8,
-                        ),
+                            BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text(
-                      'Close',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight:
-                            FontWeight.w700,
+                    child: Text(
+                      l10n.close,
+                      style: const TextStyle(
+                        fontSize: AppTextStyles.bodySmall,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -903,6 +853,8 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
   // ===============================================================
 
   Widget _locationCard() {
+    final l10n = _l10n;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -910,17 +862,15 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Tree Location',
-            style: TextStyle(
+          Text(
+            l10n.treeLocation,
+            style: const TextStyle(
               color: primaryGreen,
-              fontSize: 11,
+              fontSize: AppTextStyles.body,
               fontWeight: FontWeight.w700,
             ),
           ),
-
           const SizedBox(height: 15),
-
           Row(
             children: [
               Container(
@@ -936,33 +886,29 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
                   size: 18,
                 ),
               ),
-
               const SizedBox(width: 10),
-
               Expanded(
                 child: Column(
                   crossAxisAlignment:
                       CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'GPS Coordinates',
-                      style: TextStyle(
+                    Text(
+                      l10n.gpsCoordinates,
+                      style: const TextStyle(
                         color: textGrey,
-                        fontSize: 8,
+                        fontSize: AppTextStyles.bodySmall,
                       ),
                     ),
-
                     const SizedBox(height: 4),
-
                     Text(
                       _hasCoordinates
                           ? '$_latitude, $_longitude'
-                          : 'No GPS coordinates recorded',
+                          : l10n
+                              .noGpsCoordinatesRecorded,
                       style: const TextStyle(
                         color: textDark,
-                        fontSize: 9,
-                        fontWeight:
-                            FontWeight.w600,
+                        fontSize: AppTextStyles.bodySmall,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -970,26 +916,20 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
               ),
             ],
           ),
-
           if (_hasCoordinates) ...[
             const SizedBox(height: 14),
-
             const Divider(
               height: 1,
               color: borderColor,
             ),
-
             const SizedBox(height: 12),
-
             _informationRow(
-              label: 'Latitude',
+              label: l10n.latitude,
               value: _latitude,
             ),
-
             const SizedBox(height: 8),
-
             _informationRow(
-              label: 'Longitude',
+              label: l10n.longitude,
               value: _longitude,
             ),
           ],
@@ -1003,6 +943,8 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
   // ===============================================================
 
   Widget _notesCard() {
+    final l10n = _l10n;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -1010,34 +952,30 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.notes_outlined,
                 color: primaryGreen,
                 size: 17,
               ),
-
-              SizedBox(width: 7),
-
+              const SizedBox(width: 7),
               Text(
-                'Notes',
-                style: TextStyle(
+                l10n.notes,
+                style: const TextStyle(
                   color: primaryGreen,
-                  fontSize: 11,
+                  fontSize: AppTextStyles.body,
                   fontWeight: FontWeight.w700,
                 ),
               ),
             ],
           ),
-
           const SizedBox(height: 12),
-
           Text(
-            _notes,
+            _notes(context),
             style: const TextStyle(
               color: textDark,
-              fontSize: 9,
+              fontSize: AppTextStyles.bodySmall,
               height: 1.5,
             ),
           ),
@@ -1051,6 +989,8 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
   // ===============================================================
 
   Widget _activityActions() {
+    final l10n = _l10n;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -1058,27 +998,23 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Tree Activities',
-            style: TextStyle(
+          Text(
+            l10n.treeActivities,
+            style: const TextStyle(
               color: primaryGreen,
-              fontSize: 11,
+              fontSize: AppTextStyles.body,
               fontWeight: FontWeight.w700,
             ),
           ),
-
           const SizedBox(height: 5),
-
-          const Text(
-            'Record and manage activities performed on this tree.',
-            style: TextStyle(
+          Text(
+            l10n.treeActivitiesDescription,
+            style: const TextStyle(
               color: textGrey,
-              fontSize: 8,
+              fontSize: AppTextStyles.bodySmall,
             ),
           ),
-
           const SizedBox(height: 15),
-
           SizedBox(
             width: double.infinity,
             height: 42,
@@ -1089,7 +1025,8 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
                   MaterialPageRoute(
                     builder: (context) =>
                         TreeActivityPage(
-                      // Raw DB IDs for API calls.
+                      // Raw database IDs.
+                      // DO NOT LOCALIZE.
                       treeId: _rawTreeId,
                       farmId: widget.farmId,
                       blockId: widget.blockId,
@@ -1105,10 +1042,10 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
                 Icons.add_task,
                 size: 16,
               ),
-              label: const Text(
-                'Add / View Tree Activities',
-                style: TextStyle(
-                  fontSize: 9,
+              label: Text(
+                l10n.addViewTreeActivities,
+                style: const TextStyle(
+                  fontSize: AppTextStyles.bodySmall,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -1129,27 +1066,48 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
   }
 
   // ===============================================================
-  // FORMAT STATUS
+  // LOCALIZED STATUS
+  //
+  // IMPORTANT:
+  // _status remains the raw backend value.
+  // Only the displayed text is translated.
   // ===============================================================
 
-  String _formatStatus(String status) {
-    final value = status.trim();
+  String _formattedStatus(
+    BuildContext context,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
 
-    if (value.isEmpty || value == '-') {
-      return '-';
+    switch (_status.toUpperCase()) {
+      case 'HEALTHY':
+        return l10n.healthy;
+
+      case 'DISEASED':
+        return l10n.diseased;
+
+      case 'DEAD':
+        return l10n.dead;
+
+      default:
+        if (_status.trim().isEmpty ||
+            _status == '-') {
+          return '-';
+        }
+
+        return _status;
     }
-
-    final lower = value.toLowerCase();
-
-    return lower[0].toUpperCase() +
-        lower.substring(1);
   }
 
   // ===============================================================
   // STATUS COLOR
+  //
+  // Uses RAW backend values.
+  // DO NOT TRANSLATE.
   // ===============================================================
 
-  Color _statusColor(String status) {
+  Color _statusColor(
+    String status,
+  ) {
     switch (status.toUpperCase()) {
       case 'HEALTHY':
         return primaryGreen;
@@ -1167,9 +1125,14 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
 
   // ===============================================================
   // STATUS BACKGROUND
+  //
+  // Uses RAW backend values.
+  // DO NOT TRANSLATE.
   // ===============================================================
 
-  Color _statusBackground(String status) {
+  Color _statusBackground(
+    String status,
+  ) {
     switch (status.toUpperCase()) {
       case 'HEALTHY':
         return lightGreen;
@@ -1183,6 +1146,24 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
       default:
         return const Color(0xFFF0F2F1);
     }
+  }
+
+  // ===============================================================
+  // CLEAN ERROR
+  // ===============================================================
+
+  String? _cleanError(
+    String? error,
+  ) {
+    if (error == null ||
+        error.trim().isEmpty) {
+      return null;
+    }
+
+    return error.replaceFirst(
+      'Exception: ',
+      '',
+    );
   }
 
   // ===============================================================

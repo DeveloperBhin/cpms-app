@@ -2,8 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/tari_disease_detector.iml" filepath="$PROJECT_DIR$/tari_disease_detector.iml" />
-      <module fileurl="file://$PROJECT_DIR$/android/tari_disease_detector_android.iml" filepath="$PROJECT_DIR$/android/tari_disease_detector_android.iml" />
+      <module fileurl="file://$PROJECT_DIR$/TARI.iml" filepath="$PROJECT_DIR$/TARI.iml" />
+      <module fileurl="file://$PROJECT_DIR$/android/TARI_android.iml" filepath="$PROJECT_DIR$/android/TARI_android.iml" />
     </modules>
   </component>
 </project>

@@ -1,12 +1,12 @@
 # Project-level configuration.
 cmake_minimum_required(VERSION 3.14)
-project(tari_disease_detector LANGUAGES CXX)
+project(TARI LANGUAGES CXX)
 
 add_compile_definitions(_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)
 
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
-set(BINARY_NAME "tari_disease_detector")
+set(BINARY_NAME "TARI")
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.

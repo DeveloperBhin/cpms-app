@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
-import 'tree_activity_page.dart';
+import '../l10n/app_localizations.dart';
 import '../services/api_services/tree_activity_api_services.dart';
 import 'add_activity_page.dart';
+import 'tree_activity_page.dart';
+import '../theme/app_text_styles.dart';
 
 class ActivityPage extends StatefulWidget {
   final VoidCallback? onBack;
@@ -13,28 +16,16 @@ class ActivityPage extends StatefulWidget {
   });
 
   @override
-  State<ActivityPage> createState() =>
-      _ActivityPageState();
+  State<ActivityPage> createState() => _ActivityPageState();
 }
 
 class _ActivityPageState extends State<ActivityPage> {
-  static const Color primaryGreen =
-      Color(0xFF087A2F);
-
-  static const Color backgroundColor =
-      Color(0xFFF8FAF8);
-
-  static const Color borderColor =
-      Color(0xFFDCE8DF);
-
-  static const Color lightGreen =
-      Color(0xFFE7F3EB);
-
-  static const Color textDark =
-      Color(0xFF25402D);
-
-  static const Color textGrey =
-      Color(0xFF718078);
+  static const Color primaryGreen = Color(0xFF087A2F);
+  static const Color backgroundColor = Color(0xFFF8FAF8);
+  static const Color borderColor = Color(0xFFDCE8DF);
+  static const Color lightGreen = Color(0xFFE7F3EB);
+  static const Color textDark = Color(0xFF25402D);
+  static const Color textGrey = Color(0xFF718078);
 
   // ============================================================
   // SEARCH
@@ -45,7 +36,8 @@ class _ActivityPageState extends State<ActivityPage> {
 
   String _search = '';
 
-  String _selectedFilter = 'All';
+  // Keep the backend value here, NOT the translated label.
+  String _selectedFilter = 'ALL';
 
   // ============================================================
   // API DATA
@@ -54,7 +46,6 @@ class _ActivityPageState extends State<ActivityPage> {
   List<Map<String, dynamic>> _activities = [];
 
   bool _isLoading = true;
-
   String? _error;
 
   // ============================================================
@@ -62,13 +53,13 @@ class _ActivityPageState extends State<ActivityPage> {
   // ============================================================
 
   final List<String> _filters = [
-    'All',
-    'Weeding',
-    'Pruning',
-    'Pesticide',
-    'Fertilizer',
-    'Harvesting',
-    'Other',
+    'ALL',
+    'WEEDING',
+    'PRUNING',
+    'PESTICIDE_APPLICATION',
+    'FERTILIZER_APPLICATION',
+    'HARVESTING',
+    'OTHER',
   ];
 
   // ============================================================
@@ -105,25 +96,18 @@ class _ActivityPageState extends State<ActivityPage> {
 
     try {
       final result =
-          await TreeActivityApiServices
-              .getMyActivities();
+          await TreeActivityApiServices.getMyActivities();
 
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       setState(() {
         _activities = result;
         _isLoading = false;
       });
     } catch (e) {
-      debugPrint(
-        'LOAD MY ACTIVITIES ERROR: $e',
-      );
+      debugPrint('LOAD MY ACTIVITIES ERROR: $e');
 
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       setState(() {
         _error = e.toString();
@@ -136,19 +120,17 @@ class _ActivityPageState extends State<ActivityPage> {
   // FILTERED ACTIVITIES
   // ============================================================
 
-  List<Map<String, dynamic>>
-      get _filteredActivities {
+  List<Map<String, dynamic>> get _filteredActivities {
     return _activities.where((activity) {
-      final search =
-          _search.trim().toLowerCase();
+      final search = _search.trim().toLowerCase();
 
       final treeCode =
           _treeCode(activity).toLowerCase();
 
       final farmId =
           _displayFarmId(
-        activity['farmId'],
-      ).toLowerCase();
+            activity['farmId'],
+          ).toLowerCase();
 
       final farmName =
           activity['farmName']
@@ -158,8 +140,8 @@ class _ActivityPageState extends State<ActivityPage> {
 
       final blockId =
           _displayBlockId(
-        activity['blockId'],
-      ).toLowerCase();
+            activity['blockId'],
+          ).toLowerCase();
 
       final blockName =
           activity['blockName']
@@ -173,12 +155,22 @@ class _ActivityPageState extends State<ActivityPage> {
                   .toLowerCase() ??
               '';
 
-      final title =
+      final rawActivityType =
+          activity['activityType']
+                  ?.toString()
+                  .toUpperCase() ??
+              '';
+
+      final displayActivityType =
           _formatActivityType(
-        activity['activityType']
-                ?.toString() ??
-            '',
-      ).toLowerCase();
+            context,
+            rawActivityType,
+          ).toLowerCase();
+
+      final rawActivitySearch =
+          rawActivityType
+              .replaceAll('_', ' ')
+              .toLowerCase();
 
       final description =
           activity['description']
@@ -188,75 +180,86 @@ class _ActivityPageState extends State<ActivityPage> {
 
       final matchesSearch =
           search.isEmpty ||
-              treeCode.contains(search) ||
-              farmId.contains(search) ||
-              farmName.contains(search) ||
-              blockId.contains(search) ||
-              blockName.contains(search) ||
-              variety.contains(search) ||
-              title.contains(search) ||
-              description.contains(search);
+          treeCode.contains(search) ||
+          farmId.contains(search) ||
+          farmName.contains(search) ||
+          blockId.contains(search) ||
+          blockName.contains(search) ||
+          variety.contains(search) ||
+          displayActivityType.contains(search) ||
+          rawActivitySearch.contains(search) ||
+          description.contains(search);
 
       bool matchesFilter = true;
 
-      if (_selectedFilter != 'All') {
+      if (_selectedFilter != 'ALL') {
         matchesFilter =
-            title.contains(
-          _selectedFilter.toLowerCase(),
-        );
+            rawActivityType == _selectedFilter;
       }
 
-      return matchesSearch &&
-          matchesFilter;
+      return matchesSearch && matchesFilter;
     }).toList();
   }
-Future<void> _showTreeActivityForm() async {
-  final result = await Navigator.push<bool>(
-    context,
-    MaterialPageRoute(
-      builder: (context) =>
-          const AddActivityPage(
-        mode: AddActivityMode.treeActivity,
+
+  // ============================================================
+  // ADD TREE ACTIVITY
+  // ============================================================
+
+  Future<void> _showTreeActivityForm() async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            const AddActivityPage(
+          mode: AddActivityMode.treeActivity,
+        ),
       ),
-    ),
-  );
+    );
 
-  if (result == true) {
-    await _loadActivities();
+    if (result == true) {
+      await _loadActivities();
+    }
   }
-}
 
-Future<void> _showFarmHarvestForm() async {
-  final result = await Navigator.push<bool>(
-    context,
-    MaterialPageRoute(
-      builder: (context) =>
-          const AddActivityPage(
-        mode: AddActivityMode.farmHarvest,
+  // ============================================================
+  // ADD FARM HARVEST
+  // ============================================================
+
+  Future<void> _showFarmHarvestForm() async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            const AddActivityPage(
+          mode: AddActivityMode.farmHarvest,
+        ),
       ),
-    ),
-  );
+    );
 
-  if (result == true) {
-    await _loadActivities();
+    if (result == true) {
+      await _loadActivities();
+    }
   }
-}
 
-Future<void> _showTreeHarvestForm() async {
-  final result = await Navigator.push<bool>(
-    context,
-    MaterialPageRoute(
-      builder: (context) =>
-          const AddActivityPage(
-        mode: AddActivityMode.treeHarvest,
+  // ============================================================
+  // ADD TREE HARVEST
+  // ============================================================
+
+  Future<void> _showTreeHarvestForm() async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            const AddActivityPage(
+          mode: AddActivityMode.treeHarvest,
+        ),
       ),
-    ),
-  );
+    );
 
-  if (result == true) {
-    await _loadActivities();
+    if (result == true) {
+      await _loadActivities();
+    }
   }
-}
 
   // ============================================================
   // OPEN TREE ACTIVITIES
@@ -265,6 +268,8 @@ Future<void> _showTreeHarvestForm() async {
   void _openTreeActivities(
     Map<String, dynamic> activity,
   ) {
+    final l10n = AppLocalizations.of(context)!;
+
     final treeId =
         activity['treeId']?.toString();
 
@@ -280,12 +285,10 @@ Future<void> _showTreeHarvestForm() async {
         farmId.isEmpty ||
         blockId == null ||
         blockId.isEmpty) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-        const SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
           content: Text(
-            'Unable to open tree activities. '
-            'Tree relationship information is missing.',
+            l10n.unableToOpenTreeActivities,
           ),
           backgroundColor: Colors.red,
         ),
@@ -307,216 +310,230 @@ Future<void> _showTreeHarvestForm() async {
     );
   }
 
+  // ============================================================
+  // HARVESTING OPTIONS
+  // ============================================================
+
   Future<void> _showHarvestingOptions() async {
-  final result = await showModalBottomSheet<String>(
-    context: context,
-    backgroundColor: Colors.transparent,
-    builder: (context) {
-      return Container(
-        padding: const EdgeInsets.fromLTRB(
-          18,
-          12,
-          18,
-          25,
-        ),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(22),
+    final l10n = AppLocalizations.of(context)!;
+
+    final result =
+        await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.fromLTRB(
+            18,
+            12,
+            18,
+            25,
           ),
-        ),
-        child: SafeArea(
-          top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 42,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: borderColor,
-                    borderRadius:
-                        BorderRadius.circular(10),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(22),
+            ),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 42,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: borderColor,
+                      borderRadius:
+                          BorderRadius.circular(10),
+                    ),
                   ),
                 ),
-              ),
 
-              const SizedBox(height: 18),
+                const SizedBox(height: 18),
 
-              const Text(
-                'Harvesting Method',
-                style: TextStyle(
-                  color: textDark,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
+                Text(
+                  l10n.harvestingMethod,
+                  style: const TextStyle(
+                    color: textDark,
+  fontSize: AppTextStyles.subtitle,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 5),
+                const SizedBox(height: 5),
 
-              const Text(
-                'How was this harvest recorded?',
-                style: TextStyle(
-                  color: textGrey,
-                  fontSize: 9,
+                Text(
+                  l10n.howHarvestRecorded,
+                  style: const TextStyle(
+                    color: textGrey,
+                    fontSize: AppTextStyles.bodySmall,
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 18),
+                const SizedBox(height: 18),
 
-              _activityOption(
-                icon: Icons.landscape_outlined,
-                title: 'Farm Harvesting',
-                subtitle:
-                    'Record harvest using number of buckets and kilograms per bucket.',
-                onTap: () {
-                  Navigator.pop(
-                    context,
-                    'FARM',
-                  );
-                },
-              ),
+                _activityOption(
+                  icon: Icons.landscape_outlined,
+                  title: l10n.farmHarvesting,
+                  subtitle:
+                      l10n.farmHarvestingDescription,
+                  onTap: () {
+                    Navigator.pop(
+                      context,
+                      'FARM',
+                    );
+                  },
+                ),
 
-              const SizedBox(height: 10),
+                const SizedBox(height: 10),
 
-              _activityOption(
-                icon: Icons.park_outlined,
-                title: 'Tree Harvesting',
-                subtitle:
-                    'Record kilograms harvested from a specific cashew tree.',
-                onTap: () {
-                  Navigator.pop(
-                    context,
-                    'TREE',
-                  );
-                },
-              ),
-            ],
+                _activityOption(
+                  icon: Icons.park_outlined,
+                  title: l10n.treeHarvesting,
+                  subtitle:
+                      l10n.treeHarvestingDescription,
+                  onTap: () {
+                    Navigator.pop(
+                      context,
+                      'TREE',
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
-        ),
-      );
-    },
-  );
+        );
+      },
+    );
 
-  if (!mounted || result == null) {
-    return;
+    if (!mounted || result == null) {
+      return;
+    }
+
+    if (result == 'FARM') {
+      await _showFarmHarvestForm();
+    } else if (result == 'TREE') {
+      await _showTreeHarvestForm();
+    }
   }
 
-  if (result == 'FARM') {
-    _showFarmHarvestForm();
-  } else if (result == 'TREE') {
-    _showTreeHarvestForm();
-  }
-}
+  // ============================================================
+  // ADD ACTIVITY OPTIONS
+  // ============================================================
 
   Future<void> _showAddActivityOptions() async {
-  final result = await showModalBottomSheet<String>(
-    context: context,
-    backgroundColor: Colors.transparent,
-    isScrollControlled: true,
-    builder: (context) {
-      return Container(
-        padding: const EdgeInsets.fromLTRB(
-          18,
-          12,
-          18,
-          25,
-        ),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(22),
+    final l10n = AppLocalizations.of(context)!;
+
+    final result =
+        await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.fromLTRB(
+            18,
+            12,
+            18,
+            25,
           ),
-        ),
-        child: SafeArea(
-          top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 42,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: borderColor,
-                    borderRadius:
-                        BorderRadius.circular(10),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(22),
+            ),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 42,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: borderColor,
+                      borderRadius:
+                          BorderRadius.circular(10),
+                    ),
                   ),
                 ),
-              ),
 
-              const SizedBox(height: 18),
+                const SizedBox(height: 18),
 
-              const Text(
-                'Add Activity',
-                style: TextStyle(
-                  color: textDark,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
+                Text(
+                  l10n.addActivity,
+                  style: const TextStyle(
+                    color: textDark,
+                    fontSize: AppTextStyles.subtitle,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 5),
+                const SizedBox(height: 5),
 
-              const Text(
-                'Choose the type of activity you want to record.',
-                style: TextStyle(
-                  color: textGrey,
-                  fontSize: 9,
+                Text(
+                  l10n.chooseActivityType,
+                  style: const TextStyle(
+                    color: textGrey,
+                    fontSize: AppTextStyles.bodySmall,
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 18),
+                const SizedBox(height: 18),
 
-              _activityOption(
-                icon: Icons.task_alt,
-                title: 'Tree Activity',
-                subtitle:
-                    'Weeding, pruning, pesticide, fertilizer and other tree activities.',
-                onTap: () {
-                  Navigator.pop(
-                    context,
-                    'TREE_ACTIVITY',
-                  );
-                },
-              ),
+                _activityOption(
+                  icon: Icons.task_alt,
+                  title: l10n.treeActivity,
+                  subtitle:
+                      l10n.treeActivityDescription,
+                  onTap: () {
+                    Navigator.pop(
+                      context,
+                      'TREE_ACTIVITY',
+                    );
+                  },
+                ),
 
-              const SizedBox(height: 10),
+                const SizedBox(height: 10),
 
-              _activityOption(
-                icon: Icons.agriculture_outlined,
-                title: 'Harvesting',
-                subtitle:
-                    'Record farm harvesting or harvesting from a specific tree.',
-                onTap: () {
-                  Navigator.pop(
-                    context,
-                    'HARVESTING',
-                  );
-                },
-              ),
-            ],
+                _activityOption(
+                  icon: Icons.agriculture_outlined,
+                  title: l10n.harvesting,
+                  subtitle:
+                      l10n.harvestingDescription,
+                  onTap: () {
+                    Navigator.pop(
+                      context,
+                      'HARVESTING',
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
-        ),
-      );
-    },
-  );
+        );
+      },
+    );
 
-  if (!mounted || result == null) {
-    return;
-  }
+    if (!mounted || result == null) {
+      return;
+    }
 
-  if (result == 'TREE_ACTIVITY') {
-    _showTreeActivityForm();
-  } else if (result == 'HARVESTING') {
-    _showHarvestingOptions();
+    if (result == 'TREE_ACTIVITY') {
+      await _showTreeActivityForm();
+    } else if (result == 'HARVESTING') {
+      await _showHarvestingOptions();
+    }
   }
-}
 
   // ============================================================
   // BUILD
@@ -524,8 +541,8 @@ Future<void> _showTreeHarvestForm() async {
 
   @override
   Widget build(BuildContext context) {
-    final activities =
-        _filteredActivities;
+    final l10n = AppLocalizations.of(context)!;
+    final activities = _filteredActivities;
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -540,89 +557,65 @@ Future<void> _showTreeHarvestForm() async {
             Container(
               width: double.infinity,
               height: 55,
-              padding:
-                  const EdgeInsets.symmetric(
+              padding: const EdgeInsets.symmetric(
                 horizontal: 14,
               ),
-              decoration:
-                  const BoxDecoration(
+              decoration: const BoxDecoration(
                 color: primaryGreen,
-                borderRadius:
-                    BorderRadius.only(
-                  bottomLeft:
-                      Radius.circular(18),
-                  bottomRight:
-                      Radius.circular(18),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(18),
+                  bottomRight: Radius.circular(18),
                 ),
               ),
               child: Row(
                 children: [
-                  if (widget.onBack !=
-                      null) ...[
+                  if (widget.onBack != null) ...[
                     InkWell(
                       onTap: widget.onBack,
                       borderRadius:
-                          BorderRadius
-                              .circular(20),
-                      child:
-                          const Padding(
-                        padding:
-                            EdgeInsets.all(
-                          4,
-                        ),
+                          BorderRadius.circular(20),
+                      child: const Padding(
+                        padding: EdgeInsets.all(4),
                         child: Icon(
-                          Icons
-                              .arrow_back_ios_new,
-                          color:
-                              Colors.white,
+                          Icons.arrow_back_ios_new,
+                          color: Colors.white,
                           size: 15,
                         ),
                       ),
                     ),
-                    const SizedBox(
-                      width: 8,
-                    ),
+                    const SizedBox(width: 8),
                   ],
-                  const Expanded(
+
+                  Expanded(
                     child: Text(
-                      'Activities',
-                      style: TextStyle(
-                        color:
-                            Colors.white,
-                        fontSize: 14,
-                        fontWeight:
-                            FontWeight
-                                .w700,
+                      l10n.activities,
+                      style: const TextStyle(
+                        color: Colors.white,
+  fontSize: AppTextStyles.bodyLarge,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
+
                   Container(
                     padding:
-                        const EdgeInsets
-                            .symmetric(
+                        const EdgeInsets.symmetric(
                       horizontal: 9,
                       vertical: 5,
                     ),
-                    decoration:
-                        BoxDecoration(
-                      color: Colors.white
-                          .withValues(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(
                         alpha: 0.15,
                       ),
                       borderRadius:
-                          BorderRadius
-                              .circular(8),
+                          BorderRadius.circular(8),
                     ),
                     child: Text(
                       '${_activities.length}',
-                      style:
-                          const TextStyle(
-                        color:
-                            Colors.white,
-                        fontSize: 9,
-                        fontWeight:
-                            FontWeight
-                                .w700,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: AppTextStyles.bodySmall,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -637,15 +630,11 @@ Future<void> _showTreeHarvestForm() async {
             Expanded(
               child: RefreshIndicator(
                 color: primaryGreen,
-                onRefresh:
-                    _loadActivities,
-                child:
-                    SingleChildScrollView(
+                onRefresh: _loadActivities,
+                child: SingleChildScrollView(
                   physics:
                       const AlwaysScrollableScrollPhysics(),
-                  padding:
-                      const EdgeInsets
-                          .fromLTRB(
+                  padding: const EdgeInsets.fromLTRB(
                     14,
                     20,
                     14,
@@ -653,74 +642,74 @@ Future<void> _showTreeHarvestForm() async {
                   ),
                   child: Column(
                     crossAxisAlignment:
-                        CrossAxisAlignment
-                            .start,
+                        CrossAxisAlignment.start,
                     children: [
                       // ========================================
                       // TITLE
                       // ========================================
 
-                      const Text(
-                        'Tree Activities',
-                        style: TextStyle(
+                      Text(
+                        l10n.treeActivities,
+                        style: const TextStyle(
                           color: textDark,
-                          fontSize: 16,
-                          fontWeight:
-                              FontWeight
-                                  .w800,
+                          fontSize: AppTextStyles.subtitle,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
 
-                      const SizedBox(
-                        height: 5,
+                      const SizedBox(height: 5),
+
+                      Text(
+                        l10n.activityPageDescription,
+                        style: const TextStyle(
+                          color: textGrey,
+                          fontSize: AppTextStyles.bodySmall,
+                        ),
                       ),
 
-                     const Text(
-  'View and manage farm and tree activities.',
-  style: TextStyle(
-    color: textGrey,
-    fontSize: 9,
-  ),
-),
+                      const SizedBox(height: 14),
 
-const SizedBox(
-  height: 14,
-),
+                      // ========================================
+                      // ADD ACTIVITY BUTTON
+                      // ========================================
 
-// ============================================================
-// ADD ACTIVITY BUTTON
-// ============================================================
+                      SizedBox(
+                        width: double.infinity,
+                        height: 42,
+                        child: ElevatedButton.icon(
+                          onPressed:
+                              _showAddActivityOptions,
+                          icon: const Icon(
+                            Icons.add,
+                            size: 18,
+                          ),
+                          label: Text(
+                            l10n.addActivity,
+                            style: const TextStyle(
+                              fontSize: AppTextStyles.bodySmall,
+                              fontWeight:
+                                  FontWeight.w700,
+                            ),
+                          ),
+                          style:
+                              ElevatedButton.styleFrom(
+                            backgroundColor:
+                                primaryGreen,
+                            foregroundColor:
+                                Colors.white,
+                            elevation: 0,
+                            shape:
+                                RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(
+                                10,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
 
-SizedBox(
-  width: double.infinity,
-  height: 42,
-  child: ElevatedButton.icon(
-    onPressed: _showAddActivityOptions,
-    icon: const Icon(
-      Icons.add,
-      size: 18,
-    ),
-    label: const Text(
-      'Add Activity',
-      style: TextStyle(
-        fontSize: 10,
-        fontWeight: FontWeight.w700,
-      ),
-    ),
-    style: ElevatedButton.styleFrom(
-      backgroundColor: primaryGreen,
-      foregroundColor: Colors.white,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-      ),
-    ),
-  ),
-),
-
-const SizedBox(
-  height: 18,
-),
+                      const SizedBox(height: 18),
 
                       // ========================================
                       // SUMMARY
@@ -729,25 +718,20 @@ const SizedBox(
                       Row(
                         children: [
                           Expanded(
-                            child:
-                                _summaryCard(
-                              icon: Icons
-                                  .task_alt,
-                              label:
-                                  'Activities',
+                            child: _summaryCard(
+                              icon: Icons.task_alt,
+                              label: l10n.activities,
                               value:
                                   '${_activities.length}',
                             ),
                           ),
-                          const SizedBox(
-                            width: 10,
-                          ),
+
+                          const SizedBox(width: 10),
+
                           Expanded(
-                            child:
-                                _summaryCard(
-                              icon: Icons
-                                  .park_outlined,
-                              label: 'Trees',
+                            child: _summaryCard(
+                              icon: Icons.park_outlined,
+                              label: l10n.trees,
                               value:
                                   '${_uniqueTreeCount()}',
                             ),
@@ -755,9 +739,7 @@ const SizedBox(
                         ],
                       ),
 
-                      const SizedBox(
-                        height: 18,
-                      ),
+                      const SizedBox(height: 18),
 
                       // ========================================
                       // SEARCH
@@ -771,55 +753,46 @@ const SizedBox(
                             _search = value;
                           });
                         },
-                        style:
-                            const TextStyle(
+                        style: const TextStyle(
                           color: textDark,
-                          fontSize: 10,
+                          fontSize: AppTextStyles.bodySmall,
                         ),
-                        decoration:
-                            InputDecoration(
+                        decoration: InputDecoration(
                           hintText:
-                              'Search tree, farm, block or activity...',
+                              l10n.searchActivitiesHint,
                           hintStyle:
                               const TextStyle(
-                            color:
-                                textGrey,
-                            fontSize: 9,
+                            color: textGrey,
+                            fontSize: AppTextStyles.bodySmall,
                           ),
                           prefixIcon:
                               const Icon(
                             Icons.search,
-                            color:
-                                textGrey,
+                            color: textGrey,
                             size: 19,
                           ),
-                          suffixIcon: _search
-                                  .isNotEmpty
-                              ? IconButton(
-                                  onPressed:
-                                      () {
-                                    _searchController
-                                        .clear();
+                          suffixIcon:
+                              _search.isNotEmpty
+                                  ? IconButton(
+                                      onPressed: () {
+                                        _searchController
+                                            .clear();
 
-                                    setState(
-                                      () {
-                                        _search =
-                                            '';
+                                        setState(() {
+                                          _search = '';
+                                        });
                                       },
-                                    );
-                                  },
-                                  icon:
-                                      const Icon(
-                                    Icons.close,
-                                    color:
-                                        textGrey,
-                                    size: 17,
-                                  ),
-                                )
-                              : null,
+                                      icon:
+                                          const Icon(
+                                        Icons.close,
+                                        color:
+                                            textGrey,
+                                        size: 17,
+                                      ),
+                                    )
+                                  : null,
                           filled: true,
-                          fillColor:
-                              Colors.white,
+                          fillColor: Colors.white,
                           contentPadding:
                               const EdgeInsets
                                   .symmetric(
@@ -828,35 +801,29 @@ const SizedBox(
                           enabledBorder:
                               OutlineInputBorder(
                             borderRadius:
-                                BorderRadius
-                                    .circular(
+                                BorderRadius.circular(
                               10,
                             ),
                             borderSide:
                                 const BorderSide(
-                              color:
-                                  borderColor,
+                              color: borderColor,
                             ),
                           ),
                           focusedBorder:
                               OutlineInputBorder(
                             borderRadius:
-                                BorderRadius
-                                    .circular(
+                                BorderRadius.circular(
                               10,
                             ),
                             borderSide:
                                 const BorderSide(
-                              color:
-                                  primaryGreen,
+                              color: primaryGreen,
                             ),
                           ),
                         ),
                       ),
 
-                      const SizedBox(
-                        height: 14,
-                      ),
+                      const SizedBox(height: 14),
 
                       // ========================================
                       // FILTERS
@@ -864,28 +831,20 @@ const SizedBox(
 
                       SizedBox(
                         height: 34,
-                        child:
-                            ListView.separated(
+                        child: ListView.separated(
                           scrollDirection:
                               Axis.horizontal,
                           itemCount:
                               _filters.length,
                           separatorBuilder:
-                              (
-                            context,
-                            index,
-                          ) =>
+                              (context, index) =>
                                   const SizedBox(
                             width: 7,
                           ),
                           itemBuilder:
-                              (
-                            context,
-                            index,
-                          ) {
+                              (context, index) {
                             final filter =
-                                _filters[
-                                    index];
+                                _filters[index];
 
                             final selected =
                                 _selectedFilter ==
@@ -893,34 +852,27 @@ const SizedBox(
 
                             return InkWell(
                               onTap: () {
-                                setState(
-                                  () {
-                                    _selectedFilter =
-                                        filter;
-                                  },
-                                );
+                                setState(() {
+                                  _selectedFilter =
+                                      filter;
+                                });
                               },
                               borderRadius:
-                                  BorderRadius
-                                      .circular(
+                                  BorderRadius.circular(
                                 8,
                               ),
-                              child:
-                                  Container(
+                              child: Container(
                                 padding:
                                     const EdgeInsets
                                         .symmetric(
-                                  horizontal:
-                                      13,
-                                  vertical:
-                                      8,
+                                  horizontal: 13,
+                                  vertical: 8,
                                 ),
                                 decoration:
                                     BoxDecoration(
                                   color: selected
                                       ? primaryGreen
-                                      : Colors
-                                          .white,
+                                      : Colors.white,
                                   borderRadius:
                                       BorderRadius
                                           .circular(
@@ -934,15 +886,15 @@ const SizedBox(
                                   ),
                                 ),
                                 child: Text(
-                                  filter,
-                                  style:
-                                      TextStyle(
+                                  _filterLabel(
+                                    context,
+                                    filter,
+                                  ),
+                                  style: TextStyle(
                                     color: selected
-                                        ? Colors
-                                            .white
+                                        ? Colors.white
                                         : textGrey,
-                                    fontSize:
-                                        8,
+  fontSize: AppTextStyles.bodySmall,
                                     fontWeight:
                                         FontWeight
                                             .w700,
@@ -954,9 +906,7 @@ const SizedBox(
                         ),
                       ),
 
-                      const SizedBox(
-                        height: 20,
-                      ),
+                      const SizedBox(height: 20),
 
                       // ========================================
                       // RECENT ACTIVITIES
@@ -964,42 +914,34 @@ const SizedBox(
 
                       Row(
                         children: [
-                          const Expanded(
+                          Expanded(
                             child: Text(
-                              'Recent Activities',
+                              l10n.recentActivities,
                               style:
-                                  TextStyle(
-                                color:
-                                    textDark,
-                                fontSize:
-                                    12,
+                                  const TextStyle(
+                                color: textDark,
+                                fontSize: AppTextStyles.bodySmall,
                                 fontWeight:
-                                    FontWeight
-                                        .w800,
+                                    FontWeight.w800,
                               ),
                             ),
                           ),
+
                           if (!_isLoading)
                             Text(
-                              '${activities.length} found',
+                              l10n.activitiesFound(
+                                activities.length,
+                              ),
                               style:
                                   const TextStyle(
-                                color:
-                                    textGrey,
-                                fontSize:
-                                    8,
+                                color: textGrey,
+                                fontSize: AppTextStyles.bodySmall,
                               ),
                             ),
                         ],
                       ),
 
-                      const SizedBox(
-                        height: 12,
-                      ),
-
-                      // ========================================
-                      // API STATE
-                      // ========================================
+                      const SizedBox(height: 12),
 
                       _buildActivityContent(
                         activities,
@@ -1015,90 +957,92 @@ const SizedBox(
     );
   }
 
+  // ============================================================
+  // ACTIVITY OPTION
+  // ============================================================
 
   Widget _activityOption({
-  required IconData icon,
-  required String title,
-  required String subtitle,
-  required VoidCallback onTap,
-}) {
-  return InkWell(
-    onTap: onTap,
-    borderRadius: BorderRadius.circular(12),
-    child: Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: borderColor,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: borderColor,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 43,
+              height: 43,
+              decoration: const BoxDecoration(
+                color: lightGreen,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                color: primaryGreen,
+                size: 21,
+              ),
+            ),
+
+            const SizedBox(width: 12),
+
+            Expanded(
+              child: Column(
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: textDark,
+                      fontSize: AppTextStyles.bodySmall,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: textGrey,
+                      fontSize: AppTextStyles.bodySmall,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(width: 8),
+
+            const Icon(
+              Icons.arrow_forward_ios,
+              color: textGrey,
+              size: 13,
+            ),
+          ],
         ),
       ),
-      child: Row(
-        children: [
-          Container(
-            width: 43,
-            height: 43,
-            decoration: const BoxDecoration(
-              color: lightGreen,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              color: primaryGreen,
-              size: 21,
-            ),
-          ),
-
-          const SizedBox(width: 12),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: textDark,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    color: textGrey,
-                    fontSize: 8,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(width: 8),
-
-          const Icon(
-            Icons.arrow_forward_ios,
-            color: textGrey,
-            size: 13,
-          ),
-        ],
-      ),
-    ),
-  );
-}
+    );
+  }
 
   // ============================================================
   // ACTIVITY CONTENT
   // ============================================================
 
   Widget _buildActivityContent(
-    List<Map<String, dynamic>>
-        activities,
+    List<Map<String, dynamic>> activities,
   ) {
     if (_isLoading) {
       return _loadingState();
@@ -1120,8 +1064,7 @@ const SizedBox(
                   const EdgeInsets.only(
                 bottom: 12,
               ),
-              child:
-                  _activityCard(
+              child: _activityCard(
                 activity,
               ),
             ),
@@ -1138,8 +1081,7 @@ const SizedBox(
     return _activities
         .map(
           (activity) =>
-              activity['treeId']
-                  ?.toString(),
+              activity['treeId']?.toString(),
         )
         .whereType<String>()
         .where(
@@ -1159,17 +1101,14 @@ const SizedBox(
     required String value,
   }) {
     return Container(
-      padding:
-          const EdgeInsets.all(13),
-      decoration:
-          _cardDecoration(),
+      padding: const EdgeInsets.all(13),
+      decoration: _cardDecoration(),
       child: Row(
         children: [
           Container(
             width: 37,
             height: 37,
-            decoration:
-                const BoxDecoration(
+            decoration: const BoxDecoration(
               color: lightGreen,
               shape: BoxShape.circle,
             ),
@@ -1179,35 +1118,28 @@ const SizedBox(
               size: 19,
             ),
           ),
-          const SizedBox(
-            width: 10,
-          ),
+
+          const SizedBox(width: 10),
+
           Expanded(
             child: Column(
               crossAxisAlignment:
-                  CrossAxisAlignment
-                      .start,
+                  CrossAxisAlignment.start,
               children: [
                 Text(
                   value,
-                  style:
-                      const TextStyle(
+                  style: const TextStyle(
                     color: textDark,
-                    fontSize: 14,
-                    fontWeight:
-                        FontWeight
-                            .w800,
+                    fontSize: AppTextStyles.bodyLarge,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(
-                  height: 2,
-                ),
+                const SizedBox(height: 2),
                 Text(
                   label,
-                  style:
-                      const TextStyle(
+                  style: const TextStyle(
                     color: textGrey,
-                    fontSize: 8,
+                    fontSize: AppTextStyles.bodySmall,
                   ),
                 ),
               ],
@@ -1225,17 +1157,30 @@ const SizedBox(
   Widget _activityCard(
     Map<String, dynamic> activity,
   ) {
+    final l10n = AppLocalizations.of(context)!;
+
+    final rawActivityType =
+        activity['activityType']
+                ?.toString()
+                .toUpperCase() ??
+            '';
+
+    final rawStatus =
+        activity['status']
+                ?.toString()
+                .toUpperCase() ??
+            '';
+
     final title =
         _formatActivityType(
-      activity['activityType']
-              ?.toString() ??
-          '',
+      context,
+      rawActivityType,
     );
 
     final status =
         _formatStatus(
-      activity['status']?.toString() ??
-          '',
+      context,
+      rawStatus,
     );
 
     final treeCode =
@@ -1262,6 +1207,7 @@ const SizedBox(
 
     final date =
         _formatDate(
+      context,
       activity['activityDate']
           ?.toString(),
     );
@@ -1276,10 +1222,8 @@ const SizedBox(
           BorderRadius.circular(13),
       child: Container(
         width: double.infinity,
-        padding:
-            const EdgeInsets.all(14),
-        decoration:
-            _cardDecoration(),
+        padding: const EdgeInsets.all(14),
+        decoration: _cardDecoration(),
         child: Row(
           crossAxisAlignment:
               CrossAxisAlignment.start,
@@ -1290,25 +1234,23 @@ const SizedBox(
               decoration:
                   const BoxDecoration(
                 color: lightGreen,
-                shape:
-                    BoxShape.circle,
+                shape: BoxShape.circle,
               ),
               child: Icon(
-                _activityIcon(title),
+                _activityIcon(
+                  rawActivityType,
+                ),
                 color: primaryGreen,
                 size: 20,
               ),
             ),
 
-            const SizedBox(
-              width: 12,
-            ),
+            const SizedBox(width: 12),
 
             Expanded(
               child: Column(
                 crossAxisAlignment:
-                    CrossAxisAlignment
-                        .start,
+                    CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
@@ -1317,16 +1259,14 @@ const SizedBox(
                           title,
                           style:
                               const TextStyle(
-                            color:
-                                textDark,
-                            fontSize:
-                                10,
+                            color: textDark,
+                            fontSize: AppTextStyles.bodySmall,
                             fontWeight:
-                                FontWeight
-                                    .w700,
+                                FontWeight.w700,
                           ),
                         ),
                       ),
+
                       Container(
                         padding:
                             const EdgeInsets
@@ -1338,7 +1278,7 @@ const SizedBox(
                             BoxDecoration(
                           color:
                               _statusBackground(
-                            status,
+                            rawStatus,
                           ),
                           borderRadius:
                               BorderRadius
@@ -1348,134 +1288,104 @@ const SizedBox(
                         ),
                         child: Text(
                           status,
-                          style:
-                              TextStyle(
-                            color:
-                                _statusColor(
-                              status,
+                          style: TextStyle(
+                            color: _statusColor(
+                              rawStatus,
                             ),
-                            fontSize:
-                                7,
+                            fontSize: AppTextStyles.bodySmall,
                             fontWeight:
-                                FontWeight
-                                    .w700,
+                                FontWeight.w700,
                           ),
                         ),
                       ),
                     ],
                   ),
 
-                  const SizedBox(
-                    height: 6,
-                  ),
+                  const SizedBox(height: 6),
 
                   // TREE
                   Row(
                     children: [
                       const Icon(
-                        Icons
-                            .park_outlined,
-                        color:
-                            primaryGreen,
+                        Icons.park_outlined,
+                        color: primaryGreen,
                         size: 13,
                       ),
-                      const SizedBox(
-                        width: 5,
-                      ),
+                      const SizedBox(width: 5),
                       Text(
                         treeCode,
                         style:
                             const TextStyle(
-                          color:
-                              primaryGreen,
-                          fontSize:
-                              9,
+                          color: primaryGreen,
+                          fontSize: AppTextStyles.bodySmall,
                           fontWeight:
-                              FontWeight
-                                  .w700,
+                              FontWeight.w700,
                         ),
                       ),
                     ],
                   ),
 
-                  const SizedBox(
-                    height: 6,
-                  ),
+                  const SizedBox(height: 6),
 
                   Text(
                     '$farmName • $blockName',
-                    style:
-                        const TextStyle(
+                    style: const TextStyle(
                       color: textGrey,
-                      fontSize: 8,
+                      fontSize: AppTextStyles.bodySmall,
                     ),
                   ),
 
-                  if (description
-                      .isNotEmpty) ...[
-                    const SizedBox(
-                      height: 7,
-                    ),
+                  if (description.isNotEmpty) ...[
+                    const SizedBox(height: 7),
                     Text(
                       description,
-                      style:
-                          const TextStyle(
-                        color:
-                            textGrey,
-                        fontSize: 8,
+                      style: const TextStyle(
+                        color: textGrey,
+                        fontSize: AppTextStyles.bodySmall,
                         height: 1.4,
                       ),
                     ),
                   ],
 
-                  const SizedBox(
-                    height: 9,
-                  ),
+                  const SizedBox(height: 9),
 
                   Row(
                     children: [
                       const Icon(
-                        Icons
-                            .calendar_today_outlined,
-                        color:
-                            textGrey,
+                        Icons.calendar_today_outlined,
+                        color: textGrey,
                         size: 11,
                       ),
-                      const SizedBox(
-                        width: 5,
-                      ),
+
+                      const SizedBox(width: 5),
+
                       Text(
                         date,
                         style:
                             const TextStyle(
-                          color:
-                              textGrey,
-                          fontSize:
-                              8,
+                          color: textGrey,
+                          fontSize: AppTextStyles.bodySmall,
                         ),
                       ),
+
                       const Spacer(),
-                      const Text(
-                        'View Tree Activities',
+
+                      Text(
+                        l10n.viewTreeActivities,
                         style:
-                            TextStyle(
-                          color:
-                              primaryGreen,
-                          fontSize:
-                              8,
+                            const TextStyle(
+                          color: primaryGreen,
+                          fontSize: AppTextStyles.bodySmall,
                           fontWeight:
-                              FontWeight
-                                  .w700,
+                              FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(
-                        width: 3,
-                      ),
+
+                      const SizedBox(width: 3),
+
                       const Icon(
-                        Icons
-                            .arrow_forward_ios,
-                        color:
-                            primaryGreen,
+                        Icons.arrow_forward_ios,
+                        color: primaryGreen,
                         size: 9,
                       ),
                     ],
@@ -1494,32 +1404,33 @@ const SizedBox(
   // ============================================================
 
   Widget _loadingState() {
+    final l10n = AppLocalizations.of(context)!;
+
     return Container(
       width: double.infinity,
-      padding:
-          const EdgeInsets.symmetric(
+      padding: const EdgeInsets.symmetric(
         vertical: 45,
         horizontal: 20,
       ),
-      decoration:
-          _cardDecoration(),
-      child: const Column(
+      decoration: _cardDecoration(),
+      child: Column(
         children: [
-          SizedBox(
+          const SizedBox(
             width: 27,
             height: 27,
-            child:
-                CircularProgressIndicator(
+            child: CircularProgressIndicator(
               color: primaryGreen,
               strokeWidth: 2.5,
             ),
           ),
-          SizedBox(height: 12),
+
+          const SizedBox(height: 12),
+
           Text(
-            'Loading activities...',
-            style: TextStyle(
+            l10n.loadingActivities,
+            style: const TextStyle(
               color: textGrey,
-              fontSize: 9,
+              fontSize: AppTextStyles.bodySmall,
             ),
           ),
         ],
@@ -1532,15 +1443,15 @@ const SizedBox(
   // ============================================================
 
   Widget _errorState() {
+    final l10n = AppLocalizations.of(context)!;
+
     return Container(
       width: double.infinity,
-      padding:
-          const EdgeInsets.symmetric(
+      padding: const EdgeInsets.symmetric(
         vertical: 35,
         horizontal: 20,
       ),
-      decoration:
-          _cardDecoration(),
+      decoration: _cardDecoration(),
       child: Column(
         children: [
           const Icon(
@@ -1548,53 +1459,47 @@ const SizedBox(
             color: Colors.red,
             size: 36,
           ),
-          const SizedBox(
-            height: 10,
-          ),
-          const Text(
-            'Unable to load activities',
-            style: TextStyle(
+
+          const SizedBox(height: 10),
+
+          Text(
+            l10n.unableToLoadActivities,
+            style: const TextStyle(
               color: textDark,
-              fontSize: 11,
-              fontWeight:
-                  FontWeight.w700,
+              fontSize: AppTextStyles.bodySmall,
+              fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(
-            height: 5,
-          ),
+
+          const SizedBox(height: 5),
+
           Text(
             _error ?? '',
-            textAlign:
-                TextAlign.center,
-            style:
-                const TextStyle(
+            textAlign: TextAlign.center,
+            style: const TextStyle(
               color: textGrey,
-              fontSize: 8,
+              fontSize: AppTextStyles.bodySmall,
             ),
           ),
-          const SizedBox(
-            height: 13,
-          ),
+
+          const SizedBox(height: 13),
+
           SizedBox(
             height: 34,
-            child:
-                ElevatedButton.icon(
-              onPressed:
-                  _loadActivities,
+            child: ElevatedButton.icon(
+              onPressed: _loadActivities,
               icon: const Icon(
                 Icons.refresh,
                 size: 14,
               ),
-              label: const Text(
-                'Retry',
-                style: TextStyle(
-                  fontSize: 9,
+              label: Text(
+                l10n.retry,
+                style: const TextStyle(
+                  fontSize: AppTextStyles.bodySmall,
                 ),
               ),
               style:
-                  ElevatedButton
-                      .styleFrom(
+                  ElevatedButton.styleFrom(
                 backgroundColor:
                     primaryGreen,
                 foregroundColor:
@@ -1613,19 +1518,19 @@ const SizedBox(
   // ============================================================
 
   Widget _emptyState() {
+    final l10n = AppLocalizations.of(context)!;
+
     final hasSearchOrFilter =
         _search.trim().isNotEmpty ||
-            _selectedFilter != 'All';
+        _selectedFilter != 'ALL';
 
     return Container(
       width: double.infinity,
-      padding:
-          const EdgeInsets.symmetric(
+      padding: const EdgeInsets.symmetric(
         vertical: 45,
         horizontal: 20,
       ),
-      decoration:
-          _cardDecoration(),
+      decoration: _cardDecoration(),
       child: Column(
         children: [
           const Icon(
@@ -1633,34 +1538,30 @@ const SizedBox(
             color: textGrey,
             size: 40,
           ),
-          const SizedBox(
-            height: 10,
-          ),
+
+          const SizedBox(height: 10),
+
           Text(
             hasSearchOrFilter
-                ? 'No activities found'
-                : 'No activities recorded',
-            style:
-                const TextStyle(
+                ? l10n.noActivitiesFound
+                : l10n.noActivitiesRecorded,
+            style: const TextStyle(
               color: textDark,
-              fontSize: 11,
-              fontWeight:
-                  FontWeight.w700,
+              fontSize: AppTextStyles.bodySmall,
+              fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(
-            height: 5,
-          ),
+
+          const SizedBox(height: 5),
+
           Text(
             hasSearchOrFilter
-                ? 'Try changing your search or filter.'
-                : 'Activities added to your cashew trees will appear here.',
-            textAlign:
-                TextAlign.center,
-            style:
-                const TextStyle(
+                ? l10n.changeSearchOrFilter
+                : l10n.activitiesAppearHere,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
               color: textGrey,
-              fontSize: 8,
+              fontSize: AppTextStyles.bodySmall,
             ),
           ),
         ],
@@ -1669,43 +1570,68 @@ const SizedBox(
   }
 
   // ============================================================
+  // FILTER LABEL
+  // ============================================================
+
+  String _filterLabel(
+    BuildContext context,
+    String filter,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+
+    switch (filter.toUpperCase()) {
+      case 'ALL':
+        return l10n.all;
+
+      case 'WEEDING':
+        return l10n.weeding;
+
+      case 'PRUNING':
+        return l10n.pruning;
+
+      case 'PESTICIDE_APPLICATION':
+        return l10n.pesticide;
+
+      case 'FERTILIZER_APPLICATION':
+        return l10n.fertilizer;
+
+      case 'HARVESTING':
+        return l10n.harvesting;
+
+      case 'OTHER':
+        return l10n.other;
+
+      default:
+        return filter;
+    }
+  }
+
+  // ============================================================
   // ACTIVITY ICON
   // ============================================================
 
   IconData _activityIcon(
-    String title,
+    String activityType,
   ) {
-    final value =
-        title.toLowerCase();
+    switch (activityType.toUpperCase()) {
+      case 'WEEDING':
+        return Icons.grass_outlined;
 
-    if (value.contains('weed')) {
-      return Icons.grass_outlined;
+      case 'PESTICIDE_APPLICATION':
+        return Icons.water_drop_outlined;
+
+      case 'PRUNING':
+        return Icons.content_cut;
+
+      case 'HARVESTING':
+        return Icons.agriculture_outlined;
+
+      case 'FERTILIZER_APPLICATION':
+        return Icons.eco_outlined;
+
+      default:
+        return Icons.task_alt;
     }
-
-    if (value.contains(
-          'pesticide',
-        ) ||
-        value.contains('spray')) {
-      return Icons.water_drop_outlined;
-    }
-
-    if (value.contains('prun')) {
-      return Icons.content_cut;
-    }
-
-    if (value.contains(
-      'harvest',
-    )) {
-      return Icons.agriculture_outlined;
-    }
-
-    if (value.contains(
-      'fertil',
-    )) {
-      return Icons.eco_outlined;
-    }
-
-    return Icons.task_alt;
   }
 
   // ============================================================
@@ -1716,8 +1642,7 @@ const SizedBox(
     Map<String, dynamic> activity,
   ) {
     final code =
-        activity['treeCode']
-            ?.toString();
+        activity['treeCode']?.toString();
 
     if (code != null &&
         code.trim().isNotEmpty) {
@@ -1725,16 +1650,13 @@ const SizedBox(
     }
 
     final id =
-        activity['treeId']
-            ?.toString();
+        activity['treeId']?.toString();
 
-    if (id == null ||
-        id.isEmpty) {
+    if (id == null || id.isEmpty) {
       return '-';
     }
 
-    final number =
-        int.tryParse(id);
+    final number = int.tryParse(id);
 
     if (number == null) {
       return id;
@@ -1754,11 +1676,8 @@ const SizedBox(
       return '-';
     }
 
-    final id =
-        value.toString();
-
-    final number =
-        int.tryParse(id);
+    final id = value.toString();
+    final number = int.tryParse(id);
 
     if (number == null) {
       return id;
@@ -1778,11 +1697,8 @@ const SizedBox(
       return '-';
     }
 
-    final id =
-        value.toString();
-
-    final number =
-        int.tryParse(id);
+    final id = value.toString();
+    final number = int.tryParse(id);
 
     if (number == null) {
       return id;
@@ -1796,34 +1712,33 @@ const SizedBox(
   // ============================================================
 
   String _formatActivityType(
+    BuildContext context,
     String value,
   ) {
-    switch (value
-        .toUpperCase()) {
+    final l10n = AppLocalizations.of(context)!;
+
+    switch (value.toUpperCase()) {
       case 'WEEDING':
-        return 'Weeding';
+        return l10n.weeding;
 
       case 'PRUNING':
-        return 'Pruning';
+        return l10n.pruning;
 
       case 'PESTICIDE_APPLICATION':
-        return 'Pesticide Application';
+        return l10n.pesticideApplication;
 
       case 'FERTILIZER_APPLICATION':
-        return 'Fertilizer Application';
+        return l10n.fertilizerApplication;
 
       case 'HARVESTING':
-        return 'Harvesting';
+        return l10n.harvesting;
 
       case 'OTHER':
-        return 'Other';
+        return l10n.other;
 
       default:
         return _capitalizeWords(
-          value.replaceAll(
-            '_',
-            ' ',
-          ),
+          value.replaceAll('_', ' '),
         );
     }
   }
@@ -1833,18 +1748,33 @@ const SizedBox(
   // ============================================================
 
   String _formatStatus(
+    BuildContext context,
     String value,
   ) {
-    if (value.isEmpty) {
-      return '-';
-    }
+    final l10n = AppLocalizations.of(context)!;
 
-    return _capitalizeWords(
-      value.replaceAll(
-        '_',
-        ' ',
-      ),
-    );
+    switch (value.toUpperCase()) {
+      case 'PLANNED':
+        return l10n.planned;
+
+      case 'IN_PROGRESS':
+        return l10n.inProgress;
+
+      case 'COMPLETED':
+        return l10n.completed;
+
+      case 'CANCELLED':
+        return l10n.cancelled;
+
+      default:
+        if (value.isEmpty) {
+          return '-';
+        }
+
+        return _capitalizeWords(
+          value.replaceAll('_', ' '),
+        );
+    }
   }
 
   String _capitalizeWords(
@@ -1854,8 +1784,7 @@ const SizedBox(
         .toLowerCase()
         .split(' ')
         .where(
-          (word) =>
-              word.isNotEmpty,
+          (word) => word.isNotEmpty,
         )
         .map(
           (word) =>
@@ -1870,6 +1799,7 @@ const SizedBox(
   // ============================================================
 
   String _formatDate(
+    BuildContext context,
     String? value,
   ) {
     if (value == null ||
@@ -1884,24 +1814,21 @@ const SizedBox(
       return value;
     }
 
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
+    final locale =
+        Localizations.localeOf(context)
+            .languageCode;
 
-    return '${date.day.toString().padLeft(2, '0')} '
-        '${months[date.month - 1]} '
-        '${date.year}';
+    try {
+      return DateFormat(
+        'dd MMM yyyy',
+        locale,
+      ).format(date);
+    } catch (_) {
+      return DateFormat(
+        'dd MMM yyyy',
+        'en',
+      ).format(date);
+    }
   }
 
   // ============================================================
@@ -1909,20 +1836,19 @@ const SizedBox(
   // ============================================================
 
   Color _statusColor(
-    String status,
+    String rawStatus,
   ) {
-    switch (status
-        .toLowerCase()) {
-      case 'completed':
+    switch (rawStatus.toUpperCase()) {
+      case 'COMPLETED':
         return primaryGreen;
 
-      case 'planned':
+      case 'PLANNED':
         return Colors.blue;
 
-      case 'in progress':
+      case 'IN_PROGRESS':
         return Colors.orange;
 
-      case 'cancelled':
+      case 'CANCELLED':
         return Colors.red;
 
       default:
@@ -1931,28 +1857,24 @@ const SizedBox(
   }
 
   Color _statusBackground(
-    String status,
+    String rawStatus,
   ) {
-    switch (status
-        .toLowerCase()) {
-      case 'completed':
+    switch (rawStatus.toUpperCase()) {
+      case 'COMPLETED':
         return lightGreen;
 
-      case 'planned':
-        return Colors.blue
-            .withValues(
+      case 'PLANNED':
+        return Colors.blue.withValues(
           alpha: 0.10,
         );
 
-      case 'in progress':
-        return Colors.orange
-            .withValues(
+      case 'IN_PROGRESS':
+        return Colors.orange.withValues(
           alpha: 0.10,
         );
 
-      case 'cancelled':
-        return Colors.red
-            .withValues(
+      case 'CANCELLED':
+        return Colors.red.withValues(
           alpha: 0.10,
         );
 

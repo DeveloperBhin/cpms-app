@@ -23,7 +23,7 @@ class FarmApiServices {
 
 static Future<Map<String, dynamic>> createFarm({
   required String name,
-  required int farmerId,
+  // required int farmerId,
   required double acreage,
   required String plantingDate,
   required String farmType,
@@ -46,7 +46,7 @@ static Future<Map<String, dynamic>> createFarm({
 
   final requestBody = {
     'name': name,
-    'farmerId': farmerId,
+    // 'farmerId': farmerId,
     'acreage': acreage,
     'plantingDate': plantingDate,
     'farmType': farmType,

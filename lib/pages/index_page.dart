@@ -1,20 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../l10n/app_localizations.dart';
+import '../providers/language_provider.dart';
+
+import '../services/api_services/api_services.dart';
 import '../services/api_services/farm_api_services.dart';
 import '../services/api_services/tree_api_services.dart';
 import '../services/api_services/tree_activity_api_services.dart';
 import '../services/api_services/farm_harvest_api_services.dart';
+import '../theme/app_text_styles.dart';
 
 class IndexPage extends StatefulWidget {
-  const IndexPage({super.key});
+  const IndexPage({
+    super.key,
+  });
 
-  @override
-  State<IndexPage> createState() => _IndexPageState();
+@override
+State<IndexPage> createState() =>
+    IndexPageState();
 }
 
-class _IndexPageState extends State<IndexPage> {
-  int _currentIndex = 0;
-
+class IndexPageState extends State<IndexPage>  {
   // ============================================================
   // COLORS
   // ============================================================
@@ -37,6 +44,8 @@ class _IndexPageState extends State<IndexPage> {
   // ============================================================
   // REAL API DATA
   // ============================================================
+
+  Map<String, dynamic>? _currentUser;
 
   List<Map<String, dynamic>> _farms = [];
 
@@ -62,6 +71,110 @@ class _IndexPageState extends State<IndexPage> {
   }
 
   // ============================================================
+  // CURRENT USER NAME
+  // ============================================================
+
+  String get _userName {
+    final fullName =
+        _currentUser?['fullName']
+            ?.toString()
+            .trim();
+
+    if (fullName != null &&
+        fullName.isNotEmpty) {
+      return _capitalizeName(fullName);
+    }
+
+    final username =
+        _currentUser?['username']
+            ?.toString()
+            .trim();
+
+    if (username != null &&
+        username.isNotEmpty) {
+      return _capitalizeName(username);
+    }
+
+    return 'User';
+  }
+
+  String _capitalizeName(
+    String name,
+  ) {
+    return name
+        .split(' ')
+        .where(
+          (word) =>
+              word.trim().isNotEmpty,
+        )
+        .map(
+          (word) {
+            if (word.length == 1) {
+              return word.toUpperCase();
+            }
+
+            return '${word[0].toUpperCase()}'
+                '${word.substring(1).toLowerCase()}';
+          },
+        )
+        .join(' ');
+  }
+
+  // ============================================================
+  // GREETING
+  // ============================================================
+
+  String _greeting(
+    BuildContext context,
+  ) {
+    final l10n =
+        AppLocalizations.of(context)!;
+
+    final hour =
+        DateTime.now().hour;
+
+    if (hour < 12) {
+      return l10n.goodMorning;
+    }
+
+    if (hour < 17) {
+      return l10n.goodAfternoon;
+    }
+
+    return l10n.goodEvening;
+  }
+
+  // ============================================================
+  // PROFILE
+  // ============================================================
+
+  void _openProfile() {
+    debugPrint(
+      'OPEN PROFILE',
+    );
+
+    // TODO:
+    // Navigate to profile page.
+  }
+
+  // ============================================================
+  // MORE
+  // ============================================================
+
+  void _openMoreMenu() {
+    debugPrint(
+      'OPEN MORE',
+    );
+
+    // TODO:
+    // Navigate to More page.
+  }
+
+  Future<void> refreshDashboard() async {
+  await _loadDashboard();
+}
+
+  // ============================================================
   // LOAD DASHBOARD DATA
   // ============================================================
 
@@ -74,31 +187,56 @@ class _IndexPageState extends State<IndexPage> {
     }
 
     try {
-      // --------------------------------------------------------
+      // ========================================================
+      // CURRENT USER
+      // GET /api/v1/auth/me
+      // ========================================================
+
+      Map<String, dynamic>?
+          currentUser;
+
+      try {
+        currentUser =
+            await ApiServices
+                .getCurrentUser();
+
+        debugPrint(
+          'CURRENT USER: '
+          '$currentUser',
+        );
+      } catch (e) {
+        debugPrint(
+          'CURRENT USER ERROR: $e',
+        );
+      }
+
+      // ========================================================
       // FARMS
-      // --------------------------------------------------------
+      // ========================================================
 
       final farms =
-          await FarmApiServices.getMyFarms();
+          await FarmApiServices
+              .getMyFarms();
 
-      // --------------------------------------------------------
+      // ========================================================
       // TREES
-      // --------------------------------------------------------
+      // ========================================================
 
       final trees =
-          await TreeApiServices.getMyTrees();
+          await TreeApiServices
+              .getMyTrees();
 
-      // --------------------------------------------------------
+      // ========================================================
       // TREE ACTIVITIES
-      // --------------------------------------------------------
+      // ========================================================
 
       final activities =
           await TreeActivityApiServices
               .getMyActivities();
 
-      // --------------------------------------------------------
+      // ========================================================
       // FARM HARVESTS
-      // --------------------------------------------------------
+      // ========================================================
 
       List<Map<String, dynamic>>
           farmHarvests = [];
@@ -108,9 +246,6 @@ class _IndexPageState extends State<IndexPage> {
             await FarmHarvestApiServices
                 .getMyHarvests();
       } catch (e) {
-        // Do not destroy the entire dashboard
-        // if farm harvest API is temporarily
-        // unavailable.
         debugPrint(
           'DASHBOARD FARM HARVEST ERROR: $e',
         );
@@ -121,12 +256,23 @@ class _IndexPageState extends State<IndexPage> {
       }
 
       setState(() {
-        _farms = farms;
-        _trees = trees;
-        _activities = activities;
-        _farmHarvests = farmHarvests;
+        _currentUser =
+            currentUser;
 
-        _isLoading = false;
+        _farms =
+            farms;
+
+        _trees =
+            trees;
+
+        _activities =
+            activities;
+
+        _farmHarvests =
+            farmHarvests;
+
+        _isLoading =
+            false;
       });
 
       debugPrint(
@@ -135,6 +281,10 @@ class _IndexPageState extends State<IndexPage> {
 
       debugPrint(
         'DASHBOARD REAL DATA',
+      );
+
+      debugPrint(
+        'USER: $_userName',
       );
 
       debugPrint(
@@ -171,17 +321,8 @@ class _IndexPageState extends State<IndexPage> {
       );
 
       debugPrint(
-        'TREE ACTIVITY COST: '
-        '$_treeActivityCost',
-      );
-
-      debugPrint(
-        'FARM HARVEST COST: '
-        '$_farmHarvestCost',
-      );
-
-      debugPrint(
-        'TOTAL COST: $_totalCost',
+        'TOTAL COST: '
+        '$_totalCost',
       );
 
       debugPrint(
@@ -197,20 +338,24 @@ class _IndexPageState extends State<IndexPage> {
       }
 
       setState(() {
-        _isLoading = false;
-        _error = e.toString();
+        _isLoading =
+            false;
+
+        _error =
+            e.toString();
       });
     }
   }
 
   // ============================================================
-  // TOTAL TREE HARVEST KG
+  // TREE HARVEST KG
   // ============================================================
 
   double get _treeHarvestedKg {
     double total = 0;
 
-    for (final activity in _activities) {
+    for (final activity
+        in _activities) {
       final activityType =
           activity['activityType']
                   ?.toString()
@@ -218,17 +363,19 @@ class _IndexPageState extends State<IndexPage> {
                   .toUpperCase() ??
               '';
 
-      if (activityType != 'HARVESTING') {
+      if (activityType !=
+          'HARVESTING') {
         continue;
       }
 
       final harvestedKg =
           double.tryParse(
-            activity['harvestedKg']
-                    ?.toString() ??
-                '0',
-          ) ??
-          0;
+                activity[
+                            'harvestedKg']
+                        ?.toString() ??
+                    '0',
+              ) ??
+              0;
 
       total += harvestedKg;
     }
@@ -237,15 +384,14 @@ class _IndexPageState extends State<IndexPage> {
   }
 
   // ============================================================
-  // TOTAL FARM HARVEST KG
+  // FARM HARVEST KG
   // ============================================================
 
   double get _farmHarvestedKg {
     double total = 0;
 
-    for (final harvest in _farmHarvests) {
-      // First use the total calculated
-      // by the backend.
+    for (final harvest
+        in _farmHarvests) {
       final totalHarvestedKg =
           double.tryParse(
         harvest['totalHarvestedKg']
@@ -253,40 +399,41 @@ class _IndexPageState extends State<IndexPage> {
             '',
       );
 
-      if (totalHarvestedKg != null) {
+      if (totalHarvestedKg !=
+          null) {
         total += totalHarvestedKg;
 
         continue;
       }
 
-      // Fallback:
-      // bucketCount × kgPerBucket
-
       final bucketCount =
           int.tryParse(
-            harvest['bucketCount']
-                    ?.toString() ??
-                '0',
-          ) ??
-          0;
+                harvest[
+                            'bucketCount']
+                        ?.toString() ??
+                    '0',
+              ) ??
+              0;
 
       final kgPerBucket =
           double.tryParse(
-            harvest['kgPerBucket']
-                    ?.toString() ??
-                '0',
-          ) ??
-          0;
+                harvest[
+                            'kgPerBucket']
+                        ?.toString() ??
+                    '0',
+              ) ??
+              0;
 
       total +=
-          bucketCount * kgPerBucket;
+          bucketCount *
+              kgPerBucket;
     }
 
     return total;
   }
 
   // ============================================================
-  // TOTAL HARVEST KG
+  // TOTAL HARVEST
   // ============================================================
 
   double get _totalHarvestedKg {
@@ -301,14 +448,15 @@ class _IndexPageState extends State<IndexPage> {
   double get _treeActivityCost {
     double total = 0;
 
-    for (final activity in _activities) {
+    for (final activity
+        in _activities) {
       final cost =
           double.tryParse(
-            activity['cost']
-                    ?.toString() ??
-                '0',
-          ) ??
-          0;
+                activity['cost']
+                        ?.toString() ??
+                    '0',
+              ) ??
+              0;
 
       total += cost;
     }
@@ -323,14 +471,15 @@ class _IndexPageState extends State<IndexPage> {
   double get _farmHarvestCost {
     double total = 0;
 
-    for (final harvest in _farmHarvests) {
+    for (final harvest
+        in _farmHarvests) {
       final cost =
           double.tryParse(
-            harvest['cost']
-                    ?.toString() ??
-                '0',
-          ) ??
-          0;
+                harvest['cost']
+                        ?.toString() ??
+                    '0',
+              ) ??
+              0;
 
       total += cost;
     }
@@ -362,46 +511,51 @@ class _IndexPageState extends State<IndexPage> {
 
   List<Map<String, dynamic>>
       get _upcomingActivityList {
-    final now = DateTime.now();
+    final now =
+        DateTime.now();
+
+    final today =
+        DateTime(
+      now.year,
+      now.month,
+      now.day,
+    );
 
     final upcoming =
-        _activities.where((activity) {
-      final status =
-          activity['status']
-                  ?.toString()
-                  .toUpperCase() ??
-              '';
+        _activities.where(
+      (activity) {
+        final status =
+            activity['status']
+                    ?.toString()
+                    .trim()
+                    .toUpperCase() ??
+                '';
 
-      final date =
-          DateTime.tryParse(
-        activity['activityDate']
-                ?.toString() ??
-            '',
-      );
+        final date =
+            DateTime.tryParse(
+          activity[
+                      'activityDate']
+                  ?.toString() ??
+              '',
+        );
 
-      if (date == null) {
-        return false;
-      }
+        if (date == null) {
+          return false;
+        }
 
-      final today =
-          DateTime(
-        now.year,
-        now.month,
-        now.day,
-      );
+        final activityDay =
+            DateTime(
+          date.year,
+          date.month,
+          date.day,
+        );
 
-      final activityDay =
-          DateTime(
-        date.year,
-        date.month,
-        date.day,
-      );
-
-      // Planned activities should be
-      // today or in the future.
-      return status == 'PLANNED' &&
-          !activityDay.isBefore(today);
-    }).toList();
+        return status ==
+                'PLANNED' &&
+            !activityDay
+                .isBefore(today);
+      },
+    ).toList();
 
     upcoming.sort(
       (a, b) {
@@ -421,11 +575,15 @@ class _IndexPageState extends State<IndexPage> {
                 ) ??
                 DateTime(2100);
 
-        return aDate.compareTo(bDate);
+        return aDate.compareTo(
+          bDate,
+        );
       },
     );
 
-    return upcoming.take(3).toList();
+    return upcoming
+        .take(3)
+        .toList();
   }
 
   // ============================================================
@@ -435,11 +593,14 @@ class _IndexPageState extends State<IndexPage> {
   String _formatKg(
     double value,
   ) {
-    if (value == value.roundToDouble()) {
-      return value.toStringAsFixed(0);
+    if (value ==
+        value.roundToDouble()) {
+      return value
+          .toStringAsFixed(0);
     }
 
-    return value.toStringAsFixed(1);
+    return value
+        .toStringAsFixed(1);
   }
 
   // ============================================================
@@ -464,35 +625,45 @@ class _IndexPageState extends State<IndexPage> {
   }
 
   // ============================================================
-  // FORMAT ACTIVITY TYPE
+  // FORMAT ACTIVITY TYPE - LOCALIZED
   // ============================================================
 
   String _formatActivityType(
+    BuildContext context,
     dynamic value,
   ) {
+    final l10n =
+        AppLocalizations.of(context)!;
+
     final raw =
         value
-            ?.toString()
-            .trim() ??
-        '';
+                ?.toString()
+                .trim()
+                .toUpperCase() ??
+            '';
 
-    if (raw.isEmpty) {
-      return 'Activity';
+    switch (raw) {
+      case 'WEEDING':
+        return l10n.weeding;
+
+      case 'PRUNING':
+        return l10n.pruning;
+
+      case 'PESTICIDE_APPLICATION':
+        return l10n.pesticideApplication;
+
+      case 'FERTILIZER_APPLICATION':
+        return l10n.fertilizerApplication;
+
+      case 'HARVESTING':
+        return l10n.harvesting;
+
+      case 'OTHER':
+        return l10n.other;
+
+      default:
+        return l10n.activity;
     }
-
-    return raw
-        .split('_')
-        .map(
-          (word) {
-            if (word.isEmpty) {
-              return '';
-            }
-
-            return '${word[0].toUpperCase()}'
-                '${word.substring(1).toLowerCase()}';
-          },
-        )
-        .join(' ');
   }
 
   // ============================================================
@@ -531,40 +702,6 @@ class _IndexPageState extends State<IndexPage> {
   }
 
   // ============================================================
-  // NAVIGATION
-  // ============================================================
-
-  void _onNavigationTapped(
-    int index,
-  ) {
-    setState(() {
-      _currentIndex = index;
-    });
-
-    switch (index) {
-      case 0:
-        // Home
-        break;
-
-      case 1:
-        // Farms
-        break;
-
-      case 2:
-        // Trees
-        break;
-
-      case 3:
-        // Tasks / Activities
-        break;
-
-      case 4:
-        // More
-        break;
-    }
-  }
-
-  // ============================================================
   // BUILD
   // ============================================================
 
@@ -572,71 +709,42 @@ class _IndexPageState extends State<IndexPage> {
   Widget build(
     BuildContext context,
   ) {
+    final l10n =
+        AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor:
           backgroundColor,
 
       body: SafeArea(
         bottom: false,
+
         child: Column(
           children: [
             // ==================================================
-            // DASHBOARD HEADER
+            // GREEN USER HEADER
             // ==================================================
 
-            Container(
-              width:
-                  double.infinity,
-              height: 52,
-              padding:
-                  const EdgeInsets
-                      .symmetric(
-                horizontal: 14,
-              ),
-              decoration:
-                  const BoxDecoration(
-                color: primaryGreen,
-                borderRadius:
-                    BorderRadius.only(
-                  bottomLeft:
-                      Radius.circular(
-                    18,
-                  ),
-                  bottomRight:
-                      Radius.circular(
-                    18,
-                  ),
-                ),
-              ),
-              alignment:
-                  Alignment.centerLeft,
-              child:
-                  const Text(
-                'Dashboard',
-                style:
-                    TextStyle(
-                  color:
-                      Colors.white,
-                  fontSize: 14,
-                  fontWeight:
-                      FontWeight.w700,
-                ),
-              ),
-            ),
+            _dashboardHeader(),
 
             // ==================================================
-            // PAGE CONTENT
+            // DASHBOARD CONTENT
             // ==================================================
 
             Expanded(
               child:
                   RefreshIndicator(
+                color:
+                    primaryGreen,
+
                 onRefresh:
                     _loadDashboard,
+
                 child:
                     SingleChildScrollView(
                   physics:
                       const AlwaysScrollableScrollPhysics(),
+
                   padding:
                       const EdgeInsets
                           .fromLTRB(
@@ -645,23 +753,25 @@ class _IndexPageState extends State<IndexPage> {
                     12,
                     22,
                   ),
+
                   child: Column(
                     children: [
                       // ========================================
                       // ERROR
                       // ========================================
 
-                      if (_error != null)
+                      if (_error !=
+                          null)
                         _errorCard(),
 
-                      if (_error != null)
+                      if (_error !=
+                          null)
                         const SizedBox(
                           height: 14,
                         ),
 
                       // ========================================
-                      // FIRST ROW
-                      // FARMS / TREES
+                      // FARMS + TREES
                       // ========================================
 
                       Row(
@@ -670,15 +780,17 @@ class _IndexPageState extends State<IndexPage> {
                             child:
                                 _statCard(
                               title:
-                                  'Farms',
+                                  l10n.farms,
+
                               value:
                                   _isLoading
                                       ? '-'
                                       : _farms
                                           .length
                                           .toString(),
+
                               subtitle:
-                                  'registered',
+                                  l10n.registered,
                             ),
                           ),
 
@@ -690,15 +802,17 @@ class _IndexPageState extends State<IndexPage> {
                             child:
                                 _statCard(
                               title:
-                                  'Trees',
+                                  l10n.trees,
+
                               value:
                                   _isLoading
                                       ? '-'
                                       : _trees
                                           .length
                                           .toString(),
+
                               subtitle:
-                                  'registered',
+                                  l10n.registered,
                             ),
                           ),
                         ],
@@ -709,8 +823,7 @@ class _IndexPageState extends State<IndexPage> {
                       ),
 
                       // ========================================
-                      // SECOND ROW
-                      // HARVEST / COST
+                      // HARVEST + COST
                       // ========================================
 
                       Row(
@@ -719,13 +832,15 @@ class _IndexPageState extends State<IndexPage> {
                             child:
                                 _statCard(
                               title:
-                                  'Harvested',
+                                  l10n.harvested,
+
                               value:
                                   _isLoading
                                       ? '-'
                                       : '${_formatKg(_totalHarvestedKg)} kg',
+
                               subtitle:
-                                  'total harvested',
+                                  l10n.totalHarvested,
                             ),
                           ),
 
@@ -737,15 +852,17 @@ class _IndexPageState extends State<IndexPage> {
                             child:
                                 _statCard(
                               title:
-                                  'Total Cost',
+                                  l10n.totalCost,
+
                               value:
                                   _isLoading
                                       ? '-'
                                       : _formatMoney(
                                           _totalCost,
                                         ),
+
                               subtitle:
-                                  'activity costs',
+                                  l10n.activityCosts,
                             ),
                           ),
                         ],
@@ -756,8 +873,7 @@ class _IndexPageState extends State<IndexPage> {
                       ),
 
                       // ========================================
-                      // THIRD ROW
-                      // ACTIVITIES
+                      // ACTIVITIES + FARM HARVESTS
                       // ========================================
 
                       Row(
@@ -766,14 +882,16 @@ class _IndexPageState extends State<IndexPage> {
                             child:
                                 _statCard(
                               title:
-                                  'Activities',
+                                  l10n.activities,
+
                               value:
                                   _isLoading
                                       ? '-'
                                       : _totalActivities
                                           .toString(),
+
                               subtitle:
-                                  'recorded',
+                                  l10n.recorded,
                             ),
                           ),
 
@@ -785,15 +903,17 @@ class _IndexPageState extends State<IndexPage> {
                             child:
                                 _statCard(
                               title:
-                                  'Farm Harvests',
+                                  l10n.farmHarvests,
+
                               value:
                                   _isLoading
                                       ? '-'
                                       : _farmHarvests
                                           .length
                                           .toString(),
+
                               subtitle:
-                                  'recorded',
+                                  l10n.recorded,
                             ),
                           ),
                         ],
@@ -814,7 +934,7 @@ class _IndexPageState extends State<IndexPage> {
                       ),
 
                       // ========================================
-                      // UPCOMING ACTIVITIES
+                      // UPCOMING
                       // ========================================
 
                       _upcomingActivities(),
@@ -834,37 +954,442 @@ class _IndexPageState extends State<IndexPage> {
   }
 
   // ============================================================
+  // DASHBOARD HEADER
+  // ============================================================
+
+  Widget _dashboardHeader() {
+    final l10n =
+        AppLocalizations.of(context)!;
+
+    final language =
+        context.watch<LanguageProvider>();
+
+    return Container(
+      width:
+          double.infinity,
+
+      padding:
+          const EdgeInsets
+              .fromLTRB(
+        16,
+        16,
+        16,
+        18,
+      ),
+
+      decoration:
+          const BoxDecoration(
+        color:
+            primaryGreen,
+
+        borderRadius:
+            BorderRadius.only(
+          bottomLeft:
+              Radius.circular(26),
+
+          bottomRight:
+              Radius.circular(26),
+        ),
+      ),
+
+      child: Row(
+        children: [
+          // ====================================================
+          // PROFILE AVATAR
+          // ====================================================
+
+          InkWell(
+            onTap:
+                _openProfile,
+
+            borderRadius:
+                BorderRadius.circular(
+              50,
+            ),
+
+            child: Container(
+              width: 54,
+              height: 54,
+
+              decoration:
+                  BoxDecoration(
+                color:
+                    Colors.white,
+
+                shape:
+                    BoxShape.circle,
+
+                border:
+                    Border.all(
+                  color:
+                      Colors.white,
+
+                  width: 2,
+                ),
+
+                boxShadow: [
+                  BoxShadow(
+                    color:
+                        Colors.black
+                            .withValues(
+                      alpha: 0.10,
+                    ),
+
+                    blurRadius: 8,
+
+                    offset:
+                        const Offset(
+                      0,
+                      3,
+                    ),
+                  ),
+                ],
+              ),
+
+              child:
+                  const Icon(
+                Icons.person,
+
+                size: 34,
+
+                color:
+                    Color(
+                  0xFFBDBDBD,
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(
+            width: 13,
+          ),
+
+          // ====================================================
+          // GREETING + USER NAME
+          // ====================================================
+
+          Expanded(
+            child: Column(
+              mainAxisAlignment:
+                  MainAxisAlignment
+                      .center,
+
+              crossAxisAlignment:
+                  CrossAxisAlignment
+                      .start,
+
+              children: [
+                Text(
+                  _greeting(
+                    context,
+                  ),
+
+                  maxLines: 1,
+
+                  overflow:
+                      TextOverflow
+                          .ellipsis,
+
+                  style:
+                      TextStyle(
+                    color:
+                        Colors.white
+                            .withValues(
+                      alpha: 0.85,
+                    ),
+
+  fontSize: AppTextStyles.body,
+
+                    fontWeight:
+                        FontWeight
+                            .w400,
+                  ),
+                ),
+
+                const SizedBox(
+                  height: 3,
+                ),
+
+                Text(
+                  _userName,
+
+                  maxLines: 1,
+
+                  overflow:
+                      TextOverflow
+                          .ellipsis,
+
+                  style:
+                      const TextStyle(
+                    color:
+                        Colors.white,
+
+                    fontSize: AppTextStyles.body,
+
+                    fontWeight:
+                        FontWeight
+                            .w800,
+
+                    height: 1.1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(
+            width: 8,
+          ),
+
+          // ====================================================
+          // LANGUAGE
+          // ====================================================
+
+          PopupMenuButton<String>(
+            tooltip:
+                l10n.changeLanguage,
+
+            offset:
+                const Offset(
+              0,
+              50,
+            ),
+
+            color:
+                Colors.white,
+
+            shape:
+                RoundedRectangleBorder(
+              borderRadius:
+                  BorderRadius.circular(
+                14,
+              ),
+            ),
+
+            onSelected:
+                (languageCode) async {
+              await context
+                  .read<
+                      LanguageProvider>()
+                  .setLanguage(
+                    languageCode,
+                  );
+            },
+
+            itemBuilder:
+                (context) => [
+              PopupMenuItem<String>(
+                value: 'sw',
+
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        l10n.swahili,
+                      ),
+                    ),
+
+                    if (language
+                            .languageCode ==
+                        'sw')
+                      const Icon(
+                        Icons.check,
+
+                        color:
+                            primaryGreen,
+
+                        size: 18,
+                      ),
+                  ],
+                ),
+              ),
+
+              PopupMenuItem<String>(
+                value: 'en',
+
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        l10n.english,
+                      ),
+                    ),
+
+                    if (language
+                            .languageCode ==
+                        'en')
+                      const Icon(
+                        Icons.check,
+
+                        color:
+                            primaryGreen,
+
+                        size: 18,
+                      ),
+                  ],
+                ),
+              ),
+            ],
+
+            child:
+                _dashboardHeaderCircle(
+              child: Text(
+                language
+                    .languageCode
+                    .toUpperCase(),
+
+                style:
+                    const TextStyle(
+                  color:
+                      Colors.white,
+
+  fontSize: AppTextStyles.bodySmall,
+
+                  fontWeight:
+                      FontWeight
+                          .w800,
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(
+            width: 10,
+          ),
+
+          // ====================================================
+          // MORE
+          // ====================================================
+
+          InkWell(
+            onTap:
+                _openMoreMenu,
+
+            borderRadius:
+                BorderRadius.circular(
+              50,
+            ),
+
+            child:
+                _dashboardHeaderCircle(
+              child:
+                  const Icon(
+                Icons.more_vert,
+
+                color:
+                    Colors.white,
+
+                size: 25,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  // HEADER CIRCLE
+  // ============================================================
+
+  Widget _dashboardHeaderCircle({
+    required Widget child,
+  }) {
+    return Container(
+      width: 45,
+      height: 45,
+
+      alignment:
+          Alignment.center,
+
+      decoration:
+          BoxDecoration(
+        color:
+            Colors.white.withValues(
+          alpha: 0.10,
+        ),
+
+        shape:
+            BoxShape.circle,
+
+        border:
+            Border.all(
+          color:
+              Colors.white.withValues(
+            alpha: 0.42,
+          ),
+
+          width: 2,
+        ),
+
+        boxShadow: [
+          BoxShadow(
+            color:
+                Colors.black
+                    .withValues(
+              alpha: 0.08,
+            ),
+
+            blurRadius: 10,
+
+            offset:
+                const Offset(
+              0,
+              4,
+            ),
+          ),
+        ],
+      ),
+
+      child: child,
+    );
+  }
+
+  // ============================================================
   // ERROR CARD
   // ============================================================
 
   Widget _errorCard() {
+    final l10n =
+        AppLocalizations.of(context)!;
+
     return Container(
-      width: double.infinity,
+      width:
+          double.infinity,
+
       padding:
           const EdgeInsets.all(
         12,
       ),
+
       decoration:
           BoxDecoration(
         color:
             Colors.red.shade50,
+
         borderRadius:
             BorderRadius.circular(
           12,
         ),
-        border: Border.all(
+
+        border:
+            Border.all(
           color:
               Colors.red.shade200,
         ),
       ),
+
       child: Row(
         crossAxisAlignment:
             CrossAxisAlignment.start,
+
         children: [
           Icon(
             Icons.error_outline,
+
             color:
                 Colors.red.shade700,
+
             size: 18,
           ),
 
@@ -875,12 +1400,16 @@ class _IndexPageState extends State<IndexPage> {
           Expanded(
             child: Text(
               _error ??
-                  'Unable to load dashboard.',
+                  l10n
+                      .unableToLoadDashboard,
+
               style:
                   TextStyle(
                 color:
                     Colors.red.shade700,
-                fontSize: 10,
+
+  fontSize: AppTextStyles.body,
+
                 fontWeight:
                     FontWeight.w500,
               ),
@@ -890,11 +1419,14 @@ class _IndexPageState extends State<IndexPage> {
           IconButton(
             onPressed:
                 _loadDashboard,
+
             visualDensity:
                 VisualDensity.compact,
+
             icon:
                 const Icon(
               Icons.refresh,
+
               size: 18,
             ),
           ),
@@ -914,39 +1446,51 @@ class _IndexPageState extends State<IndexPage> {
   }) {
     return Container(
       height: 104,
+
       padding:
-          const EdgeInsets.fromLTRB(
+          const EdgeInsets
+              .fromLTRB(
         12,
         12,
         10,
         10,
       ),
+
       decoration:
           BoxDecoration(
-        color: Colors.white,
+        color:
+            Colors.white,
+
         borderRadius:
             BorderRadius.circular(
           13,
         ),
+
         border:
             Border.all(
-          color: borderColor,
+          color:
+              borderColor,
+
           width: 1,
         ),
       ),
+
       child: Column(
         crossAxisAlignment:
             CrossAxisAlignment.start,
+
         children: [
           Row(
             children: [
               Container(
                 width: 17,
                 height: 17,
+
                 decoration:
                     const BoxDecoration(
                   color:
                       lightGreen,
+
                   shape:
                       BoxShape.circle,
                 ),
@@ -957,22 +1501,27 @@ class _IndexPageState extends State<IndexPage> {
               ),
 
               Expanded(
-                child:
-                    Text(
+                child: Text(
                   title,
+
                   maxLines: 1,
+
                   overflow:
                       TextOverflow
                           .ellipsis,
+
                   style:
                       const TextStyle(
                     color:
                         Color(
                       0xFF637168,
                     ),
-                    fontSize: 10,
+
+  fontSize: AppTextStyles.body,
+
                     fontWeight:
-                        FontWeight.w600,
+                        FontWeight
+                            .w600,
                   ),
                 ),
               ),
@@ -984,27 +1533,36 @@ class _IndexPageState extends State<IndexPage> {
           ),
 
           Expanded(
-            child:
-                Align(
+            child: Align(
               alignment:
-                  Alignment.centerLeft,
+                  Alignment
+                      .centerLeft,
+
               child:
                   FittedBox(
                 fit:
                     BoxFit.scaleDown,
+
                 alignment:
-                    Alignment.centerLeft,
-                child:
-                    Text(
+                    Alignment
+                        .centerLeft,
+
+                child: Text(
                   value,
+
                   maxLines: 1,
+
                   style:
                       const TextStyle(
                     color:
                         primaryGreen,
-                    fontSize: 20,
+
+  fontSize: AppTextStyles.bodyLarge,
+
                     fontWeight:
-                        FontWeight.w800,
+                        FontWeight
+                            .w800,
+
                     height: 1,
                   ),
                 ),
@@ -1014,16 +1572,22 @@ class _IndexPageState extends State<IndexPage> {
 
           Text(
             subtitle,
+
             maxLines: 1,
+
             overflow:
-                TextOverflow.ellipsis,
+                TextOverflow
+                    .ellipsis,
+
             style:
                 const TextStyle(
               color:
                   Color(
                 0xFF89948C,
               ),
-              fontSize: 8,
+
+  fontSize: AppTextStyles.bodySmall,
+
               fontWeight:
                   FontWeight.w400,
             ),
@@ -1038,38 +1602,52 @@ class _IndexPageState extends State<IndexPage> {
   // ============================================================
 
   Widget _productionOverview() {
+    final l10n =
+        AppLocalizations.of(context)!;
+
     return Container(
-      width: double.infinity,
+      width:
+          double.infinity,
+
       padding:
-          const EdgeInsets.fromLTRB(
-        14,
-        14,
-        14,
+          const EdgeInsets.all(
         14,
       ),
+
       decoration:
           BoxDecoration(
-        color: Colors.white,
+        color:
+            Colors.white,
+
         borderRadius:
             BorderRadius.circular(
           13,
         ),
+
         border:
             Border.all(
-          color: borderColor,
+          color:
+              borderColor,
+
           width: 1,
         ),
       ),
+
       child: Column(
         crossAxisAlignment:
             CrossAxisAlignment.start,
+
         children: [
-          const Text(
-            'Production Overview',
+          Text(
+            l10n.productionOverview,
+
             style:
-                TextStyle(
-              color: textDark,
-              fontSize: 12,
+                const TextStyle(
+              color:
+                  textDark,
+
+              fontSize: AppTextStyles.body,
+
               fontWeight:
                   FontWeight.w700,
             ),
@@ -1081,7 +1659,8 @@ class _IndexPageState extends State<IndexPage> {
 
           _productionRow(
             label:
-                'Tree Harvest',
+                l10n.treeHarvest,
+
             value:
                 '${_formatKg(_treeHarvestedKg)} kg',
           ),
@@ -1092,21 +1671,26 @@ class _IndexPageState extends State<IndexPage> {
 
           _productionRow(
             label:
-                'Farm Harvest',
+                l10n.farmHarvest,
+
             value:
                 '${_formatKg(_farmHarvestedKg)} kg',
           ),
 
           const Divider(
             height: 22,
-            color: borderColor,
+
+            color:
+                borderColor,
           ),
 
           _productionRow(
             label:
-                'Total Harvested',
+                l10n.totalHarvested,
+
             value:
                 '${_formatKg(_totalHarvestedKg)} kg',
+
             bold: true,
           ),
 
@@ -1116,11 +1700,13 @@ class _IndexPageState extends State<IndexPage> {
 
           _productionRow(
             label:
-                'Total Cost',
+                l10n.totalCost,
+
             value:
                 _formatMoney(
               _totalCost,
             ),
+
             bold: true,
           ),
         ],
@@ -1140,20 +1726,24 @@ class _IndexPageState extends State<IndexPage> {
     return Row(
       children: [
         Expanded(
-          child:
-              Text(
+          child: Text(
             label,
+
             style:
                 TextStyle(
               color:
                   const Color(
                 0xFF637168,
               ),
-              fontSize: 10,
+
+              fontSize: AppTextStyles.bodySmall,
+
               fontWeight:
                   bold
-                      ? FontWeight.w700
-                      : FontWeight.w500,
+                      ? FontWeight
+                          .w700
+                      : FontWeight
+                          .w500,
             ),
           ),
         ),
@@ -1164,15 +1754,20 @@ class _IndexPageState extends State<IndexPage> {
 
         Text(
           value,
+
           style:
               TextStyle(
             color:
                 primaryGreen,
-            fontSize: 11,
+
+            fontSize: AppTextStyles.bodySmall,
+
             fontWeight:
                 bold
-                    ? FontWeight.w800
-                    : FontWeight.w700,
+                    ? FontWeight
+                        .w800
+                    : FontWeight
+                        .w700,
           ),
         ),
       ],
@@ -1184,43 +1779,58 @@ class _IndexPageState extends State<IndexPage> {
   // ============================================================
 
   Widget _upcomingActivities() {
+    final l10n =
+        AppLocalizations.of(context)!;
+
     final upcoming =
         _upcomingActivityList;
 
     return Container(
-      width: double.infinity,
+      width:
+          double.infinity,
+
       padding:
-          const EdgeInsets.fromLTRB(
+          const EdgeInsets
+              .fromLTRB(
         14,
         14,
         14,
         15,
       ),
+
       decoration:
           BoxDecoration(
-        color: primaryGreen,
+        color:
+            primaryGreen,
+
         borderRadius:
             BorderRadius.circular(
           13,
         ),
       ),
+
       child: Column(
         crossAxisAlignment:
             CrossAxisAlignment.start,
+
         children: [
           Row(
             children: [
-              const Expanded(
-                child:
-                    Text(
-                  'Upcoming Activities',
+              Expanded(
+                child: Text(
+                  l10n
+                      .upcomingActivities,
+
                   style:
-                      TextStyle(
+                      const TextStyle(
                     color:
                         Colors.white,
-                    fontSize: 12,
+
+                    fontSize: AppTextStyles.body,
+
                     fontWeight:
-                        FontWeight.w700,
+                        FontWeight
+                            .w700,
                   ),
                 ),
               ),
@@ -1229,9 +1839,11 @@ class _IndexPageState extends State<IndexPage> {
                 const SizedBox(
                   width: 14,
                   height: 14,
+
                   child:
                       CircularProgressIndicator(
                     strokeWidth: 2,
+
                     color:
                         Colors.white,
                   ),
@@ -1245,13 +1857,17 @@ class _IndexPageState extends State<IndexPage> {
 
           if (!_isLoading &&
               upcoming.isEmpty)
-            const Text(
-              'No upcoming activities.',
+            Text(
+              l10n
+                  .noUpcomingActivities,
+
               style:
-                  TextStyle(
+                  const TextStyle(
                 color:
                     Colors.white70,
-                fontSize: 9,
+
+                fontSize: AppTextStyles.bodySmall,
+
                 fontWeight:
                     FontWeight.w500,
               ),
@@ -1259,19 +1875,19 @@ class _IndexPageState extends State<IndexPage> {
 
           if (!_isLoading)
             ...upcoming.map(
-              (activity) {
-                return Padding(
-                  padding:
-                      const EdgeInsets
-                          .only(
-                    bottom: 12,
-                  ),
-                  child:
-                      _upcomingActivityRow(
-                    activity,
-                  ),
-                );
-              },
+              (activity) =>
+                  Padding(
+                padding:
+                    const EdgeInsets
+                        .only(
+                  bottom: 12,
+                ),
+
+                child:
+                    _upcomingActivityRow(
+                  activity,
+                ),
+              ),
             ),
         ],
       ),
@@ -1283,10 +1899,12 @@ class _IndexPageState extends State<IndexPage> {
   // ============================================================
 
   Widget _upcomingActivityRow(
-    Map<String, dynamic> activity,
+    Map<String, dynamic>
+        activity,
   ) {
     final activityName =
         _formatActivityType(
+      context,
       activity['activityType'],
     );
 
@@ -1303,17 +1921,22 @@ class _IndexPageState extends State<IndexPage> {
     return Row(
       crossAxisAlignment:
           CrossAxisAlignment.start,
+
       children: [
         Container(
           width: 7,
           height: 7,
+
           margin:
               const EdgeInsets.only(
             top: 3,
           ),
+
           decoration:
               const BoxDecoration(
-            color: Colors.white,
+            color:
+                Colors.white,
+
             shape:
                 BoxShape.circle,
           ),
@@ -1326,35 +1949,44 @@ class _IndexPageState extends State<IndexPage> {
         Expanded(
           child: Column(
             crossAxisAlignment:
-                CrossAxisAlignment.start,
+                CrossAxisAlignment
+                    .start,
+
             children: [
               Text(
                 '$activityName • $date',
+
                 style:
                     const TextStyle(
                   color:
                       Colors.white,
-                  fontSize: 9,
+
+                  fontSize: AppTextStyles.bodySmall,
+
                   fontWeight:
-                      FontWeight.w600,
+                      FontWeight
+                          .w600,
                 ),
               ),
 
-              if (treeCode.isNotEmpty)
+              if (treeCode
+                  .isNotEmpty)
                 Padding(
                   padding:
                       const EdgeInsets
                           .only(
                     top: 3,
                   ),
-                  child:
-                      Text(
+
+                  child: Text(
                     treeCode,
+
                     style:
                         const TextStyle(
                       color:
                           Colors.white70,
-                      fontSize: 8,
+
+                      fontSize: AppTextStyles.bodySmall,
                     ),
                   ),
                 ),
@@ -1362,69 +1994,6 @@ class _IndexPageState extends State<IndexPage> {
           ),
         ),
       ],
-    );
-  }
-
-  // ============================================================
-  // NAVIGATION ITEM
-  // ============================================================
-
-  Widget _navigationItem({
-    required int index,
-    required IconData icon,
-    required IconData selectedIcon,
-    required String label,
-  }) {
-    final bool selected =
-        _currentIndex == index;
-
-    return Expanded(
-      child: InkWell(
-        onTap: () =>
-            _onNavigationTapped(
-          index,
-        ),
-        child: Column(
-          mainAxisAlignment:
-              MainAxisAlignment.center,
-          children: [
-            Icon(
-              selected
-                  ? selectedIcon
-                  : icon,
-              size: 17,
-              color:
-                  selected
-                      ? primaryGreen
-                      : const Color(
-                          0xFF9AA39D,
-                        ),
-            ),
-
-            const SizedBox(
-              height: 4,
-            ),
-
-            Text(
-              label,
-              style:
-                  TextStyle(
-                fontSize: 8,
-                fontWeight:
-                    selected
-                        ? FontWeight.w700
-                        : FontWeight.w500,
-                color:
-                    selected
-                        ? primaryGreen
-                        : const Color(
-                            0xFF9AA39D,
-                          ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

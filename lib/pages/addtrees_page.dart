@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-
+import '../theme/app_text_styles.dart';
+import '../l10n/app_localizations.dart';
 import '../services/api_services/tree_api_services.dart';
 
 class AddTreePage extends StatefulWidget {
@@ -15,33 +16,57 @@ class AddTreePage extends StatefulWidget {
   });
 
   @override
-  State<AddTreePage> createState() => _AddTreePageState();
+  State<AddTreePage> createState() =>
+      _AddTreePageState();
 }
 
 class _AddTreePageState extends State<AddTreePage> {
   final _formKey = GlobalKey<FormState>();
 
-  final _varietyController = TextEditingController();
-  final _plantingYearController = TextEditingController();
-  final _latitudeController = TextEditingController();
-  final _longitudeController = TextEditingController();
-  final _notesController = TextEditingController();
+  final _varietyController =
+      TextEditingController();
+
+  final _plantingYearController =
+      TextEditingController();
+
+  final _latitudeController =
+      TextEditingController();
+
+  final _longitudeController =
+      TextEditingController();
+
+  final _notesController =
+      TextEditingController();
 
   bool _isLoading = false;
 
-  String _status = 'Healthy';
+  // Keep backend enum values here.
+  String _status = 'HEALTHY';
 
-  static const Color primaryGreen = Color(0xFF087A2F);
-  static const Color fieldBackground = Color(0xFFEAF4EE);
-  static const Color fieldBorder = Color(0xFFD7E9DD);
-  static const Color textDark = Color(0xFF304438);
-  static const Color textGrey = Color(0xFF718078);
+  static const Color primaryGreen =
+      Color(0xFF087A2F);
 
-  final List<String> statuses = [
-     'Healthy',
-  'Diseased',
-  'Dead',
+  static const Color fieldBackground =
+      Color(0xFFEAF4EE);
+
+  static const Color fieldBorder =
+      Color(0xFFD7E9DD);
+
+  static const Color textDark =
+      Color(0xFF304438);
+
+  static const Color textGrey =
+      Color(0xFF718078);
+
+  static const List<String> statuses = [
+    'HEALTHY',
+    'DISEASED',
+    'DEAD',
   ];
+
+  // ============================================================
+  // DISPOSE
+  // ============================================================
 
   @override
   void dispose() {
@@ -59,7 +84,8 @@ class _AddTreePageState extends State<AddTreePage> {
   // ============================================================
 
   String get _farmDisplayId {
-    final id = int.tryParse(widget.farmId);
+    final id =
+        int.tryParse(widget.farmId);
 
     if (id == null) {
       return widget.farmId;
@@ -69,7 +95,8 @@ class _AddTreePageState extends State<AddTreePage> {
   }
 
   String get _blockDisplayId {
-    final id = int.tryParse(widget.blockId);
+    final id =
+        int.tryParse(widget.blockId);
 
     if (id == null) {
       return widget.blockId;
@@ -79,21 +106,57 @@ class _AddTreePageState extends State<AddTreePage> {
   }
 
   // ============================================================
+  // LOCALIZED STATUS
+  // ============================================================
+
+  String _statusLabel(
+    BuildContext context,
+    String status,
+  ) {
+    final l10n =
+        AppLocalizations.of(context)!;
+
+    switch (status.toUpperCase()) {
+      case 'HEALTHY':
+        return l10n.healthy;
+
+      case 'DISEASED':
+        return l10n.diseased;
+
+      case 'DEAD':
+        return l10n.dead;
+
+      default:
+        return status;
+    }
+  }
+
+  // ============================================================
   // SELECT PLANTING YEAR
   // ============================================================
 
   Future<void> _selectPlantingYear() async {
-    final currentYear = DateTime.now().year;
+    final l10n =
+        AppLocalizations.of(context)!;
 
-    final DateTime? date = await showDatePicker(
+    final currentYear =
+        DateTime.now().year;
+
+    final DateTime? date =
+        await showDatePicker(
       context: context,
-      initialDate: DateTime(currentYear),
-      firstDate: DateTime(1950),
-      lastDate: DateTime(currentYear),
-      helpText: 'Select planting year',
+      initialDate:
+          DateTime(currentYear),
+      firstDate:
+          DateTime(1950),
+      lastDate:
+          DateTime(currentYear),
+      helpText:
+          l10n.selectPlantingYear,
     );
 
-    if (date == null || !mounted) {
+    if (date == null ||
+        !mounted) {
       return;
     }
 
@@ -106,155 +169,202 @@ class _AddTreePageState extends State<AddTreePage> {
   // ============================================================
   // SUBMIT TREE
   // ============================================================
-Future<void> _submitTree() async {
-  if (_isLoading) {
-    return;
-  }
 
-  final valid =
-      _formKey.currentState?.validate() ?? false;
+  Future<void> _submitTree() async {
+    final l10n =
+        AppLocalizations.of(context)!;
 
-  if (!valid) {
-    return;
-  }
+    if (_isLoading) {
+      return;
+    }
 
-  final plantingYear = int.tryParse(
-    _plantingYearController.text.trim(),
-  );
+    final valid =
+        _formKey.currentState
+                ?.validate() ??
+            false;
 
-  if (plantingYear == null) {
-    _showError('Enter a valid planting year.');
-    return;
-  }
+    if (!valid) {
+      return;
+    }
 
-  final latitudeText =
-      _latitudeController.text.trim();
+    final plantingYear =
+        int.tryParse(
+      _plantingYearController.text
+          .trim(),
+    );
 
-  final longitudeText =
-      _longitudeController.text.trim();
-
-  double? latitude;
-  double? longitude;
-
-  // ============================================================
-  // LATITUDE
-  // ============================================================
-
-  if (latitudeText.isNotEmpty) {
-    latitude = double.tryParse(latitudeText);
-
-    if (latitude == null ||
-        latitude < -90 ||
-        latitude > 90) {
+    if (plantingYear == null) {
       _showError(
-        'Enter a valid latitude between -90 and 90.',
+        l10n.validPlantingYearRequired,
+      );
+      return;
+    }
+
+    final latitudeText =
+        _latitudeController.text
+            .trim();
+
+    final longitudeText =
+        _longitudeController.text
+            .trim();
+
+    double? latitude;
+    double? longitude;
+
+    // ============================================================
+    // LATITUDE
+    // ============================================================
+
+    if (latitudeText.isNotEmpty) {
+      latitude =
+          double.tryParse(
+        latitudeText,
       );
 
-      return;
+      if (latitude == null ||
+          latitude < -90 ||
+          latitude > 90) {
+        _showError(
+          l10n.validLatitudeRequired,
+        );
+        return;
+      }
     }
-  }
 
-  // ============================================================
-  // LONGITUDE
-  // ============================================================
+    // ============================================================
+    // LONGITUDE
+    // ============================================================
 
-  if (longitudeText.isNotEmpty) {
-    longitude = double.tryParse(longitudeText);
-
-    if (longitude == null ||
-        longitude < -180 ||
-        longitude > 180) {
-      _showError(
-        'Enter a valid longitude between -180 and 180.',
+    if (longitudeText.isNotEmpty) {
+      longitude =
+          double.tryParse(
+        longitudeText,
       );
 
-      return;
+      if (longitude == null ||
+          longitude < -180 ||
+          longitude > 180) {
+        _showError(
+          l10n.validLongitudeRequired,
+        );
+        return;
+      }
     }
-  }
 
-  // Require both coordinates or neither.
-  if ((latitude == null && longitude != null) ||
-      (latitude != null && longitude == null)) {
-    _showError(
-      'Enter both latitude and longitude.',
-    );
-
-    return;
-  }
-
-  setState(() {
-    _isLoading = true;
-  });
-
-  try {
-    final result =
-        await TreeApiServices.createTree(
-      farmId: widget.farmId,
-      blockId: widget.blockId,
-      variety: _varietyController.text.trim(),
-      plantingYear: plantingYear,
-      status: _status.toUpperCase(),
-      latitude: latitude,
-      longitude: longitude,
-      notes: _notesController.text.trim(),
-    );
-
-    debugPrint(
-      'TREE CREATED SUCCESSFULLY: $result',
-    );
-
-    if (!mounted) {
+    // Require both coordinates or neither.
+    if ((latitude == null &&
+            longitude != null) ||
+        (latitude != null &&
+            longitude == null)) {
+      _showError(
+        l10n.bothCoordinatesRequired,
+      );
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Tree added successfully',
-        ),
-        backgroundColor: primaryGreen,
-      ),
-    );
+    setState(() {
+      _isLoading = true;
+    });
 
-    // Return true so BlockDetailsPage can reload trees.
-    Navigator.pop(
-      context,
-      true,
-    );
-  } catch (e) {
-    if (!mounted) {
-      return;
-    }
+    try {
+      final result =
+          await TreeApiServices.createTree(
+        farmId:
+            widget.farmId,
 
-    debugPrint(
-      'CREATE TREE ERROR: $e',
-    );
+        blockId:
+            widget.blockId,
 
-    _showError(
-      e
-          .toString()
-          .replaceFirst(
-            'Exception: ',
-            '',
+        variety:
+            _varietyController.text
+                .trim(),
+
+        plantingYear:
+            plantingYear,
+
+        // Already the exact backend enum.
+        status:
+            _status,
+
+        latitude:
+            latitude,
+
+        longitude:
+            longitude,
+
+        notes:
+            _notesController.text
+                .trim(),
+      );
+
+      debugPrint(
+        'TREE CREATED SUCCESSFULLY: $result',
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n.treeAddedSuccessfully,
           ),
-    );
-  } finally {
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
+          backgroundColor:
+              primaryGreen,
+        ),
+      );
+
+      // Return true so BlockDetailsPage reloads trees.
+      Navigator.pop(
+        context,
+        true,
+      );
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      debugPrint(
+        'CREATE TREE ERROR: $e',
+      );
+
+      _showError(
+        e
+            .toString()
+            .replaceFirst(
+              'Exception: ',
+              '',
+            ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
-}
-  void _showError(String message) {
+
+  // ============================================================
+  // ERROR
+  // ============================================================
+
+  void _showError(
+    String message,
+  ) {
     if (!mounted) {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
+    ScaffoldMessenger.of(context)
+        .showSnackBar(
       SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
+        content:
+            Text(message),
+        backgroundColor:
+            Colors.red,
       ),
     );
   }
@@ -264,70 +374,108 @@ Future<void> _submitTree() async {
   // ============================================================
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
+    final l10n =
+        AppLocalizations.of(context)!;
+
     return Scaffold(
-      backgroundColor: primaryGreen,
-      resizeToAvoidBottomInset: true,
+      backgroundColor:
+          primaryGreen,
+
+      resizeToAvoidBottomInset:
+          true,
+
       body: SafeArea(
         bottom: false,
+
         child: Container(
-          width: double.infinity,
-          height: double.infinity,
-          decoration: const BoxDecoration(
+          width:
+              double.infinity,
+          height:
+              double.infinity,
+
+          decoration:
+              const BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(28),
-              bottomRight: Radius.circular(28),
+
+            borderRadius:
+                BorderRadius.only(
+              bottomLeft:
+                  Radius.circular(28),
+              bottomRight:
+                  Radius.circular(28),
             ),
           ),
+
           child: Column(
             children: [
               _buildHeader(),
 
               Expanded(
-                child: SingleChildScrollView(
+                child:
+                    SingleChildScrollView(
                   keyboardDismissBehavior:
                       ScrollViewKeyboardDismissBehavior
                           .onDrag,
+
                   padding:
-                      const EdgeInsets.fromLTRB(
+                      const EdgeInsets
+                          .fromLTRB(
                     18,
                     25,
                     18,
                     30,
                   ),
+
                   child: Form(
-                    key: _formKey,
+                    key:
+                        _formKey,
+
                     child: Column(
                       crossAxisAlignment:
-                          CrossAxisAlignment.start,
+                          CrossAxisAlignment
+                              .start,
+
                       children: [
                         _buildBlockInformation(),
 
-                        const SizedBox(height: 22),
+                        const SizedBox(
+                          height: 22,
+                        ),
 
                         // =======================================
                         // VARIETY
                         // =======================================
 
                         _fieldLabel(
-                          'Cashew Variety',
+                          l10n.cashewVariety,
                         ),
 
-                        const SizedBox(height: 6),
+                        const SizedBox(
+                          height: 6,
+                        ),
 
                         _buildField(
                           controller:
                               _varietyController,
-                          hint: 'Cashew variety',
+
+                          hint:
+                              l10n.cashewVarietyHint,
+
                           textInputAction:
                               TextInputAction.next,
-                          validator: (value) {
-                            if (value == null ||
+
+                          validator:
+                              (value) {
+                            if (value ==
+                                    null ||
                                 value
                                     .trim()
                                     .isEmpty) {
-                              return 'Cashew variety is required';
+                              return l10n
+                                  .cashewVarietyRequired;
                             }
 
                             return null;
@@ -341,45 +489,64 @@ Future<void> _submitTree() async {
                         // =======================================
 
                         _fieldLabel(
-                          'Planting Year',
+                          l10n.plantingYear,
                         ),
 
-                        const SizedBox(height: 6),
+                        const SizedBox(
+                          height: 6,
+                        ),
 
                         _buildField(
                           controller:
                               _plantingYearController,
-                          hint: 'Planting year',
-                          readOnly: true,
-                          onTap: _isLoading
-                              ? null
-                              : _selectPlantingYear,
+
+                          hint:
+                              l10n.plantingYearHint,
+
+                          readOnly:
+                              true,
+
+                          onTap:
+                              _isLoading
+                                  ? null
+                                  : _selectPlantingYear,
+
                           suffixIcon:
                               Icons.calendar_month_outlined,
-                          validator: (value) {
-                            if (value == null ||
+
+                          validator:
+                              (value) {
+                            if (value ==
+                                    null ||
                                 value
                                     .trim()
                                     .isEmpty) {
-                              return 'Planting year is required';
+                              return l10n
+                                  .plantingYearRequired;
                             }
 
                             final year =
                                 int.tryParse(
-                              value.trim(),
+                              value
+                                  .trim(),
                             );
 
-                            if (year == null) {
-                              return 'Invalid planting year';
+                            if (year ==
+                                null) {
+                              return l10n
+                                  .invalidPlantingYear;
                             }
 
                             final currentYear =
-                                DateTime.now().year;
+                                DateTime.now()
+                                    .year;
 
-                            if (year < 1950 ||
+                            if (year <
+                                    1950 ||
                                 year >
                                     currentYear) {
-                              return 'Enter a valid planting year';
+                              return l10n
+                                  .validPlantingYearRequired;
                             }
 
                             return null;
@@ -393,51 +560,74 @@ Future<void> _submitTree() async {
                         // =======================================
 
                         _fieldLabel(
-                          'Tree Status',
+                          l10n.treeStatus,
                         ),
 
-                        const SizedBox(height: 6),
+                        const SizedBox(
+                          height: 6,
+                        ),
 
-                        DropdownButtonFormField<String>(
-                          value: _status,
-                          isExpanded: true,
+                        DropdownButtonFormField<
+                            String>(
+                          value:
+                              _status,
+
+                          isExpanded:
+                              true,
+
                           decoration:
                               _fieldDecoration(
-                            'Tree status',
+                            l10n.treeStatusHint,
                           ),
+
                           items: statuses
                               .map(
                                 (status) =>
                                     DropdownMenuItem<
                                         String>(
-                                  value: status,
-                                  child: Text(
-                                    status,
+                                  value:
+                                      status,
+
+                                  child:
+                                      Text(
+                                    _statusLabel(
+                                      context,
+                                      status,
+                                    ),
+
                                     style:
                                         const TextStyle(
-                                      fontSize: 10,
-                                      color: textDark,
+                                    fontSize: AppTextStyles.bodySmall,
+
+                                      color:
+                                          textDark,
                                     ),
                                   ),
                                 ),
                               )
                               .toList(),
-                          onChanged: _isLoading
-                              ? null
-                              : (value) {
-                                  if (value ==
-                                      null) {
-                                    return;
-                                  }
 
-                                  setState(() {
-                                    _status =
-                                        value;
-                                  });
-                                },
+                          onChanged:
+                              _isLoading
+                                  ? null
+                                  : (value) {
+                                      if (value ==
+                                          null) {
+                                        return;
+                                      }
+
+                                      setState(
+                                        () {
+                                          _status =
+                                              value;
+                                        },
+                                      );
+                                    },
                         ),
 
-                        const SizedBox(height: 24),
+                        const SizedBox(
+                          height: 24,
+                        ),
 
                         // =======================================
                         // LOCATION
@@ -448,19 +638,24 @@ Future<void> _submitTree() async {
                             Container(
                               width: 30,
                               height: 30,
+
                               decoration:
                                   BoxDecoration(
-                                color: primaryGreen
-                                    .withOpacity(
+                                color:
+                                    primaryGreen
+                                        .withOpacity(
                                   0.10,
                                 ),
+
                                 borderRadius:
                                     BorderRadius
                                         .circular(
                                   7,
                                 ),
                               ),
-                              child: const Icon(
+
+                              child:
+                                  const Icon(
                                 Icons
                                     .location_on_outlined,
                                 color:
@@ -473,34 +668,43 @@ Future<void> _submitTree() async {
                               width: 9,
                             ),
 
-                            const Expanded(
-                              child: Column(
+                            Expanded(
+                              child:
+                                  Column(
                                 crossAxisAlignment:
                                     CrossAxisAlignment
                                         .start,
+
                                 children: [
                                   Text(
-                                    'Tree Location',
+                                    l10n.treeLocation,
+
                                     style:
-                                        TextStyle(
+                                        const TextStyle(
                                       color:
                                           primaryGreen,
-                                      fontSize: 11,
+                                      fontSize:
+                                          AppTextStyles.body,
                                       fontWeight:
                                           FontWeight
                                               .w700,
                                     ),
                                   ),
-                                  SizedBox(
-                                    height: 2,
+
+                                  const SizedBox(
+                                    height:
+                                        2,
                                   ),
+
                                   Text(
-                                    'Optional GPS coordinates for this tree.',
+                                    l10n.treeLocationDescription,
+
                                     style:
-                                        TextStyle(
+                                        const TextStyle(
                                       color:
                                           textGrey,
-                                      fontSize: 8,
+                                      fontSize:
+                                          AppTextStyles.bodySmall,
                                     ),
                                   ),
                                 ],
@@ -509,24 +713,34 @@ Future<void> _submitTree() async {
                           ],
                         ),
 
-                        const SizedBox(height: 13),
+                        const SizedBox(
+                          height: 13,
+                        ),
 
                         Row(
                           children: [
                             Expanded(
-                              child: _buildField(
+                              child:
+                                  _buildField(
                                 controller:
                                     _latitudeController,
-                                hint: 'Latitude',
+
+                                hint:
+                                    l10n.latitude,
+
                                 keyboardType:
                                     const TextInputType
                                         .numberWithOptions(
-                                  decimal: true,
-                                  signed: true,
+                                  decimal:
+                                      true,
+                                  signed:
+                                      true,
                                 ),
+
                                 textInputAction:
                                     TextInputAction
                                         .next,
+
                                 validator:
                                     _latitudeValidator,
                               ),
@@ -537,19 +751,27 @@ Future<void> _submitTree() async {
                             ),
 
                             Expanded(
-                              child: _buildField(
+                              child:
+                                  _buildField(
                                 controller:
                                     _longitudeController,
-                                hint: 'Longitude',
+
+                                hint:
+                                    l10n.longitude,
+
                                 keyboardType:
                                     const TextInputType
                                         .numberWithOptions(
-                                  decimal: true,
-                                  signed: true,
+                                  decimal:
+                                      true,
+                                  signed:
+                                      true,
                                 ),
+
                                 textInputAction:
                                     TextInputAction
                                         .next,
+
                                 validator:
                                     _longitudeValidator,
                               ),
@@ -557,87 +779,117 @@ Future<void> _submitTree() async {
                           ],
                         ),
 
-                        const SizedBox(height: 24),
+                        const SizedBox(
+                          height: 24,
+                        ),
 
                         // =======================================
                         // NOTES
                         // =======================================
 
                         _fieldLabel(
-                          'Notes',
+                          l10n.notes,
                         ),
 
-                        const SizedBox(height: 6),
+                        const SizedBox(
+                          height: 6,
+                        ),
 
                         _buildField(
                           controller:
                               _notesController,
+
                           hint:
-                              'Notes / tree description',
-                          minLines: 4,
-                          maxLines: 4,
+                              l10n.treeNotesHint,
+
+                          minLines:
+                              4,
+
+                          maxLines:
+                              4,
+
                           textInputAction:
                               TextInputAction
                                   .newline,
                         ),
 
-                        const SizedBox(height: 40),
+                        const SizedBox(
+                          height: 40,
+                        ),
 
                         // =======================================
                         // SUBMIT
                         // =======================================
 
                         SizedBox(
-                          width: double.infinity,
+                          width:
+                              double.infinity,
                           height: 46,
+
                           child:
                               ElevatedButton.icon(
                             onPressed:
                                 _isLoading
                                     ? null
                                     : _submitTree,
-                            icon: _isLoading
-                                ? const SizedBox
-                                    .shrink()
-                                : const Icon(
-                                    Icons
-                                        .park_outlined,
-                                    size: 16,
-                                  ),
-                            label: _isLoading
-                                ? const SizedBox(
-                                    width: 19,
-                                    height: 19,
-                                    child:
-                                        CircularProgressIndicator(
-                                      strokeWidth:
-                                          2,
-                                      color: Colors
-                                          .white,
-                                    ),
-                                  )
-                                : const Text(
-                                    'Add Tree',
-                                    style:
-                                        TextStyle(
-                                      fontSize: 11,
-                                      fontWeight:
-                                          FontWeight
-                                              .w700,
-                                    ),
-                                  ),
-                            style: ElevatedButton
-                                .styleFrom(
+
+                            icon:
+                                _isLoading
+                                    ? const SizedBox
+                                        .shrink()
+                                    : const Icon(
+                                        Icons
+                                            .park_outlined,
+                                        size:
+                                            16,
+                                      ),
+
+                            label:
+                                _isLoading
+                                    ? const SizedBox(
+                                        width:
+                                            19,
+                                        height:
+                                            19,
+
+                                        child:
+                                            CircularProgressIndicator(
+                                          strokeWidth:
+                                              2,
+                                          color:
+                                              Colors.white,
+                                        ),
+                                      )
+                                    : Text(
+                                        l10n.addTree,
+
+                                        style:
+                                            const TextStyle(
+                                          fontSize:
+                                              AppTextStyles.body,
+                                          fontWeight:
+                                              FontWeight.w700,
+                                        ),
+                                      ),
+
+                            style:
+                                ElevatedButton
+                                    .styleFrom(
                               backgroundColor:
                                   primaryGreen,
+
                               foregroundColor:
                                   Colors.white,
+
                               disabledBackgroundColor:
                                   primaryGreen
                                       .withOpacity(
                                 0.6,
                               ),
-                              elevation: 0,
+
+                              elevation:
+                                  0,
+
                               shape:
                                   RoundedRectangleBorder(
                                 borderRadius:
@@ -650,7 +902,9 @@ Future<void> _submitTree() async {
                           ),
                         ),
 
-                        const SizedBox(height: 20),
+                        const SizedBox(
+                          height: 20,
+                        ),
                       ],
                     ),
                   ),
@@ -668,47 +922,77 @@ Future<void> _submitTree() async {
   // ============================================================
 
   Widget _buildHeader() {
+    final l10n =
+        AppLocalizations.of(context)!;
+
     return Container(
       width: double.infinity,
       height: 52,
-      padding: const EdgeInsets.symmetric(
+
+      padding:
+          const EdgeInsets.symmetric(
         horizontal: 14,
       ),
-      decoration: const BoxDecoration(
+
+      decoration:
+          const BoxDecoration(
         color: primaryGreen,
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(18),
-          bottomRight: Radius.circular(18),
+
+        borderRadius:
+            BorderRadius.only(
+          bottomLeft:
+              Radius.circular(18),
+          bottomRight:
+              Radius.circular(18),
         ),
       ),
+
       child: Row(
         children: [
           InkWell(
-            onTap: _isLoading
-                ? null
-                : () {
-                    Navigator.pop(context);
-                  },
+            onTap:
+                _isLoading
+                    ? null
+                    : () {
+                        Navigator.pop(
+                          context,
+                        );
+                      },
+
             borderRadius:
-                BorderRadius.circular(20),
-            child: const Padding(
-              padding: EdgeInsets.all(3),
+                BorderRadius.circular(
+              20,
+            ),
+
+            child:
+                const Padding(
+              padding:
+                  EdgeInsets.all(3),
+
               child: Icon(
-                Icons.arrow_back_ios_new,
-                color: Colors.white,
+                Icons
+                    .arrow_back_ios_new,
+                color:
+                    Colors.white,
                 size: 14,
               ),
             ),
           ),
 
-          const SizedBox(width: 7),
+          const SizedBox(
+            width: 7,
+          ),
 
-          const Text(
-            'Add Tree',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
+          Text(
+            l10n.addTree,
+
+            style:
+                const TextStyle(
+              color:
+                  Colors.white,
+              fontSize: AppTextStyles.bodyLarge,
+              fontWeight:
+                  FontWeight.w700,
             ),
           ),
         ],
@@ -721,79 +1005,133 @@ Future<void> _submitTree() async {
   // ============================================================
 
   Widget _buildBlockInformation() {
+    final l10n =
+        AppLocalizations.of(context)!;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF4F9F5),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: fieldBorder,
+
+      padding:
+          const EdgeInsets.all(13),
+
+      decoration:
+          BoxDecoration(
+        color:
+            const Color(0xFFF4F9F5),
+
+        borderRadius:
+            BorderRadius.circular(8),
+
+        border:
+            Border.all(
+          color:
+              fieldBorder,
         ),
       ),
+
       child: Row(
         children: [
           Container(
             width: 39,
             height: 39,
-            decoration: BoxDecoration(
-              color: primaryGreen.withOpacity(
+
+            decoration:
+                BoxDecoration(
+              color:
+                  primaryGreen
+                      .withOpacity(
                 0.10,
               ),
+
               borderRadius:
-                  BorderRadius.circular(8),
+                  BorderRadius
+                      .circular(
+                8,
+              ),
             ),
-            child: const Icon(
+
+            child:
+                const Icon(
               Icons.grid_view_rounded,
-              color: primaryGreen,
+              color:
+                  primaryGreen,
               size: 19,
             ),
           ),
 
-          const SizedBox(width: 11),
+          const SizedBox(
+            width: 11,
+          ),
 
           Expanded(
             child: Column(
               crossAxisAlignment:
-                  CrossAxisAlignment.start,
+                  CrossAxisAlignment
+                      .start,
+
               children: [
-                const Text(
-                  'Adding tree to',
-                  style: TextStyle(
-                    color: textGrey,
-                    fontSize: 8,
+                Text(
+                  l10n.addingTreeTo,
+
+                  style:
+                      const TextStyle(
+                    color:
+                        textGrey,
+                    fontSize:
+                        AppTextStyles.bodySmall,
                   ),
                 ),
 
-                const SizedBox(height: 4),
+                const SizedBox(
+                  height: 4,
+                ),
 
                 Text(
                   widget.blockName,
-                  style: const TextStyle(
-                    color: textDark,
-                    fontSize: 11,
+
+                  style:
+                      const TextStyle(
+                    color:
+                        textDark,
+                    fontSize:
+                        AppTextStyles.body,
                     fontWeight:
-                        FontWeight.w700,
+                        FontWeight
+                            .w700,
                   ),
                 ),
 
-                const SizedBox(height: 4),
+                const SizedBox(
+                  height: 4,
+                ),
 
                 Text(
-                  'Block ID: $_blockDisplayId',
-                  style: const TextStyle(
-                    color: textGrey,
-                    fontSize: 8,
+                  '${l10n.blockId}: '
+                  '$_blockDisplayId',
+
+                  style:
+                      const TextStyle(
+                    color:
+                        textGrey,
+                    fontSize:
+                        AppTextStyles.bodySmall,
                   ),
                 ),
 
-                const SizedBox(height: 2),
+                const SizedBox(
+                  height: 2,
+                ),
 
                 Text(
-                  'Farm ID: $_farmDisplayId',
-                  style: const TextStyle(
-                    color: textGrey,
-                    fontSize: 8,
+                  '${l10n.farmId}: '
+                  '$_farmDisplayId',
+
+                  style:
+                      const TextStyle(
+                    color:
+                        textGrey,
+                    fontSize:
+                        AppTextStyles.bodySmall,
                   ),
                 ),
               ],
@@ -817,12 +1155,17 @@ Future<void> _submitTree() async {
     }
 
     final latitude =
-        double.tryParse(value.trim());
+        double.tryParse(
+      value.trim(),
+    );
 
     if (latitude == null ||
         latitude < -90 ||
         latitude > 90) {
-      return 'Invalid latitude';
+      return AppLocalizations.of(
+        context,
+      )!
+          .invalidLatitude;
     }
 
     return null;
@@ -837,12 +1180,17 @@ Future<void> _submitTree() async {
     }
 
     final longitude =
-        double.tryParse(value.trim());
+        double.tryParse(
+      value.trim(),
+    );
 
     if (longitude == null ||
         longitude < -180 ||
         longitude > 180) {
-      return 'Invalid longitude';
+      return AppLocalizations.of(
+        context,
+      )!
+          .invalidLongitude;
     }
 
     return null;
@@ -857,10 +1205,13 @@ Future<void> _submitTree() async {
   ) {
     return Text(
       label,
-      style: const TextStyle(
+
+      style:
+          const TextStyle(
         color: textDark,
-        fontSize: 9,
-        fontWeight: FontWeight.w600,
+        fontSize: AppTextStyles.bodySmall,
+        fontWeight:
+            FontWeight.w600,
       ),
     );
   }
@@ -870,110 +1221,184 @@ Future<void> _submitTree() async {
   // ============================================================
 
   Widget _buildField({
-    required TextEditingController controller,
+    required TextEditingController
+        controller,
     required String hint,
     TextInputType? keyboardType,
-    String? Function(String?)? validator,
+    String? Function(String?)?
+        validator,
     bool readOnly = false,
     VoidCallback? onTap,
     int minLines = 1,
     int maxLines = 1,
-    TextInputAction? textInputAction,
+    TextInputAction?
+        textInputAction,
     IconData? suffixIcon,
   }) {
     return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      validator: validator,
-      readOnly: readOnly,
-      onTap: onTap,
-      minLines: minLines,
-      maxLines: maxLines,
-      textInputAction: textInputAction,
-      enabled: !_isLoading,
-      style: const TextStyle(
-        fontSize: 11,
+      controller:
+          controller,
+
+      keyboardType:
+          keyboardType,
+
+      validator:
+          validator,
+
+      readOnly:
+          readOnly,
+
+      onTap:
+          onTap,
+
+      minLines:
+          minLines,
+
+      maxLines:
+          maxLines,
+
+      textInputAction:
+          textInputAction,
+
+      enabled:
+          !_isLoading,
+
+      style:
+          const TextStyle(
+        fontSize: AppTextStyles.body,
         color: textDark,
       ),
-      decoration: _fieldDecoration(
+
+      decoration:
+          _fieldDecoration(
         hint,
       ).copyWith(
         contentPadding:
             EdgeInsets.symmetric(
           horizontal: 13,
           vertical:
-              maxLines > 1 ? 15 : 14,
+              maxLines > 1
+                  ? 15
+                  : 14,
         ),
-        suffixIcon: suffixIcon == null
-            ? null
-            : Icon(
-                suffixIcon,
-                size: 17,
-                color: textGrey,
-              ),
+
+        suffixIcon:
+            suffixIcon == null
+                ? null
+                : Icon(
+                    suffixIcon,
+                    size: 17,
+                    color:
+                        textGrey,
+                  ),
       ),
     );
   }
+
+  // ============================================================
+  // FIELD DECORATION
+  // ============================================================
 
   InputDecoration _fieldDecoration(
     String hint,
   ) {
     return InputDecoration(
-      hintText: hint,
-      hintStyle: TextStyle(
-        fontSize: 10,
-        color: Colors.grey.shade500,
+      hintText:
+          hint,
+
+      hintStyle:
+          TextStyle(
+        fontSize: AppTextStyles.bodySmall,
+        color:
+            Colors.grey.shade500,
       ),
-      filled: true,
-      fillColor: fieldBackground,
-      isDense: true,
+
+      filled:
+          true,
+
+      fillColor:
+          fieldBackground,
+
+      isDense:
+          true,
+
       contentPadding:
           const EdgeInsets.symmetric(
         horizontal: 13,
         vertical: 14,
       ),
-      enabledBorder: OutlineInputBorder(
+
+      enabledBorder:
+          OutlineInputBorder(
         borderRadius:
             BorderRadius.circular(8),
-        borderSide: const BorderSide(
-          color: fieldBorder,
+
+        borderSide:
+            const BorderSide(
+          color:
+              fieldBorder,
         ),
       ),
-      disabledBorder: OutlineInputBorder(
+
+      disabledBorder:
+          OutlineInputBorder(
         borderRadius:
             BorderRadius.circular(8),
-        borderSide: const BorderSide(
-          color: fieldBorder,
+
+        borderSide:
+            const BorderSide(
+          color:
+              fieldBorder,
         ),
       ),
-      focusedBorder: OutlineInputBorder(
+
+      focusedBorder:
+          OutlineInputBorder(
         borderRadius:
             BorderRadius.circular(8),
-        borderSide: const BorderSide(
-          color: primaryGreen,
+
+        borderSide:
+            const BorderSide(
+          color:
+              primaryGreen,
           width: 1.2,
         ),
       ),
-      errorBorder: OutlineInputBorder(
+
+      errorBorder:
+          OutlineInputBorder(
         borderRadius:
             BorderRadius.circular(8),
-        borderSide: const BorderSide(
-          color: Colors.red,
+
+        borderSide:
+            const BorderSide(
+          color:
+              Colors.red,
         ),
       ),
+
       focusedErrorBorder:
           OutlineInputBorder(
         borderRadius:
             BorderRadius.circular(8),
-        borderSide: const BorderSide(
-          color: Colors.red,
+
+        borderSide:
+            const BorderSide(
+          color:
+              Colors.red,
         ),
       ),
-      errorStyle: const TextStyle(
-        fontSize: 9,
+
+      errorStyle:
+          const TextStyle(
+        fontSize: AppTextStyles.bodySmall,
       ),
     );
   }
+
+  // ============================================================
+  // GAP
+  // ============================================================
 
   Widget _gap() {
     return const SizedBox(

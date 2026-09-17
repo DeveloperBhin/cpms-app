@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
+
 import 'treesdetails_page.dart';
 
 import '../services/api_services/tree_api_services.dart';
 import '../services/api_services/tree_activity_api_services.dart';
 import '../services/api_services/farm_harvest_api_services.dart';
+import '../theme/app_text_styles.dart';
 
 class TreePage extends StatefulWidget {
   final VoidCallback onBack;
@@ -20,6 +23,10 @@ class TreePage extends StatefulWidget {
 }
 
 class _TreePageState extends State<TreePage> {
+  // ============================================================
+  // COLORS
+  // ============================================================
+
   static const Color primaryGreen =
       Color(0xFF087A2F);
 
@@ -38,26 +45,28 @@ class _TreePageState extends State<TreePage> {
   static const Color textGrey =
       Color(0xFF718078);
 
-  final TextEditingController
-      _searchController =
+  // ============================================================
+  // CONTROLLERS
+  // ============================================================
+
+  final TextEditingController _searchController =
       TextEditingController();
 
   // ============================================================
   // DATA
   // ============================================================
 
-List<Map<String, dynamic>> trees = [];
+  List<Map<String, dynamic>> trees = [];
 
-List<Map<String, dynamic>> activities = [];
+  List<Map<String, dynamic>> activities = [];
 
-// Farm-level harvest records
-List<Map<String, dynamic>> farmHarvests = [];
+  List<Map<String, dynamic>> farmHarvests = [];
 
-String _searchText = '';
+  String _searchText = '';
 
-bool _isLoading = true;
+  bool _isLoading = true;
 
-String? _error;
+  String? _error;
 
   // ============================================================
   // INIT
@@ -82,79 +91,133 @@ String? _error;
   }
 
   // ============================================================
-  // LOAD TREES + ACTIVITIES
+  // LOAD TREES + ACTIVITIES + FARM HARVESTS
   // ============================================================
-Future<void> _loadDashboard() async {
-  if (mounted) {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-  }
 
-  try {
-    final results = await Future.wait([
-      TreeApiServices.getMyTrees(),
-      TreeActivityApiServices
-          .getMyActivities(),
-      FarmHarvestApiServices
-          .getMyHarvests(),
-    ]);
-
-    if (!mounted) {
-      return;
+  Future<void> _loadDashboard() async {
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
     }
 
-    final treeResult = results[0];
-    final activityResult = results[1];
-    final harvestResult = results[2];
+    try {
+      /*
+       * Keep farm harvest isolated.
+       *
+       * This prevents a farm-harvest endpoint problem from
+       * stopping the entire Trees page from loading.
+       */
 
-    setState(() {
-      trees = treeResult;
-      activities = activityResult;
-      farmHarvests = harvestResult;
+      final treeFuture =
+          TreeApiServices.getMyTrees();
 
-      _isLoading = false;
-    });
+      final activityFuture =
+          TreeActivityApiServices.getMyActivities();
 
-    debugPrint(
-      'TREES: ${trees.length}',
-    );
+      final treeResult =
+          await treeFuture;
 
-    debugPrint(
-      'TREE ACTIVITIES: '
-      '${activities.length}',
-    );
+      final activityResult =
+          await activityFuture;
 
-    debugPrint(
-      'FARM HARVESTS: '
-      '${farmHarvests.length}',
-    );
+      List<Map<String, dynamic>>
+          harvestResult = [];
 
-    debugPrint(
-      'TOTAL HARVESTED: '
-      '$totalHarvestedKg KG',
-    );
+      try {
+        harvestResult =
+            await FarmHarvestApiServices
+                .getMyHarvests();
+      } catch (e) {
+        debugPrint(
+          'FARM HARVEST LOAD ERROR: $e',
+        );
+      }
 
-    debugPrint(
-      'TOTAL COST: '
-      '$totalCost',
-    );
-  } catch (e) {
-    debugPrint(
-      'LOAD DASHBOARD ERROR: $e',
-    );
+      if (!mounted) {
+        return;
+      }
 
-    if (!mounted) {
-      return;
+      setState(() {
+        trees = treeResult;
+
+        activities = activityResult;
+
+        farmHarvests = harvestResult;
+
+        _isLoading = false;
+      });
+
+      debugPrint(
+        '================================',
+      );
+
+      debugPrint(
+        'TREES: ${trees.length}',
+      );
+
+      debugPrint(
+        'TREE ACTIVITIES: '
+        '${activities.length}',
+      );
+
+      debugPrint(
+        'FARM HARVESTS: '
+        '${farmHarvests.length}',
+      );
+
+      debugPrint(
+        'TREE HARVESTED: '
+        '$totalTreeHarvestedKg KG',
+      );
+
+      debugPrint(
+        'FARM HARVESTED: '
+        '$totalFarmHarvestedKg KG',
+      );
+
+      debugPrint(
+        'TOTAL HARVESTED: '
+        '$totalHarvestedKg KG',
+      );
+
+      debugPrint(
+        'TREE ACTIVITY COST: '
+        '$totalTreeActivityCost',
+      );
+
+      debugPrint(
+        'FARM HARVEST COST: '
+        '$totalFarmHarvestCost',
+      );
+
+      debugPrint(
+        'TOTAL COST: '
+        '$totalCost',
+      );
+
+      debugPrint(
+        '================================',
+      );
+    } catch (e) {
+      debugPrint(
+        'LOAD DASHBOARD ERROR: $e',
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isLoading = false;
+
+        _error =
+            e.toString();
+      });
     }
-
-    setState(() {
-      _isLoading = false;
-      _error = e.toString();
-    });
   }
-}
+
   // ============================================================
   // FILTER TREES
   // ============================================================
@@ -166,182 +229,219 @@ Future<void> _loadDashboard() async {
     }
 
     final query =
-        _searchText.toLowerCase().trim();
+        _searchText
+            .toLowerCase()
+            .trim();
 
-    return trees.where((tree) {
-      final id =
-          tree['id']
-                  ?.toString()
-                  .toLowerCase() ??
-              '';
+    return trees.where(
+      (tree) {
+        final id =
+            tree['id']
+                    ?.toString()
+                    .toLowerCase() ??
+                '';
 
-      final treeCode =
-          tree['treeCode']
-                  ?.toString()
-                  .toLowerCase() ??
-              '';
+        final treeCode =
+            tree['treeCode']
+                    ?.toString()
+                    .toLowerCase() ??
+                '';
 
-      final farmName =
-          tree['farmName']
-                  ?.toString()
-                  .toLowerCase() ??
-              '';
+        final farmName =
+            tree['farmName']
+                    ?.toString()
+                    .toLowerCase() ??
+                '';
 
-      final blockName =
-          tree['blockName']
-                  ?.toString()
-                  .toLowerCase() ??
-              '';
+        final blockName =
+            tree['blockName']
+                    ?.toString()
+                    .toLowerCase() ??
+                '';
 
-      final variety =
-          tree['variety']
-                  ?.toString()
-                  .toLowerCase() ??
-              '';
+        final variety =
+            tree['variety']
+                    ?.toString()
+                    .toLowerCase() ??
+                '';
 
-      final status =
-          tree['status']
-                  ?.toString()
-                  .toLowerCase() ??
-              '';
+        final status =
+            tree['status']
+                    ?.toString()
+                    .toLowerCase() ??
+                '';
 
-      final plantingYear =
-          tree['plantingYear']
-                  ?.toString()
-                  .toLowerCase() ??
-              '';
+        final plantingYear =
+            tree['plantingYear']
+                    ?.toString()
+                    .toLowerCase() ??
+                '';
 
-      return id.contains(query) ||
-          treeCode.contains(query) ||
-          farmName.contains(query) ||
-          blockName.contains(query) ||
-          variety.contains(query) ||
-          status.contains(query) ||
-          plantingYear.contains(query);
-    }).toList();
+        return id.contains(query) ||
+            treeCode.contains(query) ||
+            farmName.contains(query) ||
+            blockName.contains(query) ||
+            variety.contains(query) ||
+            status.contains(query) ||
+            plantingYear.contains(query);
+      },
+    ).toList();
   }
 
   // ============================================================
-  // DASHBOARD STATISTICS
+  // TOTAL ACTIVITIES
   // ============================================================
 
   int get totalActivities {
     return activities.length;
   }
 
+  // ============================================================
+  // TREE HARVEST
+  // ============================================================
+
   double get totalTreeHarvestedKg {
-  double total = 0;
+    double total = 0;
 
-  for (final activity in activities) {
-    final type =
-        activity['activityType']
-                ?.toString()
-                .toUpperCase() ??
-            '';
+    for (final activity in activities) {
+      final type =
+          activity['activityType']
+                  ?.toString()
+                  .toUpperCase() ??
+              '';
 
-    if (type != 'HARVESTING') {
-      continue;
+      if (type != 'HARVESTING') {
+        continue;
+      }
+
+      final kg =
+          double.tryParse(
+                activity['harvestedKg']
+                        ?.toString() ??
+                    '0',
+              ) ??
+              0;
+
+      total += kg;
     }
 
-    final kg =
-        double.tryParse(
-              activity['harvestedKg']
-                      ?.toString() ??
-                  '0',
-            ) ??
-            0;
-
-    total += kg;
+    return total;
   }
 
-  return total;
-}
+  // ============================================================
+  // FARM HARVEST
+  // ============================================================
 
-double get totalFarmHarvestedKg {
-  double total = 0;
+  double get totalFarmHarvestedKg {
+    double total = 0;
 
-  for (final harvest in farmHarvests) {
-    // Prefer total returned by backend.
-    final apiTotal =
-        double.tryParse(
-      harvest['totalHarvestedKg']
-              ?.toString() ??
-          '',
-    );
+    for (final harvest
+        in farmHarvests) {
+      // Prefer calculated total from backend.
 
-    if (apiTotal != null) {
-      total += apiTotal;
-      continue;
+      final apiTotal =
+          double.tryParse(
+        harvest['totalHarvestedKg']
+                ?.toString() ??
+            '',
+      );
+
+      if (apiTotal != null) {
+        total += apiTotal;
+
+        continue;
+      }
+
+      // Fallback:
+      // bucketCount * kgPerBucket.
+
+      final buckets =
+          int.tryParse(
+                harvest['bucketCount']
+                        ?.toString() ??
+                    '0',
+              ) ??
+              0;
+
+      final kgPerBucket =
+          double.tryParse(
+                harvest['kgPerBucket']
+                        ?.toString() ??
+                    '0',
+              ) ??
+              0;
+
+      total +=
+          buckets *
+              kgPerBucket;
     }
 
-    // Fallback calculation.
-    final buckets =
-        int.tryParse(
-              harvest['bucketCount']
-                      ?.toString() ??
-                  '0',
-            ) ??
-            0;
-
-    final kgPerBucket =
-        double.tryParse(
-              harvest['kgPerBucket']
-                      ?.toString() ??
-                  '0',
-            ) ??
-            0;
-
-    total += buckets * kgPerBucket;
+    return total;
   }
 
-  return total;
-}
+  // ============================================================
+  // TOTAL HARVEST
+  // ============================================================
 
-double get totalHarvestedKg {
-  return totalTreeHarvestedKg +
-      totalFarmHarvestedKg;
-}
+  double get totalHarvestedKg {
+    return totalTreeHarvestedKg +
+        totalFarmHarvestedKg;
+  }
+
+  // ============================================================
+  // TREE ACTIVITY COST
+  // ============================================================
 
   double get totalTreeActivityCost {
-  double total = 0;
+    double total = 0;
 
-  for (final activity in activities) {
-    final cost =
-        double.tryParse(
-              activity['cost']
-                      ?.toString() ??
-                  '0',
-            ) ??
-            0;
+    for (final activity
+        in activities) {
+      final cost =
+          double.tryParse(
+                activity['cost']
+                        ?.toString() ??
+                    '0',
+              ) ??
+              0;
 
-    total += cost;
+      total += cost;
+    }
+
+    return total;
   }
 
-  return total;
-}
+  // ============================================================
+  // FARM HARVEST COST
+  // ============================================================
 
-double get totalFarmHarvestCost {
-  double total = 0;
+  double get totalFarmHarvestCost {
+    double total = 0;
 
-  for (final harvest in farmHarvests) {
-    final cost =
-        double.tryParse(
-              harvest['cost']
-                      ?.toString() ??
-                  '0',
-            ) ??
-            0;
+    for (final harvest
+        in farmHarvests) {
+      final cost =
+          double.tryParse(
+                harvest['cost']
+                        ?.toString() ??
+                    '0',
+              ) ??
+              0;
 
-    total += cost;
+      total += cost;
+    }
+
+    return total;
   }
 
-  return total;
-}
+  // ============================================================
+  // TOTAL COST
+  // ============================================================
 
-double get totalCost {
-  return totalTreeActivityCost +
-      totalFarmHarvestCost;
-}
+  double get totalCost {
+    return totalTreeActivityCost +
+        totalFarmHarvestCost;
+  }
 
   // ============================================================
   // OPEN TREE
@@ -351,20 +451,26 @@ double get totalCost {
     Map<String, dynamic> tree,
   ) async {
     final farmId =
-        tree['farmId']?.toString() ?? '';
+        tree['farmId']
+                ?.toString() ??
+            '';
 
     final blockId =
-        tree['blockId']?.toString() ?? '';
+        tree['blockId']
+                ?.toString() ??
+            '';
 
     final treeId =
-        tree['id']?.toString() ?? '';
+        tree['id']
+                ?.toString() ??
+            '';
 
     if (farmId.isEmpty ||
         blockId.isEmpty ||
         treeId.isEmpty) {
       _showMessage(
-        'Unable to open this tree because '
-        'its farm, block or tree ID is missing.',
+        AppLocalizations.of(context)!
+            .unableToOpenTree,
       );
 
       return;
@@ -392,14 +498,22 @@ double get totalCost {
   // ============================================================
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
+    final l10n =
+        AppLocalizations.of(context)!;
+
     final visibleTrees =
         filteredTrees;
 
     return Scaffold(
-      backgroundColor: backgroundColor,
+      backgroundColor:
+          backgroundColor,
+
       body: SafeArea(
         bottom: false,
+
         child: Column(
           children: [
             // ==================================================
@@ -407,64 +521,113 @@ double get totalCost {
             // ==================================================
 
             Container(
-              width: double.infinity,
+              width:
+                  double.infinity,
+
               height: 55,
+
               padding:
                   const EdgeInsets.symmetric(
                 horizontal: 16,
               ),
+
               decoration:
                   const BoxDecoration(
-                color: primaryGreen,
+                color:
+                    primaryGreen,
+
                 borderRadius:
                     BorderRadius.only(
                   bottomLeft:
-                      Radius.circular(18),
+                      Radius.circular(
+                    18,
+                  ),
+
                   bottomRight:
-                      Radius.circular(18),
+                      Radius.circular(
+                    18,
+                  ),
                 ),
               ),
+
               child: Row(
                 children: [
+                  // =============================================
+                  // BACK
+                  // =============================================
+
                   InkWell(
-                    onTap: widget.onBack,
+                    onTap:
+                        widget.onBack,
+
                     borderRadius:
                         BorderRadius.circular(
                       20,
                     ),
-                    child: const Padding(
+
+                    child:
+                        const Padding(
                       padding:
-                          EdgeInsets.all(3),
+                          EdgeInsets.all(
+                        3,
+                      ),
+
                       child: Icon(
                         Icons
                             .arrow_back_ios_new,
-                        color: Colors.white,
+
+                        color:
+                            Colors.white,
+
                         size: 14,
                       ),
                     ),
                   ),
 
-                  const SizedBox(width: 8),
+                  const SizedBox(
+                    width: 8,
+                  ),
 
-                  const Expanded(
+                  // =============================================
+                  // TITLE
+                  // =============================================
+
+                  Expanded(
                     child: Text(
-                      'Trees',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
+                      l10n.trees,
+
+                      style:
+                          const TextStyle(
+                        color:
+                            Colors.white,
+
+                        fontSize: AppTextStyles.bodyLarge,
+
                         fontWeight:
-                            FontWeight.w700,
+                            FontWeight
+                                .w700,
                       ),
                     ),
                   ),
 
+                  // =============================================
+                  // REFRESH
+                  // =============================================
+
                   IconButton(
                     onPressed:
                         _loadDashboard,
-                    tooltip: 'Refresh',
-                    icon: const Icon(
+
+                    tooltip:
+                        l10n.refresh,
+
+                    icon:
+                        const Icon(
                       Icons.refresh,
-                      color: Colors.white,
+
+                      color:
+                          Colors.white,
+
                       size: 19,
                     ),
                   ),
@@ -477,86 +640,120 @@ double get totalCost {
             // ==================================================
 
             Expanded(
-              child: RefreshIndicator(
-                color: primaryGreen,
+              child:
+                  RefreshIndicator(
+                color:
+                    primaryGreen,
+
                 onRefresh:
                     _loadDashboard,
+
                 child:
                     SingleChildScrollView(
                   physics:
                       const AlwaysScrollableScrollPhysics(),
+
                   padding:
-                      const EdgeInsets.fromLTRB(
+                      const EdgeInsets
+                          .fromLTRB(
                     13,
                     20,
                     13,
                     25,
                   ),
+
                   child: Column(
                     crossAxisAlignment:
                         CrossAxisAlignment
                             .start,
-                    children: [
-                      // ========================================
-                      // SUMMARY
-                      // ========================================
 
-                      _buildSummary(),
+                    children: [
+                      // =========================================
+                      // SUMMARY
+                      // =========================================
+
+                      _buildSummary(
+                        context,
+                      ),
 
                       const SizedBox(
                         height: 20,
                       ),
 
-                      // ========================================
+                      // =========================================
                       // SEARCH
-                      // ========================================
+                      // =========================================
 
                       Container(
                         height: 43,
+
                         decoration:
                             BoxDecoration(
-                          color: Colors.white,
+                          color:
+                              Colors.white,
+
                           borderRadius:
                               BorderRadius
-                                  .circular(9),
-                          border: Border.all(
+                                  .circular(
+                            9,
+                          ),
+
+                          border:
+                              Border.all(
                             color:
                                 borderColor,
                           ),
                         ),
-                        child: TextField(
+
+                        child:
+                            TextField(
                           controller:
                               _searchController,
-                          onChanged: (value) {
+
+                          onChanged:
+                              (value) {
                             setState(() {
                               _searchText =
                                   value;
                             });
                           },
+
                           style:
                               const TextStyle(
-                            color: textDark,
-                            fontSize: 10,
+                            color:
+                                textDark,
+
+                            fontSize: AppTextStyles.bodySmall,
                           ),
+
                           decoration:
                               InputDecoration(
                             border:
-                                InputBorder.none,
+                                InputBorder
+                                    .none,
+
                             hintText:
-                                'Search tree by code, farm, block or variety',
+                                l10n.searchTreeHint,
+
                             hintStyle:
                                 const TextStyle(
                               color:
                                   textGrey,
-                              fontSize: 9,
+
+                              fontSize:
+                                  AppTextStyles.bodySmall,
                             ),
+
                             prefixIcon:
                                 const Icon(
                               Icons.search,
+
                               color:
                                   textGrey,
+
                               size: 18,
                             ),
+
                             suffixIcon:
                                 _searchText
                                         .isNotEmpty
@@ -573,12 +770,13 @@ double get totalCost {
                                             },
                                           );
                                         },
+
                                         icon:
                                             const Icon(
-                                          Icons
-                                              .close,
-                                          size:
-                                              16,
+                                          Icons.close,
+
+                                          size: 16,
+
                                           color:
                                               textGrey,
                                         ),
@@ -592,22 +790,26 @@ double get totalCost {
                         height: 22,
                       ),
 
-                      // ========================================
+                      // =========================================
                       // REGISTERED TREES HEADER
-                      // ========================================
+                      // =========================================
 
                       Row(
                         mainAxisAlignment:
                             MainAxisAlignment
                                 .spaceBetween,
+
                         children: [
-                          const Text(
-                            'Registered Trees',
+                          Text(
+                            l10n.registeredTrees,
+
                             style:
-                                TextStyle(
+                                const TextStyle(
                               color:
                                   textDark,
-                              fontSize: 13,
+
+                              fontSize: AppTextStyles.body,
+
                               fontWeight:
                                   FontWeight
                                       .w700,
@@ -616,12 +818,18 @@ double get totalCost {
 
                           if (!_isLoading)
                             Text(
-                              '${visibleTrees.length} trees',
+                              l10n.treeCount(
+                                visibleTrees
+                                    .length,
+                              ),
+
                               style:
                                   const TextStyle(
                                 color:
                                     textGrey,
-                                fontSize: 8,
+
+                                fontSize:
+                                    AppTextStyles.bodySmall,
                               ),
                             ),
                         ],
@@ -631,11 +839,12 @@ double get totalCost {
                         height: 14,
                       ),
 
-                      // ========================================
-                      // LIST
-                      // ========================================
+                      // =========================================
+                      // TREE LIST
+                      // =========================================
 
                       _buildTreeList(
+                        context,
                         visibleTrees,
                       ),
                     ],
@@ -653,49 +862,76 @@ double get totalCost {
   // SUMMARY
   // ============================================================
 
-  Widget _buildSummary() {
+  Widget _buildSummary(
+    BuildContext context,
+  ) {
+    final l10n =
+        AppLocalizations.of(context)!;
+
     if (_isLoading) {
       return Row(
         children: [
           Expanded(
-            child: _summaryCard(
-              title: 'Total Trees',
+            child:
+                _summaryCard(
+              title:
+                  l10n.totalTrees,
+
               value: '-',
+
               icon:
                   Icons.park_outlined,
             ),
           ),
 
-          const SizedBox(width: 8),
+          const SizedBox(
+            width: 8,
+          ),
 
           Expanded(
-            child: _summaryCard(
-              title: 'Activities',
+            child:
+                _summaryCard(
+              title:
+                  l10n.activities,
+
               value: '-',
-              icon: Icons
-                  .assignment_outlined,
+
+              icon:
+                  Icons.assignment_outlined,
             ),
           ),
 
-          const SizedBox(width: 8),
+          const SizedBox(
+            width: 8,
+          ),
 
           Expanded(
-            child: _summaryCard(
-              title: 'Harvested',
+            child:
+                _summaryCard(
+              title:
+                  l10n.harvested,
+
               value: '-',
+
               icon:
                   Icons.scale_outlined,
             ),
           ),
 
-          const SizedBox(width: 8),
+          const SizedBox(
+            width: 8,
+          ),
 
           Expanded(
-            child: _summaryCard(
-              title: 'Total Cost',
+            child:
+                _summaryCard(
+              title:
+                  l10n.totalCost,
+
               value: '-',
-              icon: Icons
-                  .payments_outlined,
+
+              icon:
+                  Icons.payments_outlined,
             ),
           ),
         ],
@@ -709,61 +945,85 @@ double get totalCost {
         // ======================================================
 
         Expanded(
-          child: _summaryCard(
-            title: 'Total Trees',
+          child:
+              _summaryCard(
+            title:
+                l10n.totalTrees,
+
             value:
-                trees.length.toString(),
+                trees.length
+                    .toString(),
+
             icon:
                 Icons.park_outlined,
           ),
         ),
 
-        const SizedBox(width: 8),
+        const SizedBox(
+          width: 8,
+        ),
 
         // ======================================================
-        // TOTAL ACTIVITIES
+        // ACTIVITIES
         // ======================================================
 
         Expanded(
-          child: _summaryCard(
-            title: 'Activities',
+          child:
+              _summaryCard(
+            title:
+                l10n.activities,
+
             value:
                 totalActivities
                     .toString(),
+
             icon:
                 Icons.assignment_outlined,
           ),
         ),
 
-        const SizedBox(width: 8),
+        const SizedBox(
+          width: 8,
+        ),
 
         // ======================================================
-        // TOTAL HARVESTED KG
+        // HARVESTED
         // ======================================================
 
         Expanded(
-          child: _summaryCard(
-            title: 'Harvested',
-            value:
-                '${_formatKg(totalHarvestedKg)} kg',
+          child:
+              _summaryCard(
+            title:
+                l10n.harvested,
+
+          
+                value:
+    '${_formatKg(totalTreeHarvestedKg)} kg',
+
             icon:
                 Icons.scale_outlined,
           ),
         ),
 
-        const SizedBox(width: 8),
+        const SizedBox(
+          width: 8,
+        ),
 
         // ======================================================
-        // TOTAL ACTIVITY COST
+        // TOTAL COST
         // ======================================================
 
         Expanded(
-          child: _summaryCard(
-            title: 'Total Cost',
+          child:
+              _summaryCard(
+            title:
+                l10n.totalCost,
+
             value:
-             _formatCompactMoney(
-  totalCost,
-),
+                _formatCompactMoney(
+              totalCost,
+            ),
+
             icon:
                 Icons.payments_outlined,
           ),
@@ -777,6 +1037,7 @@ double get totalCost {
   // ============================================================
 
   Widget _buildTreeList(
+    BuildContext context,
     List<Map<String, dynamic>>
         visibleTrees,
   ) {
@@ -786,36 +1047,49 @@ double get totalCost {
             EdgeInsets.symmetric(
           vertical: 40,
         ),
+
         child: Center(
           child:
               CircularProgressIndicator(
-            color: primaryGreen,
+            color:
+                primaryGreen,
           ),
         ),
       );
     }
 
     if (_error != null) {
-      return _errorState();
+      return _errorState(
+        context,
+      );
     }
 
     if (visibleTrees.isEmpty) {
-      return _emptyState();
+      return _emptyState(
+        context,
+      );
     }
 
     return Column(
-      children: visibleTrees
-          .map(
-            (tree) => Padding(
-              padding:
-                  const EdgeInsets.only(
-                bottom: 12,
-              ),
-              child:
-                  _treeCard(tree),
-            ),
-          )
-          .toList(),
+      children:
+          visibleTrees
+              .map(
+                (tree) =>
+                    Padding(
+                  padding:
+                      const EdgeInsets
+                          .only(
+                    bottom: 12,
+                  ),
+
+                  child:
+                      _treeCard(
+                    context,
+                    tree,
+                  ),
+                ),
+              )
+              .toList(),
     );
   }
 
@@ -830,28 +1104,46 @@ double get totalCost {
   }) {
     return Container(
       height: 83,
+
       padding:
-          const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.white,
+          const EdgeInsets.all(
+        8,
+      ),
+
+      decoration:
+          BoxDecoration(
+        color:
+            Colors.white,
+
         borderRadius:
-            BorderRadius.circular(11),
-        border: Border.all(
-          color: borderColor,
+            BorderRadius.circular(
+          11,
+        ),
+
+        border:
+            Border.all(
+          color:
+              borderColor,
         ),
       ),
+
       child: Column(
         crossAxisAlignment:
             CrossAxisAlignment.start,
+
         mainAxisAlignment:
             MainAxisAlignment
                 .spaceBetween,
+
         children: [
           Row(
             children: [
               Icon(
                 icon,
-                color: primaryGreen,
+
+                color:
+                    primaryGreen,
+
                 size: 14,
               ),
 
@@ -862,13 +1154,18 @@ double get totalCost {
               Expanded(
                 child: Text(
                   title,
+
                   overflow:
                       TextOverflow
                           .ellipsis,
+
                   style:
                       const TextStyle(
-                    color: textGrey,
-                    fontSize: 6.5,
+                    color:
+                        textGrey,
+
+  fontSize: AppTextStyles.tiny,
+
                     fontWeight:
                         FontWeight
                             .w500,
@@ -879,17 +1176,25 @@ double get totalCost {
           ),
 
           FittedBox(
-            fit: BoxFit.scaleDown,
+            fit:
+                BoxFit.scaleDown,
+
             alignment:
                 Alignment.centerLeft,
+
             child: Text(
               value,
+
               style:
                   const TextStyle(
-                color: textDark,
-                fontSize: 17,
+                color:
+                    textDark,
+
+                fontSize: AppTextStyles.subtitle,
+
                 fontWeight:
-                    FontWeight.w800,
+                    FontWeight
+                        .w800,
               ),
             ),
           ),
@@ -903,10 +1208,16 @@ double get totalCost {
   // ============================================================
 
   Widget _treeCard(
+    BuildContext context,
     Map<String, dynamic> tree,
   ) {
+    final l10n =
+        AppLocalizations.of(context)!;
+
     final rawId =
-        tree['id']?.toString() ?? '';
+        tree['id']
+                ?.toString() ??
+            '';
 
     final treeCode =
         tree['treeCode']
@@ -939,10 +1250,15 @@ double get totalCost {
             '-';
 
     final formattedStatus =
-        _formatStatus(status);
+        _formatStatus(
+      context,
+      status,
+    );
 
     final statusColor =
-        _statusColor(status);
+        _statusColor(
+      status,
+    );
 
     final statusBackground =
         _statusBackground(
@@ -951,27 +1267,46 @@ double get totalCost {
 
     return InkWell(
       onTap: () {
-        _openTree(tree);
+        _openTree(
+          tree,
+        );
       },
+
       borderRadius:
-          BorderRadius.circular(13),
+          BorderRadius.circular(
+        13,
+      ),
+
       child: Container(
-        width: double.infinity,
+        width:
+            double.infinity,
+
         padding:
-            const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
+            const EdgeInsets.all(
+          14,
+        ),
+
+        decoration:
+            BoxDecoration(
+          color:
+              Colors.white,
+
           borderRadius:
               BorderRadius.circular(
             13,
           ),
-          border: Border.all(
-            color: borderColor,
+
+          border:
+              Border.all(
+            color:
+                borderColor,
           ),
         ),
+
         child: Column(
           crossAxisAlignment:
               CrossAxisAlignment.start,
+
           children: [
             // ================================================
             // TOP
@@ -982,17 +1317,22 @@ double get totalCost {
                 Container(
                   width: 38,
                   height: 38,
+
                   decoration:
                       BoxDecoration(
                     color:
                         statusBackground,
+
                     shape:
                         BoxShape.circle,
                   ),
+
                   child: Icon(
                     Icons.park_outlined,
+
                     color:
                         statusColor,
+
                     size: 20,
                   ),
                 ),
@@ -1006,14 +1346,18 @@ double get totalCost {
                     crossAxisAlignment:
                         CrossAxisAlignment
                             .start,
+
                     children: [
                       Text(
                         treeCode,
+
                         style:
                             const TextStyle(
                           color:
                               textDark,
-                          fontSize: 11,
+
+                          fontSize: AppTextStyles.body,
+
                           fontWeight:
                               FontWeight
                                   .w800,
@@ -1025,12 +1369,16 @@ double get totalCost {
                       ),
 
                       Text(
-                        '$variety • Planted $plantingYear',
+                        '$variety • '
+                        '${l10n.planted} '
+                        '$plantingYear',
+
                         style:
                             const TextStyle(
                           color:
                               textGrey,
-                          fontSize: 8,
+
+                          fontSize: AppTextStyles.bodySmall,
                         ),
                       ),
                     ],
@@ -1044,22 +1392,29 @@ double get totalCost {
                     horizontal: 8,
                     vertical: 5,
                   ),
+
                   decoration:
                       BoxDecoration(
                     color:
                         statusBackground,
+
                     borderRadius:
                         BorderRadius
                             .circular(
                       6,
                     ),
                   ),
+
                   child: Text(
                     formattedStatus,
-                    style: TextStyle(
+
+                    style:
+                        TextStyle(
                       color:
                           statusColor,
-                      fontSize: 7,
+
+                      fontSize: AppTextStyles.bodySmall,
+
                       fontWeight:
                           FontWeight
                               .w700,
@@ -1075,7 +1430,8 @@ double get totalCost {
 
             const Divider(
               height: 1,
-              color: borderColor,
+              color:
+                  borderColor,
             ),
 
             const SizedBox(
@@ -1089,9 +1445,13 @@ double get totalCost {
             Row(
               children: [
                 Expanded(
-                  child: _treeInfo(
-                    title: 'Farm',
-                    value: farmName,
+                  child:
+                      _treeInfo(
+                    title:
+                        l10n.farm,
+
+                    value:
+                        farmName,
                   ),
                 ),
 
@@ -1100,9 +1460,13 @@ double get totalCost {
                 ),
 
                 Expanded(
-                  child: _treeInfo(
-                    title: 'Block',
-                    value: blockName,
+                  child:
+                      _treeInfo(
+                    title:
+                        l10n.block,
+
+                    value:
+                        blockName,
                   ),
                 ),
               ],
@@ -1119,8 +1483,12 @@ double get totalCost {
             Row(
               children: [
                 const Icon(
-                  Icons.qr_code_scanner,
-                  color: primaryGreen,
+                  Icons
+                      .qr_code_scanner,
+
+                  color:
+                      primaryGreen,
+
                   size: 18,
                 ),
 
@@ -1131,13 +1499,18 @@ double get totalCost {
                 Expanded(
                   child: Text(
                     treeCode,
+
                     overflow:
                         TextOverflow
                             .ellipsis,
+
                     style:
                         const TextStyle(
-                      color: textGrey,
-                      fontSize: 8,
+                      color:
+                          textGrey,
+
+                      fontSize: AppTextStyles.bodySmall,
+
                       fontWeight:
                           FontWeight
                               .w600,
@@ -1147,24 +1520,31 @@ double get totalCost {
 
                 TextButton(
                   onPressed: () {
-                    _openTree(tree);
+                    _openTree(
+                      tree,
+                    );
                   },
+
                   style:
-                      TextButton.styleFrom(
+                      TextButton
+                          .styleFrom(
                     foregroundColor:
                         primaryGreen,
+
                     padding:
                         const EdgeInsets
                             .symmetric(
                       horizontal: 6,
                     ),
                   ),
-                  child:
-                      const Text(
-                    'View Tree ›',
+
+                  child: Text(
+                    '${l10n.viewTree} ›',
+
                     style:
-                        TextStyle(
-                      fontSize: 9,
+                        const TextStyle(
+                      fontSize: AppTextStyles.bodySmall,
+
                       fontWeight:
                           FontWeight
                               .w700,
@@ -1190,13 +1570,17 @@ double get totalCost {
     return Column(
       crossAxisAlignment:
           CrossAxisAlignment.start,
+
       children: [
         Text(
           title,
+
           style:
               const TextStyle(
-            color: textGrey,
-            fontSize: 7,
+            color:
+                textGrey,
+
+            fontSize: AppTextStyles.bodySmall,
           ),
         ),
 
@@ -1206,13 +1590,19 @@ double get totalCost {
 
         Text(
           value,
+
           maxLines: 1,
+
           overflow:
               TextOverflow.ellipsis,
+
           style:
               const TextStyle(
-            color: textDark,
-            fontSize: 8,
+            color:
+                textDark,
+
+            fontSize: AppTextStyles.bodySmall,
+
             fontWeight:
                 FontWeight.w600,
           ),
@@ -1254,17 +1644,20 @@ double get totalCost {
   String _formatCompactMoney(
     double value,
   ) {
-    if (value >= 1000000000) {
+    if (value >=
+        1000000000) {
       return 'TZS '
           '${_cleanNumber(value / 1000000000)}B';
     }
 
-    if (value >= 1000000) {
+    if (value >=
+        1000000) {
       return 'TZS '
           '${_cleanNumber(value / 1000000)}M';
     }
 
-    if (value >= 1000) {
+    if (value >=
+        1000) {
       return 'TZS '
           '${_cleanNumber(value / 1000)}K';
     }
@@ -1299,27 +1692,48 @@ double get totalCost {
   // ERROR STATE
   // ============================================================
 
-  Widget _errorState() {
+  Widget _errorState(
+    BuildContext context,
+  ) {
+    final l10n =
+        AppLocalizations.of(context)!;
+
     return Container(
-      width: double.infinity,
+      width:
+          double.infinity,
+
       padding:
-          const EdgeInsets.symmetric(
+          const EdgeInsets
+              .symmetric(
         vertical: 35,
         horizontal: 20,
       ),
-      decoration: BoxDecoration(
-        color: Colors.white,
+
+      decoration:
+          BoxDecoration(
+        color:
+            Colors.white,
+
         borderRadius:
-            BorderRadius.circular(13),
-        border: Border.all(
-          color: borderColor,
+            BorderRadius.circular(
+          13,
+        ),
+
+        border:
+            Border.all(
+          color:
+              borderColor,
         ),
       ),
+
       child: Column(
         children: [
           const Icon(
             Icons.error_outline,
-            color: Colors.redAccent,
+
+            color:
+                Colors.redAccent,
+
             size: 32,
           ),
 
@@ -1327,11 +1741,16 @@ double get totalCost {
             height: 10,
           ),
 
-          const Text(
-            'Unable to load trees',
-            style: TextStyle(
-              color: textDark,
-              fontSize: 11,
+          Text(
+            l10n.unableToLoadTrees,
+
+            style:
+                const TextStyle(
+              color:
+                  textDark,
+
+              fontSize: AppTextStyles.body,
+
               fontWeight:
                   FontWeight.w700,
             ),
@@ -1343,13 +1762,17 @@ double get totalCost {
 
           Text(
             _error ??
-                'Unknown error',
+                l10n.unknownError,
+
             textAlign:
                 TextAlign.center,
+
             style:
                 const TextStyle(
-              color: textGrey,
-              fontSize: 8,
+              color:
+                  textGrey,
+
+              fontSize: AppTextStyles.bodySmall,
             ),
           ),
 
@@ -1360,13 +1783,16 @@ double get totalCost {
           TextButton.icon(
             onPressed:
                 _loadDashboard,
-            icon: const Icon(
+
+            icon:
+                const Icon(
               Icons.refresh,
+
               size: 16,
             ),
-            label:
-                const Text(
-              'Try Again',
+
+            label: Text(
+              l10n.tryAgain,
             ),
           ),
         ],
@@ -1378,27 +1804,45 @@ double get totalCost {
   // EMPTY STATE
   // ============================================================
 
-  Widget _emptyState() {
+  Widget _emptyState(
+    BuildContext context,
+  ) {
+    final l10n =
+        AppLocalizations.of(context)!;
+
     final searching =
         _searchText
             .trim()
             .isNotEmpty;
 
     return Container(
-      width: double.infinity,
+      width:
+          double.infinity,
+
       padding:
-          const EdgeInsets.symmetric(
+          const EdgeInsets
+              .symmetric(
         vertical: 45,
         horizontal: 20,
       ),
-      decoration: BoxDecoration(
-        color: Colors.white,
+
+      decoration:
+          BoxDecoration(
+        color:
+            Colors.white,
+
         borderRadius:
-            BorderRadius.circular(13),
-        border: Border.all(
-          color: borderColor,
+            BorderRadius.circular(
+          13,
+        ),
+
+        border:
+            Border.all(
+          color:
+              borderColor,
         ),
       ),
+
       child: Column(
         children: [
           Icon(
@@ -1406,7 +1850,10 @@ double get totalCost {
                 ? Icons.search_off
                 : Icons
                     .park_outlined,
-            color: textGrey,
+
+            color:
+                textGrey,
+
             size: 32,
           ),
 
@@ -1416,12 +1863,17 @@ double get totalCost {
 
           Text(
             searching
-                ? 'No trees found'
-                : 'No trees registered',
+                ? l10n.noTreesFound
+                : l10n
+                    .noTreesRegistered,
+
             style:
                 const TextStyle(
-              color: textDark,
-              fontSize: 11,
+              color:
+                  textDark,
+
+              fontSize: AppTextStyles.body,
+
               fontWeight:
                   FontWeight.w700,
             ),
@@ -1433,14 +1885,20 @@ double get totalCost {
 
           Text(
             searching
-                ? 'Try another tree code, farm, block or variety.'
-                : 'Trees registered in your farms will appear here.',
+                ? l10n
+                    .tryAnotherTreeSearch
+                : l10n
+                    .registeredTreesAppearHere,
+
             textAlign:
                 TextAlign.center,
+
             style:
                 const TextStyle(
-              color: textGrey,
-              fontSize: 8,
+              color:
+                  textGrey,
+
+              fontSize: AppTextStyles.bodySmall,
             ),
           ),
         ],
@@ -1449,27 +1907,35 @@ double get totalCost {
   }
 
   // ============================================================
-  // STATUS
+  // LOCALIZED STATUS
   // ============================================================
 
   String _formatStatus(
+    BuildContext context,
     String status,
   ) {
-    final value =
-        status.trim();
+    final l10n =
+        AppLocalizations.of(context)!;
 
-    if (value.isEmpty ||
-        value == '-') {
-      return '-';
+    switch (
+        status.trim().toUpperCase()) {
+      case 'HEALTHY':
+        return l10n.healthy;
+
+      case 'DISEASED':
+        return l10n.diseased;
+
+      case 'DEAD':
+        return l10n.dead;
+
+      default:
+        return '-';
     }
-
-    final lower =
-        value.toLowerCase();
-
-    return lower[0]
-            .toUpperCase() +
-        lower.substring(1);
   }
+
+  // ============================================================
+  // STATUS COLOR
+  // ============================================================
 
   Color _statusColor(
     String status,
@@ -1493,6 +1959,10 @@ double get totalCost {
         return textGrey;
     }
   }
+
+  // ============================================================
+  // STATUS BACKGROUND
+  // ============================================================
 
   Color _statusBackground(
     String status,
@@ -1529,7 +1999,8 @@ double get totalCost {
     ScaffoldMessenger.of(context)
         .showSnackBar(
       SnackBar(
-        content: Text(
+        content:
+            Text(
           message,
         ),
       ),

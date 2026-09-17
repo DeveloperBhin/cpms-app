@@ -1,0 +1,524 @@
+{
+  "@@locale": "sw",
+
+  "goodMorning": "Habari za asubuhi,",
+  "goodAfternoon": "Habari za mchana,",
+  "goodEvening": "Habari za jioni,",
+
+  "changeLanguage": "Badili Lugha",
+  "english": "Kiingereza",
+  "swahili": "Kiswahili",
+
+  "home": "Nyumbani",
+  "farms": "Mashamba",
+  "trees": "Mikorosho",
+  "harvested": "Mavuno",
+  "totalCost": "Jumla ya Gharama",
+  "activities": "Shughuli",
+  "farmHarvests": "Mavuno ya Shamba",
+
+  "registered": "zilizosajiliwa",
+  "recorded": "zilizorekodiwa",
+  "totalHarvested": "jumla ya mavuno",
+  "activityCosts": "gharama za shughuli",
+
+  "productionOverview": "Muhtasari wa Uzalishaji",
+  "treeHarvest": "Mavuno ya Mti",
+  "farmHarvest": "Mavuno ya Shamba",
+
+  "upcomingActivities": "Shughuli Zijazo",
+  "noUpcomingActivities": "Hakuna shughuli zijazo.",
+
+  "profile": "Wasifu",
+  "more": "Zaidi",
+
+  "unableToLoadDashboard": "Imeshindikana kupakia dashibodi.",
+
+  "activity": "Shughuli",
+  "weeding": "Palizi",
+  "pruning": "Kupogoa",
+  "pesticideApplication": "Kuweka Dawa ya Wadudu",
+  "fertilizerApplication": "Kuweka Mbolea",
+  "harvesting": "Uvunaji",
+  "other": "Nyingine",
+
+  "farmDashboard": "Dashibodi ya Mashamba",
+  "acres": "Ekari",
+  "addFarm": "Ongeza Shamba",
+  "unableToLoadFarms": "Imeshindikana kupakia mashamba",
+  "retry": "Jaribu Tena",
+  "noFarmsAddedYet": "Hakuna shamba lililoongezwa bado",
+  "addFirstFarmMessage": "Bonyeza Ongeza Shamba kusajili shamba lako la kwanza.",
+  "viewFarm": "Angalia Shamba",
+  "newFarm": "Shamba jipya",
+  "productionFarm": "Shamba la uzalishaji",
+  "farm": "Shamba",
+  "locationNotAvailable": "Eneo halipatikani",
+  "planted": "Ilipandwa",
+
+  "totalTrees": "Jumla ya Mikorosho",
+  "registeredTrees": "Mikorosho Iliyosajiliwa",
+  "searchTreeHint": "Tafuta mkorosho kwa namba, shamba, kitalu au aina",
+
+  "treeCount": "Mikorosho {count}",
+  "@treeCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "refresh": "Pakia Upya",
+  "block": "Kitalu",
+  "viewTree": "Angalia Mkorosho",
+
+  "healthy": "Mzima",
+  "diseased": "Una Ugonjwa",
+  "dead": "Umekufa",
+
+  "unableToLoadTrees": "Imeshindikana kupakia mikorosho",
+  "unknownError": "Hitilafu isiyojulikana",
+  "tryAgain": "Jaribu Tena",
+
+  "noTreesFound": "Hakuna mikorosho iliyopatikana",
+  "noTreesRegistered": "Hakuna mikorosho iliyosajiliwa",
+
+  "tryAnotherTreeSearch": "Jaribu namba nyingine ya mkorosho, shamba, kitalu au aina.",
+  "registeredTreesAppearHere": "Mikorosho iliyosajiliwa kwenye mashamba yako itaonekana hapa.",
+
+  "unableToOpenTree": "Haiwezekani kufungua mkorosho huu kwa sababu taarifa ya shamba, kitalu au mkorosho haipo.",
+
+  "treeActivities": "Shughuli za Mikorosho",
+  "activityPageDescription": "Angalia na simamia shughuli za mashamba na mikorosho.",
+  "addActivity": "Ongeza Shughuli",
+  "chooseActivityType": "Chagua aina ya shughuli unayotaka kurekodi.",
+
+  "treeActivity": "Shughuli ya Mkorosho",
+  "treeActivityDescription": "Palizi, kupogoa, dawa za wadudu, mbolea na shughuli nyingine za mkorosho.",
+
+  "harvestingDescription": "Rekodi mavuno ya shamba au mavuno kutoka kwenye mkorosho maalum.",
+
+  "harvestingMethod": "Njia ya Kuvuna",
+  "howHarvestRecorded": "Mavuno haya yamerekodiwa kwa njia gani?",
+
+  "farmHarvesting": "Uvunaji wa Shamba",
+  "farmHarvestingDescription": "Rekodi mavuno kwa kutumia idadi ya ndoo na kilogramu kwa kila ndoo.",
+
+  "treeHarvesting": "Uvunaji wa Mkorosho",
+  "treeHarvestingDescription": "Rekodi kilogramu zilizovunwa kutoka kwenye mkorosho maalum.",
+
+  "searchActivitiesHint": "Tafuta mkorosho, shamba, kitalu au shughuli...",
+
+  "all": "Zote",
+  "pesticide": "Dawa ya Wadudu",
+  "fertilizer": "Mbolea",
+
+  "recentActivities": "Shughuli za Hivi Karibuni",
+
+  "activitiesFound": "{count} zimepatikana",
+  "@activitiesFound": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "viewTreeActivities": "Angalia Shughuli za Mkorosho",
+
+  "loadingActivities": "Inapakia shughuli...",
+  "unableToLoadActivities": "Imeshindikana kupakia shughuli",
+
+  "noActivitiesFound": "Hakuna shughuli zilizopatikana",
+  "noActivitiesRecorded": "Hakuna shughuli zilizorekodiwa",
+
+  "changeSearchOrFilter": "Jaribu kubadilisha utafutaji au kichujio.",
+  "activitiesAppearHere": "Shughuli zilizoongezwa kwenye mikorosho yako zitaonekana hapa.",
+
+  "unableToOpenTreeActivities": "Imeshindikana kufungua shughuli za mkorosho. Taarifa za uhusiano wa mkorosho hazipo.",
+
+  "planned": "Imepangwa",
+  "inProgress": "Inaendelea",
+  "completed": "Imekamilika",
+  "cancelled": "Imeghairiwa",
+
+  "unableToLoadProfile": "Imeshindikana kupakia wasifu",
+  "personalInformation": "TAARIFA BINAFSI",
+  "editProfile": "Hariri Wasifu",
+  "updateYourDetails": "Sasisha taarifa zako",
+  "notifications": "Arifa",
+  "enabled": "Imewashwa",
+  "language": "Lugha",
+
+  "systemSecurity": "MFUMO NA USALAMA",
+  "lightDarkMode": "Mwonekano wa Mwangaza/Giza",
+  "privacySecurity": "Faragha na Usalama",
+
+  "support": "MSAADA",
+  "helpCenter": "Kituo cha Msaada",
+  "termsOfService": "Masharti ya Huduma",
+
+  "uploads": "MAFAILI",
+  "uploadFiles": "Pakia Mafaili",
+  "uploadFilesDescription": "Pakia nyaraka, picha au mafaili ya ZIP",
+  "filesUploadedSuccessfully": "Mafaili yamepakiwa kikamilifu",
+  "uploadFailed": "Imeshindikana kupakia",
+
+  "logout": "Ondoka",
+  "poweredByTari": "Inaendeshwa na TARI",
+  "active": "Inatumika",
+  "user": "Mtumiaji",
+
+  "farmName": "Jina la Shamba",
+  "farmNameRequired": "Jina la shamba linahitajika",
+
+  "plantingDate": "Tarehe ya Kupanda",
+  "plantingDateRequired": "Tarehe ya kupanda inahitajika",
+
+  "farmType": "Aina ya Shamba",
+  "selectFarmType": "Chagua Aina ya Shamba",
+  "farmTypeRequired": "Aina ya shamba inahitajika",
+
+  "farmSize": "Ukubwa wa Shamba",
+  "farmSizeRequired": "Ukubwa wa shamba unahitajika",
+  "validFarmSizeRequired": "Weka ukubwa sahihi wa shamba",
+
+  "submitFarm": "Sajili Shamba",
+  "farmAddedSuccessfully": "Shamba limeongezwa kikamilifu",
+  "profileLocationIncomplete": "Taarifa za eneo kwenye wasifu wako hazijakamilika",
+
+  "farmDetails": "Maelezo ya Shamba",
+  "farmInformation": "Taarifa za Shamba",
+  "farmId": "Namba ya Shamba",
+  "viewBlocks": "Angalia Vitalu",
+
+  "location": "Eneo",
+  "region": "Mkoa",
+  "district": "Wilaya",
+  "ward": "Kata",
+  "village": "Kijiji",
+
+  "productionSummary": "Muhtasari wa Uzalishaji",
+  "totalProduction": "Jumla ya uzalishaji",
+  "averageProduction": "Wastani wa uzalishaji",
+  "productionHistory": "Historia ya Uzalishaji",
+  "noProductionRecords": "Hakuna rekodi za uzalishaji bado.",
+
+  "unnamedFarm": "Shamba Lisilo na Jina",
+
+  "farmBlocks": "Vitalu vya Shamba",
+  "blocks": "Vitalu",
+
+  "blockCount": "Vitalu ({count})",
+  "@blockCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "addBlock": "Ongeza Kitalu",
+  "loadingBlocks": "Inapakia vitalu...",
+  "unableToLoadBlocks": "Imeshindikana kupakia vitalu",
+  "noBlocksYet": "Hakuna vitalu bado",
+  "createFirstBlock": "Tengeneza kitalu cha kwanza kwenye shamba hili.",
+  "unnamedBlock": "Kitalu Kisicho na Jina",
+
+  "size": "Ukubwa",
+  "variety": "Aina",
+  "viewBlock": "Angalia Kitalu",
+
+  "blockName": "Jina la Kitalu",
+  "blockNameHint": "Jina la kitalu",
+  "blockNameRequired": "Jina la kitalu linahitajika",
+
+  "blockSize": "Ukubwa wa Kitalu",
+  "blockSizeHint": "Ukubwa wa kitalu / ekari",
+  "blockSizeRequired": "Ukubwa wa kitalu unahitajika",
+  "validBlockSizeRequired": "Weka ukubwa sahihi wa kitalu",
+
+  "numberOfTrees": "Idadi ya Mikorosho",
+  "numberOfTreesHint": "Idadi ya mikorosho",
+  "numberOfTreesRequired": "Idadi ya mikorosho inahitajika",
+  "validNumberOfTreesRequired": "Weka idadi sahihi ya mikorosho",
+
+  "cashewVariety": "Aina ya Korosho",
+  "cashewVarietyHint": "Aina ya korosho",
+  "cashewVarietyRequired": "Aina ya korosho inahitajika",
+
+  "description": "Maelezo",
+  "blockDescriptionHint": "Maelezo ya ziada kuhusu kitalu",
+
+  "submitBlock": "Sajili Kitalu",
+  "blockAddedSuccessfully": "Kitalu kimeongezwa kikamilifu",
+
+  "blockDetails": "Maelezo ya Kitalu",
+  "blockInformation": "Taarifa za Kitalu",
+  "blockId": "Namba ya Kitalu",
+  "blockSummary": "Muhtasari wa Kitalu",
+  "varieties": "Aina",
+
+  "addTree": "Ongeza Mkorosho",
+  "noTreesInBlock": "Hakuna mikorosho iliyosajiliwa kwenye kitalu hiki",
+  "addFirstTreeMessage": "Bonyeza Ongeza Mkorosho kusajili mkorosho wa kwanza.",
+  "addingTreeTo": "Unaongeza mkorosho kwenye",
+
+  "plantingYear": "Mwaka wa Kupanda",
+  "plantingYearHint": "Mwaka wa kupanda",
+  "selectPlantingYear": "Chagua mwaka wa kupanda",
+  "plantingYearRequired": "Mwaka wa kupanda unahitajika",
+  "invalidPlantingYear": "Mwaka wa kupanda si sahihi",
+  "validPlantingYearRequired": "Weka mwaka sahihi wa kupanda",
+
+  "treeStatus": "Hali ya Mkorosho",
+  "treeStatusHint": "Hali ya mkorosho",
+
+  "treeLocation": "Eneo la Mkorosho",
+  "treeLocationDescription": "Kuratibu za GPS za mkorosho huu si lazima.",
+
+  "latitude": "Latitudo",
+  "longitude": "Longitudo",
+  "invalidLatitude": "Latitudo si sahihi",
+  "invalidLongitude": "Longitudo si sahihi",
+  "validLatitudeRequired": "Weka latitudo sahihi kati ya -90 na 90.",
+  "validLongitudeRequired": "Weka longitudo sahihi kati ya -180 na 180.",
+  "bothCoordinatesRequired": "Weka latitudo na longitudo zote mbili.",
+
+  "notes": "Maelezo",
+  "treeNotesHint": "Maelezo ya ziada kuhusu mkorosho",
+
+  "treeAddedSuccessfully": "Mkorosho umeongezwa kikamilifu",
+
+  "addTreeActivity": "Ongeza Shughuli ya Mkorosho",
+  "treeActivitySubtitle": "Chagua shamba, kitalu na mkorosho, kisha rekodi shughuli na gharama yake.",
+  "farmHarvestSubtitle": "Chagua shamba kisha rekodi idadi ya ndoo, kilogramu kwa kila ndoo na gharama ya uvunaji.",
+  "treeHarvestSubtitle": "Chagua shamba, kitalu na mkorosho, kisha rekodi kilogramu zilizovunwa kutoka kwenye mkorosho.",
+
+  "activityInformation": "Taarifa za Shughuli",
+  "harvestInformation": "Taarifa za Mavuno",
+
+  "selectFarm": "Chagua shamba",
+  "farmRequired": "Shamba linahitajika",
+  "pleaseSelectFarm": "Tafadhali chagua shamba.",
+  "loadingFarms": "Inapakia mashamba...",
+
+  "selectFarmFirst": "Chagua shamba kwanza",
+  "selectBlock": "Chagua kitalu",
+  "blockRequired": "Kitalu kinahitajika",
+  "pleaseSelectBlock": "Tafadhali chagua kitalu.",
+  "noBlocksForFarm": "Hakuna vitalu vilivyopatikana kwenye shamba hili",
+
+  "cashewTree": "Mkorosho",
+  "selectBlockFirst": "Chagua kitalu kwanza",
+  "selectTree": "Chagua mkorosho",
+  "treeRequired": "Mkorosho unahitajika",
+  "pleaseSelectTree": "Tafadhali chagua mkorosho.",
+  "loadingTrees": "Inapakia mikorosho...",
+  "noTreesForBlock": "Hakuna mikorosho iliyopatikana kwenye kitalu hiki",
+
+  "activityType": "Aina ya Shughuli",
+  "selectActivity": "Chagua shughuli",
+  "activityTypeRequired": "Aina ya shughuli inahitajika",
+
+  "numberOfBuckets": "Idadi ya Ndoo",
+  "kgPerBucket": "Kg kwa Kila Ndoo",
+  "example20": "Mfano: 20",
+  "example15": "Mfano: 15",
+
+  "totalHarvest": "Jumla ya Mavuno",
+  "bucketsTimesKg": "Ndoo × Kg kwa kila ndoo",
+
+  "harvestedWeightKg": "Uzito Uliovunwa (Kg)",
+  "exampleHarvestWeight": "Mfano: 18.5",
+  "treeHarvestRecordDescription": "Mavuno yatarekodiwa kwa kilogramu kwa mkorosho uliochaguliwa.",
+
+  "activityDate": "Tarehe ya Shughuli",
+  "harvestDate": "Tarehe ya Mavuno",
+
+  "costTzs": "Gharama (TZS)",
+  "exampleCost": "Mfano: 25000",
+
+  "enterDescription": "Weka maelezo...",
+
+  "saving": "Inahifadhi...",
+  "saveActivity": "Hifadhi Shughuli",
+  "saveFarmHarvest": "Hifadhi Mavuno ya Shamba",
+  "saveTreeHarvest": "Hifadhi Mavuno ya Mkorosho",
+
+  "treeActivitySaved": "Shughuli ya mkorosho imehifadhiwa kikamilifu.",
+  "farmHarvestSaved": "Mavuno ya shamba yamehifadhiwa kikamilifu.",
+  "treeHarvestSaved": "Mavuno ya mkorosho yamehifadhiwa kikamilifu.",
+
+  "farmBlockTreeActivityRequired": "Shamba, kitalu, mkorosho na aina ya shughuli vinahitajika.",
+  "farmBlockTreeRequired": "Shamba, kitalu na mkorosho vinahitajika.",
+  "costCannotBeNegative": "Gharama haiwezi kuwa hasi.",
+  "harvestKgGreaterThanZero": "Kilogramu zilizovunwa lazima ziwe zaidi ya sifuri.",
+  "bucketCountGreaterThanZero": "Idadi ya ndoo lazima iwe zaidi ya sifuri.",
+  "kgPerBucketGreaterThanZero": "Kg kwa kila ndoo lazima iwe zaidi ya sifuri.",
+
+  "fieldRequired": "{field} inahitajika",
+  "@fieldRequired": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+
+  "enterValidWholeNumber": "Weka namba kamili sahihi",
+  "enterValidNumber": "Weka namba sahihi",
+  "valueCannotBeNegative": "Thamani haiwezi kuwa hasi",
+  "valueGreaterThanZero": "Thamani lazima iwe zaidi ya sifuri",
+
+  "treeDetails": "Taarifa za Mkorosho",
+  "treeInformationNotFound": "Taarifa za mkorosho hazikupatikana.",
+  "unableToLoadTree": "Imeshindikana kupakia taarifa za mkorosho",
+
+  "treeInformation": "Taarifa za Mkorosho",
+  "treeId": "Kitambulisho cha Mkorosho",
+
+  "plantedYear": "Ilipandwa {year}",
+  "@plantedYear": {
+    "placeholders": {
+      "year": {
+        "type": "String"
+      }
+    }
+  },
+
+  "scanTree": "Skani Mkorosho",
+  "scanTreeDescription": "Skani msimbo pau wa mkorosho ili kuutambua na kuona taarifa zake.",
+  "scanTreeBarcode": "Skani Msimbo Pau wa Mkorosho",
+
+  "treeIdentification": "Utambulisho wa Mkorosho",
+  "scanBarcodeToIdentifyTree": "Skani msimbo pau huu ili kutambua mkorosho huu.",
+  "enlargeBarcode": "Panua Msimbo Pau",
+  "treeBarcode": "Msimbo Pau wa Mkorosho",
+  "close": "Funga",
+
+  "gpsCoordinates": "Kuratibu za GPS",
+  "noGpsCoordinatesRecorded": "Hakuna kuratibu za GPS zilizorekodiwa",
+
+  "noNotesRecorded": "Hakuna maelezo yaliyorekodiwa",
+
+  "treeActivitiesDescription": "Rekodi na simamia shughuli zilizofanyika kwenye mkorosho huu.",
+  "addViewTreeActivities": "Ongeza / Angalia Shughuli za Mkorosho",
+
+  "activitiesPerformedOnTree": "Shughuli zilizofanyika kwenye mkorosho huu",
+
+  "loadingTreeInformation": "Inapakia taarifa za mkorosho...",
+  "unableToLoadTreeInformation": "Imeshindikana kupakia taarifa za mkorosho",
+
+  "cost": "Gharama: {amount}",
+  "@cost": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+
+  "harvestedAmount": "Imevunwa: {amount} kg",
+  "@harvestedAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+
+  "treeActivityAddedSuccessfully": "Shughuli ya mkorosho imeongezwa kikamilifu",
+
+  "failedToSaveActivity": "Imeshindikana kuhifadhi shughuli: {error}",
+  "@failedToSaveActivity": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+
+  "addFirstTreeActivity": "Ongeza shughuli ya kwanza ya mkorosho huu.",
+
+  "recordActivityForTree": "Rekodi shughuli ya {treeId}",
+  "@recordActivityForTree": {
+    "placeholders": {
+      "treeId": {
+        "type": "String"
+      }
+    }
+  },
+
+  "selectDate": "Chagua tarehe",
+  "selectActivityDate": "Chagua tarehe ya shughuli",
+  "describeActivityPerformed": "Elezea shughuli iliyofanyika...",
+  "descriptionRequired": "Maelezo yanahitajika",
+  "status": "Hali",
+  "treeNotFound": "Mkorosho Haujapatikana",
+"noTreeFoundWithBarcode": "Hakuna mkorosho uliopatikana wenye msimbo pau:\n\n{code}",
+"@noTreeFoundWithBarcode": {
+  "placeholders": {
+    "code": {
+      "type": "String"
+    }
+  }
+},
+"scanAgain": "Changanua Tena",
+"enterTreeCode": "Weka Namba ya Mkorosho",
+"treeCodeExample": "Mfano: TR-0001",
+"findTree": "Tafuta Mkorosho",
+"scanTreeBarcode": "Changanua Msimbo Pau wa Mkorosho",
+"turnOnFlash": "Washa tochi",
+"turnOffFlash": "Zima tochi",
+"positionTreeBarcode": "Weka msimbo pau uliowekwa kwenye mkorosho ndani ya fremu ya kuchanganua.",
+"keepBarcodeSteady": "Shikilia msimbo pau bila kutikisika ndani ya fremu",
+"barcodeDetected": "Msimbo pau umetambuliwa",
+"scannerReady": "Kichanganuzi Kipo Tayari",
+"readingBarcode": "Inasoma {code}",
+"@readingBarcode": {
+  "placeholders": {
+    "code": {
+      "type": "String"
+    }
+  }
+},
+"waitingForTreeBarcode": "Inasubiri msimbo pau wa mkorosho...",
+"enterTreeCodeManually": "Weka Namba ya Mkorosho Mwenyewe",
+"treeBarcodeInformation": "Kila mkorosho uliosajiliwa una msimbo pau wa kipekee. Changanua msimbo pau ili kufungua taarifa za mkorosho kwa haraka.",
+"cancel": "Ghairi",
+"createAccount": "Fungua Akaunti",
+"registerFarmerOrStaff": "Sajili mkulima au mfanyakazi",
+"fullName": "Jina Kamili",
+"username": "Jina la Mtumiaji",
+"region": "Mkoa",
+"district": "Wilaya",
+"ward": "Kata",
+"village": "Kijiji",
+"phoneNumber": "Namba ya Simu",
+"password": "Nenosiri",
+"confirmPassword": "Thibitisha Nenosiri",
+"register": "Jisajili",
+"fullNameRequired": "Jina kamili linahitajika",
+"usernameRequired": "Jina la mtumiaji linahitajika",
+"regionRequired": "Mkoa unahitajika",
+"districtRequired": "Wilaya inahitajika",
+"wardRequired": "Kata inahitajika",
+"villageRequired": "Kijiji kinahitajika",
+"phoneNumberRequired": "Namba ya simu inahitajika",
+"passwordRequired": "Nenosiri linahitajika",
+"minimumSixCharacters": "Angalau herufi 6 zinahitajika",
+"confirmPasswordRequired": "Uthibitisho wa nenosiri unahitajika",
+"passwordsDoNotMatch": "Manenosiri hayalingani",
+"registrationSuccessful": "Usajili umefanikiwa",
+"cashewProductionManagementSystem": "Mfumo wa Usimamizi wa\nUzalishaji wa Korosho",
+"signInToContinue": "Ingia ili kuendelea",
+"login": "Ingia",
+"loginSuccessful": "Umeingia kikamilifu",
+"pleaseEnterUsername": "Tafadhali weka jina la mtumiaji",
+"pleaseEnterPassword": "Tafadhali weka nenosiri",
+"dontHaveAccount": "Huna akaunti?",
+"showPassword": "Onyesha nenosiri",
+"hidePassword": "Ficha nenosiri"
+}

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../services/api_services/farm_api_services.dart';
+import '../theme/app_text_styles.dart';
 import 'addfarm_page.dart';
 import 'farmdetails_page.dart';
+import '../services/api_services/tree_api_services.dart';
 
 class FarmsPage extends StatefulWidget {
   final VoidCallback? onHome;
@@ -21,7 +24,8 @@ class FarmsPage extends StatefulWidget {
   });
 
   @override
-  State<FarmsPage> createState() => _FarmsPageState();
+  State<FarmsPage> createState() =>
+      _FarmsPageState();
 }
 
 class _FarmsPageState extends State<FarmsPage> {
@@ -29,21 +33,31 @@ class _FarmsPageState extends State<FarmsPage> {
   // COLORS
   // =========================================================
 
-  static const Color primaryGreen = Color(0xFF087A2F);
-  static const Color backgroundColor = Color(0xFFF8FAF8);
-  static const Color borderColor = Color(0xFFDCE8DF);
-  static const Color lightGreen = Color(0xFFE7F3EB);
-  static const Color textDark = Color(0xFF25402D);
+  static const Color primaryGreen =
+      Color(0xFF087A2F);
+
+  static const Color backgroundColor =
+      Color(0xFFF8FAF8);
+
+  static const Color borderColor =
+      Color(0xFFDCE8DF);
+
+  static const Color lightGreen =
+      Color(0xFFE7F3EB);
+
+  static const Color textDark =
+      Color(0xFF25402D);
 
   // =========================================================
   // STATE
   // =========================================================
 
   bool _isLoading = true;
+
   String? _error;
 
-  List<Map<String, dynamic>> _farms = [];
-
+List<Map<String, dynamic>> _farms = [];
+List<Map<String, dynamic>> _trees = [];
   // =========================================================
   // INIT
   // =========================================================
@@ -51,46 +65,72 @@ class _FarmsPageState extends State<FarmsPage> {
   @override
   void initState() {
     super.initState();
+
     _loadFarms();
   }
 
   // =========================================================
   // LOAD FARMS
   // =========================================================
+Future<void> _loadFarms() async {
+  if (mounted) {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+  }
 
-  Future<void> _loadFarms() async {
+  try {
+    final results = await Future.wait([
+      FarmApiServices.getMyFarms(),
+      TreeApiServices.getMyTrees(),
+    ]);
+
+    if (!mounted) return;
+
+    final farms =
+        List<Map<String, dynamic>>.from(
+      results[0],
+    );
+
+    final trees =
+        List<Map<String, dynamic>>.from(
+      results[1],
+    );
+
+    debugPrint(
+      'FARMS PAGE -> FARMS: ${farms.length}',
+    );
+
+    debugPrint(
+      'FARMS PAGE -> TREES: ${trees.length}',
+    );
+
+    setState(() {
+      _farms = farms;
+      _trees = trees;
+    });
+  } catch (e) {
+    debugPrint(
+      'FARMS PAGE LOAD ERROR: $e',
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _error = e.toString().replaceFirst(
+            'Exception: ',
+            '',
+          );
+    });
+  } finally {
     if (mounted) {
       setState(() {
-        _isLoading = true;
-        _error = null;
+        _isLoading = false;
       });
-    }
-
-    try {
-      final farms = await FarmApiServices.getMyFarms();
-
-      if (!mounted) return;
-
-      setState(() {
-        _farms = farms;
-      });
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        _error = e.toString().replaceFirst(
-          'Exception: ',
-          '',
-        );
-      });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
     }
   }
+}
 
   // =========================================================
   // FARM STATISTICS
@@ -100,18 +140,24 @@ class _FarmsPageState extends State<FarmsPage> {
     return _farms.length;
   }
 
+  int get _totalTrees {
+  return _trees.length;
+}
+
   double get _totalAcres {
     return _farms.fold<double>(
       0,
       (total, farm) {
-        final value = farm['acreage'];
+        final value =
+            farm['acreage'];
 
         if (value == null) {
           return total;
         }
 
         if (value is num) {
-          return total + value.toDouble();
+          return total +
+              value.toDouble();
         }
 
         return total +
@@ -123,12 +169,23 @@ class _FarmsPageState extends State<FarmsPage> {
     );
   }
 
-  String _formatNumber(double value) {
-    if (value == value.roundToDouble()) {
-      return value.toInt().toString();
+  // =========================================================
+  // FORMAT NUMBER
+  // =========================================================
+
+  String _formatNumber(
+    double value,
+  ) {
+    if (value ==
+        value.roundToDouble()) {
+      return value
+          .toInt()
+          .toString();
     }
 
-    return value.toStringAsFixed(2);
+    return value.toStringAsFixed(
+      2,
+    );
   }
 
   // =========================================================
@@ -136,9 +193,15 @@ class _FarmsPageState extends State<FarmsPage> {
   // =========================================================
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
+    final l10n =
+        AppLocalizations.of(context)!;
+
     return Scaffold(
-      backgroundColor: backgroundColor,
+      backgroundColor:
+          backgroundColor,
 
       body: SafeArea(
         bottom: false,
@@ -150,31 +213,49 @@ class _FarmsPageState extends State<FarmsPage> {
             // =================================================
 
             Container(
-              width: double.infinity,
+              width:
+                  double.infinity,
+
               height: 52,
 
-              padding: const EdgeInsets.symmetric(
+              padding:
+                  const EdgeInsets.symmetric(
                 horizontal: 14,
               ),
 
-              decoration: const BoxDecoration(
-                color: primaryGreen,
+              decoration:
+                  const BoxDecoration(
+                color:
+                    primaryGreen,
 
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(18),
-                  bottomRight: Radius.circular(18),
+                borderRadius:
+                    BorderRadius.only(
+                  bottomLeft:
+                      Radius.circular(
+                    18,
+                  ),
+
+                  bottomRight:
+                      Radius.circular(
+                    18,
+                  ),
                 ),
               ),
 
-              alignment: Alignment.centerLeft,
+              alignment:
+                  Alignment.centerLeft,
 
-              child: const Text(
-                'Farm Dashboard',
+              child: Text(
+                l10n.farmDashboard,
 
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
+                style:
+                    const TextStyle(
+                  color:
+                      Colors.white,
+
+  fontSize: AppTextStyles.bodyLarge,
+                  fontWeight:
+                      FontWeight.w700,
                 ),
               ),
             ),
@@ -184,15 +265,22 @@ class _FarmsPageState extends State<FarmsPage> {
             // =================================================
 
             Expanded(
-              child: RefreshIndicator(
-                color: primaryGreen,
-                onRefresh: _loadFarms,
+              child:
+                  RefreshIndicator(
+                color:
+                    primaryGreen,
 
-                child: SingleChildScrollView(
+                onRefresh:
+                    _loadFarms,
+
+                child:
+                    SingleChildScrollView(
                   physics:
                       const AlwaysScrollableScrollPhysics(),
 
-                  padding: const EdgeInsets.fromLTRB(
+                  padding:
+                      const EdgeInsets
+                          .fromLTRB(
                     12,
                     20,
                     12,
@@ -201,7 +289,8 @@ class _FarmsPageState extends State<FarmsPage> {
 
                   child: Column(
                     crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                        CrossAxisAlignment
+                            .start,
 
                     children: [
                       // =========================================
@@ -211,105 +300,151 @@ class _FarmsPageState extends State<FarmsPage> {
                       Row(
                         children: [
                           Expanded(
-                            child: _statCard(
-                              title: 'Farms',
-                              value: _totalFarms.toString(),
+                            child:
+                                _statCard(
+                              title:
+                                  l10n.farms,
+
+                              value:
+                                  _totalFarms
+                                      .toString(),
                             ),
                           ),
 
-                          const SizedBox(width: 10),
+                          const SizedBox(
+                            width: 10,
+                          ),
 
                           Expanded(
-                            child: _statCard(
-                              title: 'Acres',
-                              value: _formatNumber(
+                            child:
+                                _statCard(
+                              title:
+                                  l10n.acres,
+
+                              value:
+                                  _formatNumber(
                                 _totalAcres,
                               ),
                             ),
                           ),
 
-                          const SizedBox(width: 10),
+                          const SizedBox(
+                            width: 10,
+                          ),
 
                           Expanded(
-                            child: _statCard(
-                              title: 'Trees',
-
-                              // Tree API will be connected
-                              // separately.
-                              value: '-',
-                            ),
+                            child:
+                                _statCard(
+  title: l10n.trees,
+  value: _totalTrees.toString(),
+),
                           ),
                         ],
                       ),
 
-                      const SizedBox(height: 24),
+                      const SizedBox(
+                        height: 24,
+                      ),
 
                       // =========================================
                       // ADD FARM BUTTON
                       // =========================================
 
                       Align(
-                        alignment: Alignment.centerRight,
+                        alignment:
+                            Alignment
+                                .centerRight,
 
                         child: SizedBox(
                           height: 40,
 
-                          child: ElevatedButton.icon(
-                            onPressed: () async {
+                          child:
+                              ElevatedButton
+                                  .icon(
+                            onPressed:
+                                () async {
                               final created =
-                                  await Navigator.push<bool>(
+                                  await Navigator
+                                      .push<
+                                          bool>(
                                 context,
+
                                 MaterialPageRoute(
-                                  builder: (context) =>
-                                      const AddFarmPage(),
+                                  builder:
+                                      (context) =>
+                                          const AddFarmPage(),
                                 ),
                               );
 
-                              if (created == true) {
+                              if (created ==
+                                  true) {
                                 await _loadFarms();
                               }
                             },
 
-                            icon: const Icon(
+                            icon:
+                                const Icon(
                               Icons.add,
+
                               size: 16,
                             ),
 
-                            label: const Text(
-                              'Add Farm',
+                            label: Text(
+                              l10n.addFarm,
 
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
+                              style:
+                                  const TextStyle(
+                                fontSize:
+                                    AppTextStyles.bodySmall,
+
+                                fontWeight:
+                                    FontWeight
+                                        .w700,
                               ),
                             ),
 
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: primaryGreen,
-                              foregroundColor: Colors.white,
+                            style:
+                                ElevatedButton
+                                    .styleFrom(
+                              backgroundColor:
+                                  primaryGreen,
+
+                              foregroundColor:
+                                  Colors.white,
+
                               elevation: 0,
 
                               padding:
-                                  const EdgeInsets.symmetric(
-                                horizontal: 16,
+                                  const EdgeInsets
+                                      .symmetric(
+                                horizontal:
+                                    16,
                               ),
 
-                              shape: RoundedRectangleBorder(
+                              shape:
+                                  RoundedRectangleBorder(
                                 borderRadius:
-                                    BorderRadius.circular(9),
+                                    BorderRadius
+                                        .circular(
+                                  9,
+                                ),
                               ),
                             ),
                           ),
                         ),
                       ),
 
-                      const SizedBox(height: 18),
+                      const SizedBox(
+                        height: 18,
+                      ),
 
                       // =========================================
                       // FARM CONTENT
                       // =========================================
 
-                      _buildFarmContent(),
+                      _buildFarmContent(
+                        context,
+                      ),
                     ],
                   ),
                 ),
@@ -325,20 +460,28 @@ class _FarmsPageState extends State<FarmsPage> {
   // FARM CONTENT
   // =========================================================
 
-  Widget _buildFarmContent() {
+  Widget _buildFarmContent(
+    BuildContext context,
+  ) {
+    final l10n =
+        AppLocalizations.of(context)!;
+
     // ---------------------------------------------------------
     // Loading
     // ---------------------------------------------------------
 
     if (_isLoading) {
       return const Padding(
-        padding: EdgeInsets.symmetric(
+        padding:
+            EdgeInsets.symmetric(
           vertical: 60,
         ),
 
         child: Center(
-          child: CircularProgressIndicator(
-            color: primaryGreen,
+          child:
+              CircularProgressIndicator(
+            color:
+                primaryGreen,
           ),
         ),
       );
@@ -350,20 +493,30 @@ class _FarmsPageState extends State<FarmsPage> {
 
     if (_error != null) {
       return Container(
-        width: double.infinity,
+        width:
+            double.infinity,
 
-        padding: const EdgeInsets.symmetric(
+        padding:
+            const EdgeInsets
+                .symmetric(
           horizontal: 20,
           vertical: 35,
         ),
 
-        decoration: BoxDecoration(
-          color: Colors.white,
+        decoration:
+            BoxDecoration(
+          color:
+              Colors.white,
 
-          borderRadius: BorderRadius.circular(14),
+          borderRadius:
+              BorderRadius.circular(
+            14,
+          ),
 
-          border: Border.all(
-            color: borderColor,
+          border:
+              Border.all(
+            color:
+                borderColor,
           ),
         ),
 
@@ -371,65 +524,108 @@ class _FarmsPageState extends State<FarmsPage> {
           children: [
             const Icon(
               Icons.error_outline,
-              color: Colors.red,
+
+              color:
+                  Colors.red,
+
               size: 38,
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(
+              height: 12,
+            ),
 
-            const Text(
-              'Unable to load farms',
+            Text(
+              l10n.unableToLoadFarms,
 
-              style: TextStyle(
-                color: textDark,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
+              textAlign:
+                  TextAlign.center,
+
+              style:
+                  const TextStyle(
+                color:
+                    textDark,
+
+                fontSize: AppTextStyles.bodyLarge,
+
+                fontWeight:
+                    FontWeight.w700,
               ),
             ),
 
-            const SizedBox(height: 7),
+            const SizedBox(
+              height: 7,
+            ),
 
             Text(
               _error!,
 
-              textAlign: TextAlign.center,
+              textAlign:
+                  TextAlign.center,
 
-              style: const TextStyle(
-                color: Color(0xFF718078),
-                fontSize: 9,
+              style:
+                  const TextStyle(
+                color:
+                    Color(
+                  0xFF718078,
+                ),
+
+  fontSize: AppTextStyles.bodySmall,
+                fontWeight:
+                    FontWeight.w500,
               ),
             ),
 
-            const SizedBox(height: 15),
+            const SizedBox(
+              height: 15,
+            ),
 
             SizedBox(
               height: 38,
 
-              child: ElevatedButton.icon(
-                onPressed: _loadFarms,
+              child:
+                  ElevatedButton.icon(
+                onPressed:
+                    _loadFarms,
 
-                icon: const Icon(
+                icon:
+                    const Icon(
                   Icons.refresh,
+
                   size: 15,
                 ),
 
-                label: const Text(
-                  'Retry',
+                label: Text(
+                  l10n.retry,
 
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
+                  style:
+                      const TextStyle(
+                    fontSize: AppTextStyles.bodySmall,
+
+                    fontWeight:
+                        FontWeight
+                            .w700,
                   ),
                 ),
 
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryGreen,
-                  foregroundColor: Colors.white,
+                style:
+                    ElevatedButton
+                        .styleFrom(
+                  backgroundColor:
+                      primaryGreen,
+
+                  foregroundColor:
+                      Colors.white,
+
                   elevation: 0,
 
-                  shape: RoundedRectangleBorder(
+                  shape:
+                      RoundedRectangleBorder(
                     borderRadius:
-                        BorderRadius.circular(9),
+                        BorderRadius
+                            .circular(
+                      9,
+                    ),
                   ),
                 ),
               ),
@@ -445,54 +641,89 @@ class _FarmsPageState extends State<FarmsPage> {
 
     if (_farms.isEmpty) {
       return Container(
-        width: double.infinity,
+        width:
+            double.infinity,
 
-        padding: const EdgeInsets.symmetric(
+        padding:
+            const EdgeInsets
+                .symmetric(
           horizontal: 20,
           vertical: 45,
         ),
 
-        decoration: BoxDecoration(
-          color: Colors.white,
+        decoration:
+            BoxDecoration(
+          color:
+              Colors.white,
 
-          borderRadius: BorderRadius.circular(14),
+          borderRadius:
+              BorderRadius.circular(
+            14,
+          ),
 
-          border: Border.all(
-            color: borderColor,
+          border:
+              Border.all(
+            color:
+                borderColor,
           ),
         ),
 
-        child: const Column(
+        child: Column(
           children: [
-            Icon(
-              Icons.agriculture_outlined,
-              color: primaryGreen,
+            const Icon(
+              Icons
+                  .agriculture_outlined,
+
+              color:
+                  primaryGreen,
+
               size: 42,
             ),
 
-            SizedBox(height: 12),
+            const SizedBox(
+              height: 12,
+            ),
 
             Text(
-              'No farms added yet',
+              l10n.noFarmsAddedYet,
 
-              style: TextStyle(
-                color: textDark,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
+              textAlign:
+                  TextAlign.center,
+
+              style:
+                  const TextStyle(
+                color:
+                    textDark,
+
+                fontSize: AppTextStyles.bodyLarge,
+
+                fontWeight:
+                    FontWeight.w700,
               ),
             ),
 
-            SizedBox(height: 6),
+            const SizedBox(
+              height: 6,
+            ),
 
             Text(
-              'Tap Add Farm to register your first farm.',
+              l10n
+                  .addFirstFarmMessage,
 
-              textAlign: TextAlign.center,
+              textAlign:
+                  TextAlign.center,
 
-              style: TextStyle(
-                color: Color(0xFF718078),
-                fontSize: 9,
-                fontWeight: FontWeight.w500,
+              style:
+                  const TextStyle(
+                color:
+                    Color(
+                  0xFF718078,
+                ),
+
+                fontSize: AppTextStyles.bodySmall,
+
+                fontWeight:
+                    FontWeight.w500,
               ),
             ),
           ],
@@ -504,23 +735,25 @@ class _FarmsPageState extends State<FarmsPage> {
     // Farms available
     // ---------------------------------------------------------
 
-    // ---------------------------------------------------------
-// Farms available
-// ---------------------------------------------------------
+    return Column(
+      children:
+          _farms.map(
+        (farm) {
+          return Padding(
+            padding:
+                const EdgeInsets.only(
+              bottom: 16,
+            ),
 
-return Column(
-  children: _farms.map((farm) {
-    return Padding(
-      padding: const EdgeInsets.only(
-        bottom: 16,
-      ),
-      child: _featuredFarm(
-        context,
-        farm,
-      ),
+            child:
+                _featuredFarm(
+              context,
+              farm,
+            ),
+          );
+        },
+      ).toList(),
     );
-  }).toList(),
-);
   }
 
   // =========================================================
@@ -534,20 +767,29 @@ return Column(
     return Container(
       height: 78,
 
-      padding: const EdgeInsets.fromLTRB(
+      padding:
+          const EdgeInsets
+              .fromLTRB(
         10,
         10,
         8,
         8,
       ),
 
-      decoration: BoxDecoration(
-        color: Colors.white,
+      decoration:
+          BoxDecoration(
+        color:
+            Colors.white,
 
-        borderRadius: BorderRadius.circular(12),
+        borderRadius:
+            BorderRadius.circular(
+          12,
+        ),
 
-        border: Border.all(
-          color: borderColor,
+        border:
+            Border.all(
+          color:
+              borderColor,
         ),
       ),
 
@@ -562,37 +804,65 @@ return Column(
                 width: 16,
                 height: 16,
 
-                decoration: const BoxDecoration(
-                  color: lightGreen,
-                  shape: BoxShape.circle,
+                decoration:
+                    const BoxDecoration(
+                  color:
+                      lightGreen,
+
+                  shape:
+                      BoxShape.circle,
                 ),
               ),
 
-              const SizedBox(width: 5),
+              const SizedBox(
+                width: 5,
+              ),
 
               Expanded(
                 child: Text(
                   title,
 
-                  style: const TextStyle(
-                    color: Color(0xFF68766D),
-                    fontSize: 9,
-                    fontWeight: FontWeight.w600,
+                  maxLines: 1,
+
+                  overflow:
+                      TextOverflow
+                          .ellipsis,
+
+                  style:
+                      const TextStyle(
+                    color:
+                        Color(
+                      0xFF68766D,
+                    ),
+
+                    fontSize: AppTextStyles.bodySmall,
+
+                    fontWeight:
+                        FontWeight
+                            .w600,
                   ),
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 7),
+          const SizedBox(
+            height: 7,
+          ),
 
           Text(
             value,
 
-            style: const TextStyle(
-              color: primaryGreen,
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
+            style:
+                const TextStyle(
+              color:
+                  primaryGreen,
+
+              fontSize: AppTextStyles.heading,
+
+              fontWeight:
+                  FontWeight.w800,
+
               height: 1,
             ),
           ),
@@ -609,36 +879,64 @@ return Column(
     BuildContext context,
     Map<String, dynamic> farm,
   ) {
+    final l10n =
+        AppLocalizations.of(context)!;
+
     final farmName =
-        farm['name']?.toString() ??
-            'Unnamed Farm';
+        farm['name']
+                ?.toString()
+                .trim() ??
+            '';
+
+    final displayFarmName =
+        farmName.isNotEmpty
+            ? farmName
+            : l10n.farm;
 
     final acreage =
-        _getFarmAcreage(farm);
+        _getFarmAcreage(
+      farm,
+    );
 
     final farmType =
-        _getFarmTypeLabel(farm);
+        _getFarmTypeLabel(
+      context,
+      farm,
+    );
 
     final location =
-        _getFarmLocation(farm);
+        _getFarmLocation(
+      context,
+      farm,
+    );
 
     return Container(
-      width: double.infinity,
+      width:
+          double.infinity,
 
-      padding: const EdgeInsets.fromLTRB(
+      padding:
+          const EdgeInsets
+              .fromLTRB(
         14,
         14,
         14,
         14,
       ),
 
-      decoration: BoxDecoration(
-        color: Colors.white,
+      decoration:
+          BoxDecoration(
+        color:
+            Colors.white,
 
-        borderRadius: BorderRadius.circular(14),
+        borderRadius:
+            BorderRadius.circular(
+          14,
+        ),
 
-        border: Border.all(
-          color: borderColor,
+        border:
+            Border.all(
+          color:
+              borderColor,
         ),
       ),
 
@@ -647,72 +945,131 @@ return Column(
             CrossAxisAlignment.start,
 
         children: [
-          Text(
-            farmName,
+          // =====================================================
+          // FARM NAME
+          // =====================================================
 
-            style: const TextStyle(
-              color: textDark,
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
+          Text(
+            displayFarmName,
+
+            style:
+                const TextStyle(
+              color:
+                  textDark,
+
+  fontSize: AppTextStyles.bodyLarge,
+
+              fontWeight:
+                  FontWeight.w800,
             ),
           ),
 
-          const SizedBox(height: 6),
+          const SizedBox(
+            height: 6,
+          ),
+
+          // =====================================================
+          // LOCATION
+          // =====================================================
 
           Row(
             children: [
               const Icon(
-                Icons.location_on_outlined,
+                Icons
+                    .location_on_outlined,
+
                 size: 12,
-                color: Color(0xFF718078),
+
+                color:
+                    Color(
+                  0xFF718078,
+                ),
               ),
 
-              const SizedBox(width: 3),
+              const SizedBox(
+                width: 3,
+              ),
 
               Expanded(
                 child: Text(
                   location,
 
-                  style: const TextStyle(
-                    color: Color(0xFF718078),
-                    fontSize: 8,
-                    fontWeight: FontWeight.w500,
+                  maxLines: 1,
+
+                  overflow:
+                      TextOverflow
+                          .ellipsis,
+
+                  style:
+                      const TextStyle(
+                    color:
+                        Color(
+                      0xFF718078,
+                    ),
+
+                    fontSize: AppTextStyles.bodySmall,
+
+                    fontWeight:
+                        FontWeight
+                            .w500,
                   ),
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(
+            height: 12,
+          ),
 
-          // Farm type badge
+          // =====================================================
+          // FARM TYPE BADGE
+          // =====================================================
 
           Container(
             padding:
-                const EdgeInsets.symmetric(
+                const EdgeInsets
+                    .symmetric(
               horizontal: 9,
               vertical: 6,
             ),
 
-            decoration: BoxDecoration(
-              color: lightGreen,
+            decoration:
+                BoxDecoration(
+              color:
+                  lightGreen,
 
               borderRadius:
-                  BorderRadius.circular(7),
+                  BorderRadius
+                      .circular(
+                7,
+              ),
             ),
 
             child: Text(
               farmType,
 
-              style: const TextStyle(
-                color: primaryGreen,
-                fontSize: 8,
-                fontWeight: FontWeight.w600,
+              style:
+                  const TextStyle(
+                color:
+                    primaryGreen,
+
+                fontSize: AppTextStyles.bodySmall,
+
+                fontWeight:
+                    FontWeight
+                        .w600,
               ),
             ),
           ),
 
-          const SizedBox(height: 8),
+          const SizedBox(
+            height: 8,
+          ),
+
+          // =====================================================
+          // ACREAGE + PLANTING DATE + VIEW BUTTON
+          // =====================================================
 
           Row(
             crossAxisAlignment:
@@ -721,32 +1078,59 @@ return Column(
             children: [
               Expanded(
                 child: Text(
-                  '$acreage Acres${_plantingDateText(farm)}',
+                  '$acreage ${l10n.acres}'
+                  '${_plantingDateText(context, farm)}',
 
-                  style: const TextStyle(
-                    color: Color(0xFF68766D),
-                    fontSize: 9,
-                    fontWeight: FontWeight.w500,
+                  maxLines: 2,
+
+                  overflow:
+                      TextOverflow
+                          .ellipsis,
+
+                  style:
+                      const TextStyle(
+                    color:
+                        Color(
+                      0xFF68766D,
+                    ),
+
+                    fontSize: AppTextStyles.bodySmall,
+
+                    fontWeight:
+                        FontWeight
+                            .w500,
                   ),
                 ),
+              ),
+
+              const SizedBox(
+                width: 10,
               ),
 
               SizedBox(
                 height: 42,
 
-                child: ElevatedButton(
-                  onPressed: () async {
-                    await Navigator.push(
+                child:
+                    ElevatedButton(
+                  onPressed:
+                      () async {
+                    await Navigator
+                        .push(
                       context,
+
                       MaterialPageRoute(
-                        builder: (context) =>
-                            FarmDetailsPage(farm: farm),
+                        builder:
+                            (context) =>
+                                FarmDetailsPage(
+                          farm: farm,
+                        ),
                       ),
                     );
                   },
 
                   style:
-                      ElevatedButton.styleFrom(
+                      ElevatedButton
+                          .styleFrom(
                     backgroundColor:
                         primaryGreen,
 
@@ -756,26 +1140,32 @@ return Column(
                     elevation: 0,
 
                     padding:
-                        const EdgeInsets.symmetric(
-                      horizontal: 22,
+                        const EdgeInsets
+                            .symmetric(
+                      horizontal:
+                          22,
                     ),
 
                     shape:
                         RoundedRectangleBorder(
                       borderRadius:
-                          BorderRadius.circular(
+                          BorderRadius
+                              .circular(
                         9,
                       ),
                     ),
                   ),
 
-                  child: const Text(
-                    'View Farm',
+                  child: Text(
+                    l10n.viewFarm,
 
-                    style: TextStyle(
-                      fontSize: 10,
+                    style:
+                        const TextStyle(
+                      fontSize: AppTextStyles.bodySmall,
+
                       fontWeight:
-                          FontWeight.w700,
+                          FontWeight
+                              .w700,
                     ),
                   ),
                 ),
@@ -788,17 +1178,14 @@ return Column(
   }
 
   // =========================================================
-  // FARM CARD
-  // =========================================================
-
-  // =========================================================
   // FARM HELPERS
   // =========================================================
 
   String _getFarmAcreage(
     Map<String, dynamic> farm,
   ) {
-    final value = farm['acreage'];
+    final value =
+        farm['acreage'];
 
     if (value == null) {
       return '0';
@@ -819,34 +1206,56 @@ return Column(
       return value.toString();
     }
 
-    return _formatNumber(parsed);
+    return _formatNumber(
+      parsed,
+    );
   }
 
+  // =========================================================
+  // FARM TYPE
+  // =========================================================
+
   String _getFarmTypeLabel(
+    BuildContext context,
     Map<String, dynamic> farm,
   ) {
+    final l10n =
+        AppLocalizations.of(context)!;
+
     final type =
         farm['farmType']
             ?.toString()
+            .trim()
             .toUpperCase();
 
     switch (type) {
       case 'NEW':
-        return 'New farm';
+        return l10n.newFarm;
 
       case 'PRODUCTION':
-        return 'Production farm';
+        return l10n.productionFarm;
 
       default:
-        return type?.isNotEmpty == true
-            ? type!
-            : 'Farm';
+        if (type != null &&
+            type.isNotEmpty) {
+          return type;
+        }
+
+        return l10n.farm;
     }
   }
 
+  // =========================================================
+  // FARM LOCATION
+  // =========================================================
+
   String _getFarmLocation(
+    BuildContext context,
     Map<String, dynamic> farm,
   ) {
+    final l10n =
+        AppLocalizations.of(context)!;
+
     final village =
         farm['village']
             ?.toString()
@@ -897,10 +1306,15 @@ return Column(
       return region;
     }
 
-    return 'Location not available';
+    return l10n.locationNotAvailable;
   }
 
+  // =========================================================
+  // PLANTING DATE
+  // =========================================================
+
   String _plantingDateText(
+    BuildContext context,
     Map<String, dynamic> farm,
   ) {
     final plantingDate =
@@ -913,7 +1327,11 @@ return Column(
       return '';
     }
 
-    return ' • Planted: $plantingDate';
+    final l10n =
+        AppLocalizations.of(context)!;
+
+    return ' • ${l10n.planted}: '
+        '$plantingDate';
   }
 
   // =========================================================
@@ -929,7 +1347,8 @@ return Column(
   }) {
     return Expanded(
       child: InkWell(
-        onTap: onTap,
+        onTap:
+            onTap,
 
         child: Column(
           mainAxisAlignment:
@@ -938,32 +1357,41 @@ return Column(
           children: [
             Icon(
               icon,
+
               size: 17,
 
-              color: selected
-                  ? primaryGreen
-                  : const Color(
-                      0xFF9AA39D,
-                    ),
+              color:
+                  selected
+                      ? primaryGreen
+                      : const Color(
+                          0xFF9AA39D,
+                        ),
             ),
 
-            const SizedBox(height: 4),
+            const SizedBox(
+              height: 4,
+            ),
 
             Text(
               label,
 
-              style: TextStyle(
-                fontSize: 8,
+              style:
+                  TextStyle(
+                fontSize: AppTextStyles.bodySmall,
 
-                fontWeight: selected
-                    ? FontWeight.w700
-                    : FontWeight.w500,
+                fontWeight:
+                    selected
+                        ? FontWeight
+                            .w700
+                        : FontWeight
+                            .w500,
 
-                color: selected
-                    ? primaryGreen
-                    : const Color(
-                        0xFF9AA39D,
-                      ),
+                color:
+                    selected
+                        ? primaryGreen
+                        : const Color(
+                            0xFF9AA39D,
+                          ),
               ),
             ),
           ],

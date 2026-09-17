@@ -14,26 +14,41 @@ class BottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       minimum: const EdgeInsets.fromLTRB(
-        12,
-        0,
-        12,
-        10,
+        18, // clearer left margin
+        8,  // space above navbar
+        18, // clearer right margin
+        16, // clearer bottom margin
       ),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(22),
+
+          // More visible rounded corners
+          borderRadius: BorderRadius.circular(26),
+
+          // Makes the shape visible on light backgrounds
+          border: Border.all(
+            color: const Color(0xFFDCE8DF),
+            width: 1,
+          ),
+
+          // Stronger floating effect
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(
-                alpha: 0.08,
+                alpha: 0.14,
               ),
-              blurRadius: 12,
-              offset: const Offset(0, 3),
+              blurRadius: 18,
+              spreadRadius: 1,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
+
+        // Important for BottomNavigationBar
+        // to follow the rounded shape.
         clipBehavior: Clip.antiAlias,
+
         child: BottomNavigationBar(
           currentIndex: currentIndex,
           onTap: onTap,
@@ -53,7 +68,7 @@ class BottomNav extends StatelessWidget {
 
           selectedLabelStyle:
               const TextStyle(
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
           ),
 
           unselectedLabelStyle:

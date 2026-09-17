@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
+import '../services/api_services/tree_api_services.dart';
+import '../theme/app_text_styles.dart';
 import 'addtrees_page.dart';
 import 'treesdetails_page.dart';
-import '../services/api_services/tree_api_services.dart';
 
 class BlockDetailsPage extends StatefulWidget {
   final String farmId;
@@ -17,21 +19,38 @@ class BlockDetailsPage extends StatefulWidget {
   });
 
   @override
-  State<BlockDetailsPage> createState() => _BlockDetailsPageState();
+  State<BlockDetailsPage> createState() =>
+      _BlockDetailsPageState();
 }
 
-class _BlockDetailsPageState extends State<BlockDetailsPage> {
-  static const Color primaryGreen = Color(0xFF087A2F);
-  static const Color backgroundColor = Color(0xFFF8FAF8);
-  static const Color borderColor = Color(0xFFDCE8DF);
-  static const Color lightGreen = Color(0xFFE7F3EB);
-  static const Color textDark = Color(0xFF25402D);
-  static const Color textGrey = Color(0xFF718078);
+class _BlockDetailsPageState
+    extends State<BlockDetailsPage> {
+  static const Color primaryGreen =
+      Color(0xFF087A2F);
+
+  static const Color backgroundColor =
+      Color(0xFFF8FAF8);
+
+  static const Color borderColor =
+      Color(0xFFDCE8DF);
+
+  static const Color lightGreen =
+      Color(0xFFE7F3EB);
+
+  static const Color textDark =
+      Color(0xFF25402D);
+
+  static const Color textGrey =
+      Color(0xFF718078);
 
   List<Map<String, dynamic>> trees = [];
 
   bool _isLoadingTrees = true;
+
   String? _treeError;
+
+  // Tells the parent page that tree data changed.
+  bool _treeDataChanged = false;
 
   // ===============================================================
   // INIT
@@ -40,6 +59,7 @@ class _BlockDetailsPageState extends State<BlockDetailsPage> {
   @override
   void initState() {
     super.initState();
+
     _loadTrees();
   }
 
@@ -56,9 +76,14 @@ class _BlockDetailsPageState extends State<BlockDetailsPage> {
     }
 
     try {
-      final result = await TreeApiServices.getTreesByBlock(
+      final result =
+          await TreeApiServices.getTreesByBlock(
         farmId: widget.farmId,
         blockId: widget.blockId,
+      );
+
+      debugPrint(
+        'BLOCK ${widget.blockId} -> TREES: ${result.length}',
       );
 
       if (!mounted) return;
@@ -68,13 +93,115 @@ class _BlockDetailsPageState extends State<BlockDetailsPage> {
         _isLoadingTrees = false;
       });
     } catch (e) {
+      debugPrint(
+        'LOAD BLOCK TREES ERROR: $e',
+      );
+
       if (!mounted) return;
 
       setState(() {
         _isLoadingTrees = false;
-        _treeError = e.toString();
+
+        _treeError = e
+            .toString()
+            .replaceFirst(
+              'Exception: ',
+              '',
+            );
       });
     }
+  }
+
+  // ===============================================================
+  // DISPLAY IDS
+  // ===============================================================
+
+  String get _blockDisplayId {
+    final id =
+        int.tryParse(widget.blockId);
+
+    if (id == null) {
+      return widget.blockId;
+    }
+
+    return 'BL-${id.toString().padLeft(4, '0')}';
+  }
+
+  String get _farmDisplayId {
+    final id =
+        int.tryParse(widget.farmId);
+
+    if (id == null) {
+      return widget.farmId;
+    }
+
+    return 'FM-${id.toString().padLeft(4, '0')}';
+  }
+
+  // ===============================================================
+  // ADD TREE
+  // ===============================================================
+
+  Future<void> _openAddTree() async {
+    final added =
+        await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            AddTreePage(
+          farmId: widget.farmId,
+          blockId: widget.blockId,
+          blockName:
+              widget.blockName,
+        ),
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (added == true) {
+      // Remember that something changed.
+      _treeDataChanged = true;
+
+      // Immediately refresh this block.
+      await _loadTrees();
+    }
+  }
+
+  // ===============================================================
+  // OPEN TREE DETAILS
+  // ===============================================================
+
+  Future<void> _openTreeDetails(
+    String treeId,
+  ) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            TreeDetailsPage(
+          farmId: widget.farmId,
+          blockId: widget.blockId,
+          treeId: treeId,
+        ),
+      ),
+    );
+
+    if (!mounted) return;
+
+    // Refresh when returning from tree details too.
+    await _loadTrees();
+  }
+
+  // ===============================================================
+  // BACK
+  // ===============================================================
+
+  void _goBack() {
+    Navigator.pop(
+      context,
+      _treeDataChanged,
+    );
   }
 
   // ===============================================================
@@ -82,173 +209,229 @@ class _BlockDetailsPageState extends State<BlockDetailsPage> {
   // ===============================================================
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: backgroundColor,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            // =====================================================
-            // HEADER
-            // =====================================================
+  Widget build(
+    BuildContext context,
+  ) {
+    final l10n =
+        AppLocalizations.of(context)!;
 
-            Container(
-              width: double.infinity,
-              height: 52,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14,
-              ),
-              decoration: const BoxDecoration(
-                color: primaryGreen,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(18),
-                  bottomRight: Radius.circular(18),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (
+        bool didPop,
+        Object? result,
+      ) {
+        if (didPop) {
+          return;
+        }
+
+        _goBack();
+      },
+      child: Scaffold(
+        backgroundColor:
+            backgroundColor,
+        body: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              // =====================================================
+              // HEADER
+              // =====================================================
+
+              Container(
+                width: double.infinity,
+                height: 52,
+                padding:
+                    const EdgeInsets
+                        .symmetric(
+                  horizontal: 14,
                 ),
-              ),
-              child: Row(
-                children: [
-                  InkWell(
-                    onTap: () => Navigator.pop(context),
-                    borderRadius: BorderRadius.circular(20),
-                    child: const Padding(
-                      padding: EdgeInsets.all(3),
-                      child: Icon(
-                        Icons.arrow_back_ios_new,
-                        color: Colors.white,
-                        size: 14,
+                decoration:
+                    const BoxDecoration(
+                  color: primaryGreen,
+                  borderRadius:
+                      BorderRadius.only(
+                    bottomLeft:
+                        Radius.circular(
+                      18,
+                    ),
+                    bottomRight:
+                        Radius.circular(
+                      18,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    InkWell(
+                      onTap: _goBack,
+                      borderRadius:
+                          BorderRadius
+                              .circular(
+                        20,
+                      ),
+                      child:
+                          const Padding(
+                        padding:
+                            EdgeInsets.all(
+                          3,
+                        ),
+                        child: Icon(
+                          Icons
+                              .arrow_back_ios_new,
+                          color:
+                              Colors.white,
+                          size: 14,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 7),
-                  const Text(
-                    'Block Details',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
+                    const SizedBox(
+                      width: 7,
                     ),
-                  ),
-                ],
+                    Text(
+                      l10n.blockDetails,
+                      style:
+                          const TextStyle(
+                        color:
+                            Colors.white,
+                        fontSize: AppTextStyles.bodyLarge,
+                        fontWeight:
+                            FontWeight
+                                .w700,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
 
-            // =====================================================
-            // CONTENT
-            // =====================================================
+              // =====================================================
+              // CONTENT
+              // =====================================================
 
-            Expanded(
-              child: RefreshIndicator(
-                color: primaryGreen,
-                onRefresh: _loadTrees,
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(
-                    13,
-                    20,
-                    13,
-                    25,
-                  ),
-                  child: Column(
-                    children: [
-                      // BLOCK INFORMATION
-                      _blockInformation(),
+              Expanded(
+                child:
+                    RefreshIndicator(
+                  color: primaryGreen,
+                  onRefresh:
+                      _loadTrees,
+                  child:
+                      SingleChildScrollView(
+                    physics:
+                        const AlwaysScrollableScrollPhysics(),
+                    padding:
+                        const EdgeInsets
+                            .fromLTRB(
+                      13,
+                      20,
+                      13,
+                      25,
+                    ),
+                    child: Column(
+                      children: [
+                        // BLOCK INFORMATION
 
-                      const SizedBox(height: 18),
+                        _blockInformation(),
 
-                      // BLOCK SUMMARY
-                      _blockSummary(),
+                        const SizedBox(
+                          height: 18,
+                        ),
 
-                      const SizedBox(height: 22),
+                        // BLOCK SUMMARY
 
-                      // =================================================
-                      // TREES HEADER
-                      // =================================================
+                        _blockSummary(),
 
-                      Row(
-                        mainAxisAlignment:
-                            MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Trees',
-                            style: TextStyle(
-                              color: textDark,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
+                        const SizedBox(
+                          height: 22,
+                        ),
+
+                        // =========================================
+                        // TREES HEADER
+                        // =========================================
+
+                        Row(
+                          mainAxisAlignment:
+                              MainAxisAlignment
+                                  .spaceBetween,
+                          children: [
+                            Text(
+                              l10n.trees,
+                              style:
+                                  const TextStyle(
+                                color:
+                                    textDark,
+                                fontSize:
+                                    AppTextStyles.body,
+                                fontWeight:
+                                    FontWeight
+                                        .w700,
+                              ),
                             ),
-                          ),
-
-                          SizedBox(
-                            height: 38,
-                            child: ElevatedButton.icon(
-                              onPressed: () async {
-                                final added =
-                                    await Navigator.push<bool>(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        AddTreePage(
-                                      farmId: widget.farmId,
-                                      blockId: widget.blockId,
-                                      blockName:
-                                          widget.blockName,
+                            SizedBox(
+                              height: 38,
+                              child:
+                                  ElevatedButton
+                                      .icon(
+                                onPressed:
+                                    _openAddTree,
+                                icon:
+                                    const Icon(
+                                  Icons.add,
+                                  size: 15,
+                                ),
+                                label: Text(
+                                  l10n.addTree,
+                                  style:
+                                      const TextStyle(
+                                    fontSize:
+                                        AppTextStyles.bodySmall,
+                                    fontWeight:
+                                        FontWeight
+                                            .w700,
+                                  ),
+                                ),
+                                style:
+                                    ElevatedButton
+                                        .styleFrom(
+                                  backgroundColor:
+                                      primaryGreen,
+                                  foregroundColor:
+                                      Colors.white,
+                                  elevation:
+                                      0,
+                                  padding:
+                                      const EdgeInsets
+                                          .symmetric(
+                                    horizontal:
+                                        14,
+                                  ),
+                                  shape:
+                                      RoundedRectangleBorder(
+                                    borderRadius:
+                                        BorderRadius
+                                            .circular(
+                                      8,
                                     ),
                                   ),
-                                );
-
-                                if (added == true) {
-                                  await _loadTrees();
-                                }
-                              },
-                              icon: const Icon(
-                                Icons.add,
-                                size: 15,
-                              ),
-                              label: const Text(
-                                'Add Tree',
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  fontWeight:
-                                      FontWeight.w700,
-                                ),
-                              ),
-                              style:
-                                  ElevatedButton.styleFrom(
-                                backgroundColor:
-                                    primaryGreen,
-                                foregroundColor:
-                                    Colors.white,
-                                elevation: 0,
-                                padding:
-                                    const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                ),
-                                shape:
-                                    RoundedRectangleBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(
-                                    8,
-                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
 
-                      const SizedBox(height: 14),
+                        const SizedBox(
+                          height: 14,
+                        ),
 
-                      // =================================================
-                      // TREE LIST
-                      // =================================================
+                        // TREE LIST
 
-                      _buildTreeList(),
-                    ],
+                        _buildTreeList(),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -259,51 +442,66 @@ class _BlockDetailsPageState extends State<BlockDetailsPage> {
   // ===============================================================
 
   Widget _blockInformation() {
+    final l10n =
+        AppLocalizations.of(context)!;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: _cardDecoration(),
+      padding:
+          const EdgeInsets.all(14),
+      decoration:
+          _cardDecoration(),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Block Information',
-            style: TextStyle(
-              color: primaryGreen,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-
-          const SizedBox(height: 14),
-
           Text(
-            'Block ID: BL-${widget.blockId.padLeft(4, '0')}',
-            style: const TextStyle(
-              color: textDark,
-              fontSize: 9,
-              fontWeight: FontWeight.w600,
+            l10n.blockInformation,
+            style:
+                const TextStyle(
+              color: primaryGreen,
+              fontSize: AppTextStyles.body,
+              fontWeight:
+                  FontWeight.w700,
             ),
           ),
-
-          const SizedBox(height: 8),
-
+          const SizedBox(
+            height: 14,
+          ),
+          Text(
+            '${l10n.blockId}: '
+            '$_blockDisplayId',
+            style:
+                const TextStyle(
+              color: textDark,
+              fontSize: AppTextStyles.bodySmall,
+              fontWeight:
+                  FontWeight.w600,
+            ),
+          ),
+          const SizedBox(
+            height: 8,
+          ),
           Text(
             widget.blockName,
-            style: const TextStyle(
+            style:
+                const TextStyle(
               color: textDark,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
+              fontSize: AppTextStyles.body,
+              fontWeight:
+                  FontWeight.w700,
             ),
           ),
-
-          const SizedBox(height: 8),
-
+          const SizedBox(
+            height: 8,
+          ),
           Text(
-            'Farm ID: FM-${widget.farmId.padLeft(4, '0')}',
-            style: const TextStyle(
+            '${l10n.farmId}: '
+            '$_farmDisplayId',
+            style:
+                const TextStyle(
               color: textGrey,
-              fontSize: 8,
+              fontSize: AppTextStyles.bodySmall,
             ),
           ),
         ],
@@ -316,47 +514,64 @@ class _BlockDetailsPageState extends State<BlockDetailsPage> {
   // ===============================================================
 
   Widget _blockSummary() {
+    final l10n =
+        AppLocalizations.of(context)!;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: _cardDecoration(),
+      padding:
+          const EdgeInsets.all(14),
+      decoration:
+          _cardDecoration(),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Block Summary',
-            style: TextStyle(
+          Text(
+            l10n.blockSummary,
+            style:
+                const TextStyle(
               color: primaryGreen,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
+              fontSize: AppTextStyles.body,
+              fontWeight:
+                  FontWeight.w700,
             ),
           ),
-
-          const SizedBox(height: 16),
-
+          const SizedBox(
+            height: 16,
+          ),
           Row(
             children: [
               Expanded(
-                child: _summaryItem(
-                  label: 'Block',
+                child:
+                    _summaryItem(
+                  label:
+                      l10n.block,
                   value:
-                      'BL-${widget.blockId.padLeft(4, '0')}',
+                      _blockDisplayId,
                 ),
               ),
-
               Expanded(
-                child: _summaryItem(
-                  label: 'Trees',
-                  value: _isLoadingTrees
-                      ? '...'
-                      : trees.length.toString(),
+                child:
+                    _summaryItem(
+                  label:
+                      l10n.trees,
+                  value:
+                      _isLoadingTrees
+                          ? '...'
+                          : trees
+                              .length
+                              .toString(),
                 ),
               ),
-
               Expanded(
-                child: _summaryItem(
-                  label: 'Varieties',
-                  value: _varietyCount().toString(),
+                child:
+                    _summaryItem(
+                  label:
+                      l10n.varieties,
+                  value:
+                      _varietyCount()
+                          .toString(),
                 ),
               ),
             ],
@@ -375,22 +590,28 @@ class _BlockDetailsPageState extends State<BlockDetailsPage> {
     required String value,
   }) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment:
+          CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style:
+              const TextStyle(
             color: textGrey,
-            fontSize: 8,
+            fontSize: AppTextStyles.bodySmall,
           ),
         ),
-        const SizedBox(height: 5),
+        const SizedBox(
+          height: 5,
+        ),
         Text(
           value,
-          style: const TextStyle(
+          style:
+              const TextStyle(
             color: textDark,
-            fontSize: 10,
-            fontWeight: FontWeight.w700,
+            fontSize: AppTextStyles.bodySmall,
+            fontWeight:
+                FontWeight.w700,
           ),
         ),
       ],
@@ -405,9 +626,15 @@ class _BlockDetailsPageState extends State<BlockDetailsPage> {
     final varieties = trees
         .map(
           (tree) =>
-              tree['variety']?.toString().trim() ?? '',
+              tree['variety']
+                  ?.toString()
+                  .trim() ??
+              '',
         )
-        .where((value) => value.isNotEmpty)
+        .where(
+          (value) =>
+              value.isNotEmpty,
+        )
         .toSet();
 
     return varieties.length;
@@ -418,13 +645,18 @@ class _BlockDetailsPageState extends State<BlockDetailsPage> {
   // ===============================================================
 
   Widget _buildTreeList() {
+    final l10n =
+        AppLocalizations.of(context)!;
+
     if (_isLoadingTrees) {
       return const Padding(
-        padding: EdgeInsets.symmetric(
+        padding:
+            EdgeInsets.symmetric(
           vertical: 35,
         ),
         child: Center(
-          child: CircularProgressIndicator(
+          child:
+              CircularProgressIndicator(
             color: primaryGreen,
           ),
         ),
@@ -434,48 +666,60 @@ class _BlockDetailsPageState extends State<BlockDetailsPage> {
     if (_treeError != null) {
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(18),
-        decoration: _cardDecoration(),
+        padding:
+            const EdgeInsets.all(
+          18,
+        ),
+        decoration:
+            _cardDecoration(),
         child: Column(
           children: [
             const Icon(
               Icons.error_outline,
-              color: Colors.redAccent,
+              color:
+                  Colors.redAccent,
               size: 30,
             ),
-
-            const SizedBox(height: 10),
-
-            const Text(
-              'Unable to load trees',
-              style: TextStyle(
+            const SizedBox(
+              height: 10,
+            ),
+            Text(
+              l10n
+                  .unableToLoadTrees,
+              style:
+                  const TextStyle(
                 color: textDark,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
+                fontSize: AppTextStyles.body,
+                fontWeight:
+                    FontWeight.w700,
               ),
             ),
-
-            const SizedBox(height: 6),
-
+            const SizedBox(
+              height: 6,
+            ),
             Text(
               _treeError!,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
+              textAlign:
+                  TextAlign.center,
+              style:
+                  const TextStyle(
                 color: textGrey,
-                fontSize: 8,
+                fontSize: AppTextStyles.bodySmall,
               ),
             ),
-
-            const SizedBox(height: 12),
-
+            const SizedBox(
+              height: 12,
+            ),
             TextButton.icon(
-              onPressed: _loadTrees,
-              icon: const Icon(
+              onPressed:
+                  _loadTrees,
+              icon:
+                  const Icon(
                 Icons.refresh,
                 size: 16,
               ),
-              label: const Text(
-                'Try Again',
+              label: Text(
+                l10n.tryAgain,
               ),
             ),
           ],
@@ -486,38 +730,48 @@ class _BlockDetailsPageState extends State<BlockDetailsPage> {
     if (trees.isEmpty) {
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(
+        padding:
+            const EdgeInsets
+                .symmetric(
           vertical: 30,
           horizontal: 16,
         ),
-        decoration: _cardDecoration(),
-        child: const Column(
+        decoration:
+            _cardDecoration(),
+        child: Column(
           children: [
-            Icon(
+            const Icon(
               Icons.park_outlined,
               color: textGrey,
               size: 34,
             ),
-
-            SizedBox(height: 10),
-
+            const SizedBox(
+              height: 10,
+            ),
             Text(
-              'No trees registered in this block',
-              style: TextStyle(
+              l10n.noTreesInBlock,
+              textAlign:
+                  TextAlign.center,
+              style:
+                  const TextStyle(
                 color: textDark,
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
+                fontSize: AppTextStyles.bodySmall,
+                fontWeight:
+                    FontWeight.w600,
               ),
             ),
-
-            SizedBox(height: 5),
-
+            const SizedBox(
+              height: 5,
+            ),
             Text(
-              'Tap Add Tree to register the first tree.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
+              l10n
+                  .addFirstTreeMessage,
+              textAlign:
+                  TextAlign.center,
+              style:
+                  const TextStyle(
                 color: textGrey,
-                fontSize: 8,
+                fontSize: AppTextStyles.bodySmall,
               ),
             ),
           ],
@@ -528,10 +782,17 @@ class _BlockDetailsPageState extends State<BlockDetailsPage> {
     return Column(
       children: trees
           .map(
-            (tree) => Padding(
+            (tree) =>
+                Padding(
               padding:
-                  const EdgeInsets.only(bottom: 12),
-              child: _treeCard(tree),
+                  const EdgeInsets
+                      .only(
+                bottom: 12,
+              ),
+              child:
+                  _treeCard(
+                tree,
+              ),
             ),
           )
           .toList(),
@@ -542,80 +803,123 @@ class _BlockDetailsPageState extends State<BlockDetailsPage> {
   // TREE CARD
   // ===============================================================
 
-  Widget _treeCard(Map<String, dynamic> tree) {
+  Widget _treeCard(
+    Map<String, dynamic> tree,
+  ) {
+    final l10n =
+        AppLocalizations.of(context)!;
+
     final rawId =
-        tree['id']?.toString() ?? '';
+        tree['id']
+                ?.toString() ??
+            '';
 
     final treeCode =
-        tree['treeCode']?.toString() ??
+        tree['treeCode']
+                ?.toString() ??
             'TR-${rawId.padLeft(6, '0')}';
 
     final variety =
-        tree['variety']?.toString() ?? '-';
+        tree['variety']
+                ?.toString() ??
+            '-';
 
     final status =
-        tree['status']?.toString() ?? '-';
+        tree['status']
+                ?.toString() ??
+            '-';
 
     final plantingYear =
-        tree['plantingYear']?.toString() ?? '-';
+        tree['plantingYear']
+                ?.toString() ??
+            '-';
 
     final formattedStatus =
-        _formatStatus(status);
+        _formatStatus(
+      context,
+      status,
+    );
 
     final statusColor =
-        _getStatusColor(status);
+        _getStatusColor(
+      status,
+    );
 
     final statusBackground =
-        _getStatusBackground(status);
+        _getStatusBackground(
+      status,
+    );
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: _cardDecoration(),
+      padding:
+          const EdgeInsets.all(
+        14,
+      ),
+      decoration:
+          _cardDecoration(),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               // TREE ICON
+
               Container(
                 width: 34,
                 height: 34,
-                decoration: BoxDecoration(
-                  color: statusBackground,
-                  shape: BoxShape.circle,
+                decoration:
+                    BoxDecoration(
+                  color:
+                      statusBackground,
+                  shape:
+                      BoxShape.circle,
                 ),
                 child: Icon(
                   Icons.park_outlined,
-                  color: statusColor,
+                  color:
+                      statusColor,
                   size: 18,
                 ),
               ),
 
-              const SizedBox(width: 10),
+              const SizedBox(
+                width: 10,
+              ),
 
               Expanded(
                 child: Column(
                   crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                      CrossAxisAlignment
+                          .start,
                   children: [
                     Text(
                       treeCode,
-                      style: const TextStyle(
-                        color: textDark,
-                        fontSize: 10,
+                      style:
+                          const TextStyle(
+                        color:
+                            textDark,
+                        fontSize:
+                            AppTextStyles.bodySmall,
                         fontWeight:
-                            FontWeight.w700,
+                            FontWeight
+                                .w700,
                       ),
                     ),
-
-                    const SizedBox(height: 4),
-
+                    const SizedBox(
+                      height: 4,
+                    ),
                     Text(
-                      '$variety • Planted $plantingYear',
-                      style: const TextStyle(
-                        color: textGrey,
-                        fontSize: 8,
+                      '$variety • '
+                      '${l10n.planted} '
+                      '$plantingYear',
+                      style:
+                          const TextStyle(
+                        color:
+                            textGrey,
+                        fontSize:
+                            AppTextStyles.bodySmall,
                       ),
                     ),
                   ],
@@ -623,55 +927,66 @@ class _BlockDetailsPageState extends State<BlockDetailsPage> {
               ),
 
               // STATUS
+
               Container(
                 padding:
-                    const EdgeInsets.symmetric(
+                    const EdgeInsets
+                        .symmetric(
                   horizontal: 8,
                   vertical: 5,
                 ),
-                decoration: BoxDecoration(
-                  color: statusBackground,
+                decoration:
+                    BoxDecoration(
+                  color:
+                      statusBackground,
                   borderRadius:
-                      BorderRadius.circular(6),
+                      BorderRadius
+                          .circular(
+                    6,
+                  ),
                 ),
                 child: Text(
                   formattedStatus,
-                  style: TextStyle(
-                    color: statusColor,
-                    fontSize: 7,
+                  style:
+                      TextStyle(
+                    color:
+                        statusColor,
+                    fontSize: AppTextStyles.bodySmall,
                     fontWeight:
-                        FontWeight.w600,
+                        FontWeight
+                            .w600,
                   ),
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 8),
+          const SizedBox(
+            height: 8,
+          ),
 
           Align(
-            alignment: Alignment.centerRight,
+            alignment:
+                Alignment.centerRight,
             child: TextButton(
-              onPressed: rawId.isEmpty
-                  ? null
-                  : () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                      builder: (context) => TreeDetailsPage(
-  farmId: widget.farmId,
-  blockId: widget.blockId,
-  treeId: rawId,
-),
-                        ),
-                      );
-                    },
-              child: const Text(
-                'View Tree ›',
-                style: TextStyle(
-                  color: primaryGreen,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w700,
+              onPressed:
+                  rawId.isEmpty
+                      ? null
+                      : () {
+                          _openTreeDetails(
+                            rawId,
+                          );
+                        },
+              child: Text(
+                '${l10n.viewTree} ›',
+                style:
+                    const TextStyle(
+                  color:
+                      primaryGreen,
+                  fontSize: AppTextStyles.bodySmall,
+                  fontWeight:
+                      FontWeight
+                          .w700,
                 ),
               ),
             ),
@@ -685,33 +1000,49 @@ class _BlockDetailsPageState extends State<BlockDetailsPage> {
   // FORMAT STATUS
   // ===============================================================
 
-  String _formatStatus(String status) {
-    if (status.trim().isEmpty ||
-        status == '-') {
-      return '-';
+  String _formatStatus(
+    BuildContext context,
+    String status,
+  ) {
+    final l10n =
+        AppLocalizations.of(context)!;
+
+    switch (
+        status.trim().toUpperCase()) {
+      case 'HEALTHY':
+        return l10n.healthy;
+
+      case 'DISEASED':
+        return l10n.diseased;
+
+      case 'DEAD':
+        return l10n.dead;
+
+      default:
+        return '-';
     }
-
-    final value =
-        status.trim().toLowerCase();
-
-    return value[0].toUpperCase() +
-        value.substring(1);
   }
 
   // ===============================================================
   // STATUS COLOR
   // ===============================================================
 
-  Color _getStatusColor(String status) {
+  Color _getStatusColor(
+    String status,
+  ) {
     switch (status.toUpperCase()) {
       case 'HEALTHY':
         return primaryGreen;
 
       case 'DISEASED':
-        return const Color(0xFFD97706);
+        return const Color(
+          0xFFD97706,
+        );
 
       case 'DEAD':
-        return const Color(0xFFB91C1C);
+        return const Color(
+          0xFFB91C1C,
+        );
 
       default:
         return textGrey;
@@ -730,13 +1061,19 @@ class _BlockDetailsPageState extends State<BlockDetailsPage> {
         return lightGreen;
 
       case 'DISEASED':
-        return const Color(0xFFFFF3D6);
+        return const Color(
+          0xFFFFF3D6,
+        );
 
       case 'DEAD':
-        return const Color(0xFFFFE4E4);
+        return const Color(
+          0xFFFFE4E4,
+        );
 
       default:
-        return const Color(0xFFF0F2F1);
+        return const Color(
+          0xFFF0F2F1,
+        );
     }
   }
 
@@ -748,7 +1085,9 @@ class _BlockDetailsPageState extends State<BlockDetailsPage> {
     return BoxDecoration(
       color: Colors.white,
       borderRadius:
-          BorderRadius.circular(13),
+          BorderRadius.circular(
+        13,
+      ),
       border: Border.all(
         color: borderColor,
       ),

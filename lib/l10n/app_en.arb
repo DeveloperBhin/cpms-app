@@ -1,0 +1,524 @@
+{
+  "@@locale": "en",
+
+  "goodMorning": "Good morning,",
+  "goodAfternoon": "Good afternoon,",
+  "goodEvening": "Good evening,",
+
+  "changeLanguage": "Change Language",
+  "english": "English",
+  "swahili": "Kiswahili",
+
+  "home": "Home",
+  "farms": "Farms",
+  "trees": "Trees",
+  "harvested": "Harvested",
+  "totalCost": "Total Cost",
+  "activities": "Activities",
+  "farmHarvests": "Farm Harvests",
+
+  "registered": "registered",
+  "recorded": "recorded",
+  "totalHarvested": "total harvested",
+  "activityCosts": "activity costs",
+
+  "productionOverview": "Production Overview",
+  "treeHarvest": "Tree Harvest",
+  "farmHarvest": "Farm Harvest",
+
+  "upcomingActivities": "Upcoming Activities",
+  "noUpcomingActivities": "No upcoming activities.",
+
+  "profile": "Profile",
+  "more": "More",
+
+  "unableToLoadDashboard": "Unable to load dashboard.",
+
+  "activity": "Activity",
+  "weeding": "Weeding",
+  "pruning": "Pruning",
+  "pesticideApplication": "Pesticide Application",
+  "fertilizerApplication": "Fertilizer Application",
+  "harvesting": "Harvesting",
+  "other": "Other",
+
+  "farmDashboard": "Farm Dashboard",
+  "acres": "Acres",
+  "addFarm": "Add Farm",
+  "unableToLoadFarms": "Unable to load farms",
+  "retry": "Retry",
+  "noFarmsAddedYet": "No farms added yet",
+  "addFirstFarmMessage": "Tap Add Farm to register your first farm.",
+  "viewFarm": "View Farm",
+  "newFarm": "New farm",
+  "productionFarm": "Production farm",
+  "farm": "Farm",
+  "locationNotAvailable": "Location not available",
+  "planted": "Planted",
+
+  "totalTrees": "Total Trees",
+  "registeredTrees": "Registered Trees",
+  "searchTreeHint": "Search tree by code, farm, block or variety",
+
+  "treeCount": "{count} trees",
+  "@treeCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "refresh": "Refresh",
+  "block": "Block",
+  "viewTree": "View Tree",
+
+  "healthy": "Healthy",
+  "diseased": "Diseased",
+  "dead": "Dead",
+
+  "unableToLoadTrees": "Unable to load trees",
+  "unknownError": "Unknown error",
+  "tryAgain": "Try Again",
+
+  "noTreesFound": "No trees found",
+  "noTreesRegistered": "No trees registered",
+
+  "tryAnotherTreeSearch": "Try another tree code, farm, block or variety.",
+  "registeredTreesAppearHere": "Trees registered in your farms will appear here.",
+
+  "unableToOpenTree": "Unable to open this tree because its farm, block or tree ID is missing.",
+
+  "treeActivities": "Tree Activities",
+  "activityPageDescription": "View and manage farm and tree activities.",
+  "addActivity": "Add Activity",
+  "chooseActivityType": "Choose the type of activity you want to record.",
+
+  "treeActivity": "Tree Activity",
+  "treeActivityDescription": "Weeding, pruning, pesticide, fertilizer and other tree activities.",
+
+  "harvestingDescription": "Record farm harvesting or harvesting from a specific tree.",
+
+  "harvestingMethod": "Harvesting Method",
+  "howHarvestRecorded": "How was this harvest recorded?",
+
+  "farmHarvesting": "Farm Harvesting",
+  "farmHarvestingDescription": "Record harvest using number of buckets and kilograms per bucket.",
+
+  "treeHarvesting": "Tree Harvesting",
+  "treeHarvestingDescription": "Record kilograms harvested from a specific cashew tree.",
+
+  "searchActivitiesHint": "Search tree, farm, block or activity...",
+
+  "all": "All",
+  "pesticide": "Pesticide",
+  "fertilizer": "Fertilizer",
+
+  "recentActivities": "Recent Activities",
+
+  "activitiesFound": "{count} found",
+  "@activitiesFound": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "viewTreeActivities": "View Tree Activities",
+
+  "loadingActivities": "Loading activities...",
+  "unableToLoadActivities": "Unable to load activities",
+
+  "noActivitiesFound": "No activities found",
+  "noActivitiesRecorded": "No activities recorded",
+
+  "changeSearchOrFilter": "Try changing your search or filter.",
+  "activitiesAppearHere": "Activities added to your cashew trees will appear here.",
+
+  "unableToOpenTreeActivities": "Unable to open tree activities. Tree relationship information is missing.",
+
+  "planned": "Planned",
+  "inProgress": "In Progress",
+  "completed": "Completed",
+  "cancelled": "Cancelled",
+
+  "unableToLoadProfile": "Unable to load profile",
+  "personalInformation": "PERSONAL INFORMATION",
+  "editProfile": "Edit Profile",
+  "updateYourDetails": "Update your details",
+  "notifications": "Notifications",
+  "enabled": "Enabled",
+  "language": "Language",
+
+  "systemSecurity": "SYSTEM & SECURITY",
+  "lightDarkMode": "Light/Dark Mode",
+  "privacySecurity": "Privacy & Security",
+
+  "support": "SUPPORT",
+  "helpCenter": "Help Center",
+  "termsOfService": "Terms of Service",
+
+  "uploads": "UPLOADS",
+  "uploadFiles": "Upload Files",
+  "uploadFilesDescription": "Upload documents, images or ZIP files",
+  "filesUploadedSuccessfully": "Files uploaded successfully",
+  "uploadFailed": "Upload failed",
+
+  "logout": "Logout",
+  "poweredByTari": "Powered by TARI",
+  "active": "Active",
+  "user": "User",
+
+  "farmName": "Farm Name",
+  "farmNameRequired": "Farm name is required",
+
+  "plantingDate": "Planting Date",
+  "plantingDateRequired": "Planting date is required",
+
+  "farmType": "Farm Type",
+  "selectFarmType": "Select Farm Type",
+  "farmTypeRequired": "Farm type is required",
+
+  "farmSize": "Farm Size",
+  "farmSizeRequired": "Farm size is required",
+  "validFarmSizeRequired": "Enter a valid farm size",
+
+  "submitFarm": "Submit Farm",
+  "farmAddedSuccessfully": "Farm added successfully",
+  "profileLocationIncomplete": "Your profile location information is incomplete",
+
+  "farmDetails": "Farm Details",
+  "farmInformation": "Farm Information",
+  "farmId": "Farm ID",
+  "viewBlocks": "View Blocks",
+
+  "location": "Location",
+  "region": "Region",
+  "district": "District",
+  "ward": "Ward",
+  "village": "Village",
+
+  "productionSummary": "Production Summary",
+  "totalProduction": "Total production",
+  "averageProduction": "Average production",
+  "productionHistory": "Production History",
+  "noProductionRecords": "No production records available yet.",
+
+  "unnamedFarm": "Unnamed Farm",
+
+  "farmBlocks": "Farm Blocks",
+  "blocks": "Blocks",
+
+  "blockCount": "Blocks ({count})",
+  "@blockCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "addBlock": "Add Block",
+  "loadingBlocks": "Loading blocks...",
+  "unableToLoadBlocks": "Unable to load blocks",
+  "noBlocksYet": "No blocks yet",
+  "createFirstBlock": "Create the first block for this farm.",
+  "unnamedBlock": "Unnamed Block",
+
+  "size": "Size",
+  "variety": "Variety",
+  "viewBlock": "View Block",
+
+  "blockName": "Block Name",
+  "blockNameHint": "Block name",
+  "blockNameRequired": "Block name is required",
+
+  "blockSize": "Block Size",
+  "blockSizeHint": "Block size / acres",
+  "blockSizeRequired": "Block size is required",
+  "validBlockSizeRequired": "Enter a valid block size",
+
+  "numberOfTrees": "Number of Trees",
+  "numberOfTreesHint": "Number of trees",
+  "numberOfTreesRequired": "Number of trees is required",
+  "validNumberOfTreesRequired": "Enter a valid number of trees",
+
+  "cashewVariety": "Cashew Variety",
+  "cashewVarietyHint": "Cashew variety",
+  "cashewVarietyRequired": "Cashew variety is required",
+
+  "description": "Description",
+  "blockDescriptionHint": "Notes / block description",
+
+  "submitBlock": "Submit Block",
+  "blockAddedSuccessfully": "Block added successfully",
+
+  "blockDetails": "Block Details",
+  "blockInformation": "Block Information",
+  "blockId": "Block ID",
+  "blockSummary": "Block Summary",
+  "varieties": "Varieties",
+
+  "addTree": "Add Tree",
+  "noTreesInBlock": "No trees registered in this block",
+  "addFirstTreeMessage": "Tap Add Tree to register the first tree.",
+  "addingTreeTo": "Adding tree to",
+
+  "plantingYear": "Planting Year",
+  "plantingYearHint": "Planting year",
+  "selectPlantingYear": "Select planting year",
+  "plantingYearRequired": "Planting year is required",
+  "invalidPlantingYear": "Invalid planting year",
+  "validPlantingYearRequired": "Enter a valid planting year",
+
+  "treeStatus": "Tree Status",
+  "treeStatusHint": "Tree status",
+
+  "treeLocation": "Tree Location",
+  "treeLocationDescription": "Optional GPS coordinates for this tree.",
+
+  "latitude": "Latitude",
+  "longitude": "Longitude",
+  "invalidLatitude": "Invalid latitude",
+  "invalidLongitude": "Invalid longitude",
+  "validLatitudeRequired": "Enter a valid latitude between -90 and 90.",
+  "validLongitudeRequired": "Enter a valid longitude between -180 and 180.",
+  "bothCoordinatesRequired": "Enter both latitude and longitude.",
+
+  "notes": "Notes",
+  "treeNotesHint": "Notes / tree description",
+
+  "treeAddedSuccessfully": "Tree added successfully",
+
+  "addTreeActivity": "Add Tree Activity",
+  "treeActivitySubtitle": "Select a farm, block and cashew tree, then record the activity and its cost.",
+  "farmHarvestSubtitle": "Select a farm and record the number of buckets, kilograms per bucket and harvesting cost.",
+  "treeHarvestSubtitle": "Select a farm, block and cashew tree, then record the kilograms harvested from the tree.",
+
+  "activityInformation": "Activity Information",
+  "harvestInformation": "Harvest Information",
+
+  "selectFarm": "Select farm",
+  "farmRequired": "Farm is required",
+  "pleaseSelectFarm": "Please select a farm.",
+  "loadingFarms": "Loading farms...",
+
+  "selectFarmFirst": "Select farm first",
+  "selectBlock": "Select block",
+  "blockRequired": "Block is required",
+  "pleaseSelectBlock": "Please select a block.",
+  "noBlocksForFarm": "No blocks found for this farm",
+
+  "cashewTree": "Cashew Tree",
+  "selectBlockFirst": "Select block first",
+  "selectTree": "Select tree",
+  "treeRequired": "Tree is required",
+  "pleaseSelectTree": "Please select a tree.",
+  "loadingTrees": "Loading trees...",
+  "noTreesForBlock": "No trees found for this block",
+
+  "activityType": "Activity Type",
+  "selectActivity": "Select activity",
+  "activityTypeRequired": "Activity type is required",
+
+  "numberOfBuckets": "Number of Buckets",
+  "kgPerBucket": "Kg per Bucket",
+  "example20": "Example: 20",
+  "example15": "Example: 15",
+
+  "totalHarvest": "Total Harvest",
+  "bucketsTimesKg": "Buckets × Kg per bucket",
+
+  "harvestedWeightKg": "Harvested Weight (Kg)",
+  "exampleHarvestWeight": "Example: 18.5",
+  "treeHarvestRecordDescription": "Harvest will be recorded in kilograms for the selected tree.",
+
+  "activityDate": "Activity Date",
+  "harvestDate": "Harvest Date",
+
+  "costTzs": "Cost (TZS)",
+  "exampleCost": "Example: 25000",
+
+  "enterDescription": "Enter description...",
+
+  "saving": "Saving...",
+  "saveActivity": "Save Activity",
+  "saveFarmHarvest": "Save Farm Harvest",
+  "saveTreeHarvest": "Save Tree Harvest",
+
+  "treeActivitySaved": "Tree activity saved successfully.",
+  "farmHarvestSaved": "Farm harvest saved successfully.",
+  "treeHarvestSaved": "Tree harvest saved successfully.",
+
+  "farmBlockTreeActivityRequired": "Farm, block, tree and activity type are required.",
+  "farmBlockTreeRequired": "Farm, block and tree are required.",
+  "costCannotBeNegative": "Cost cannot be negative.",
+  "harvestKgGreaterThanZero": "Harvested kilograms must be greater than zero.",
+  "bucketCountGreaterThanZero": "Number of buckets must be greater than zero.",
+  "kgPerBucketGreaterThanZero": "Kg per bucket must be greater than zero.",
+
+  "fieldRequired": "{field} is required",
+  "@fieldRequired": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+
+  "enterValidWholeNumber": "Enter a valid whole number",
+  "enterValidNumber": "Enter a valid number",
+  "valueCannotBeNegative": "Value cannot be negative",
+  "valueGreaterThanZero": "Value must be greater than zero",
+
+  "treeDetails": "Tree Details",
+  "treeInformationNotFound": "Tree information was not found.",
+  "unableToLoadTree": "Unable to load tree",
+
+  "treeInformation": "Tree Information",
+  "treeId": "Tree ID",
+
+  "plantedYear": "Planted {year}",
+  "@plantedYear": {
+    "placeholders": {
+      "year": {
+        "type": "String"
+      }
+    }
+  },
+
+  "scanTree": "Scan Tree",
+  "scanTreeDescription": "Scan a tree barcode to identify and view its information.",
+  "scanTreeBarcode": "Scan Tree Barcode",
+
+  "treeIdentification": "Tree Identification",
+  "scanBarcodeToIdentifyTree": "Scan this barcode to identify this tree.",
+  "enlargeBarcode": "Enlarge Barcode",
+  "treeBarcode": "Tree Barcode",
+  "close": "Close",
+
+  "gpsCoordinates": "GPS Coordinates",
+  "noGpsCoordinatesRecorded": "No GPS coordinates recorded",
+
+  "noNotesRecorded": "No notes recorded",
+
+  "treeActivitiesDescription": "Record and manage activities performed on this tree.",
+  "addViewTreeActivities": "Add / View Tree Activities",
+
+  "activitiesPerformedOnTree": "Activities performed on this tree",
+
+  "loadingTreeInformation": "Loading tree information...",
+  "unableToLoadTreeInformation": "Unable to load tree information",
+
+  "cost": "Cost: {amount}",
+  "@cost": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+
+  "harvestedAmount": "Harvested: {amount} kg",
+  "@harvestedAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+
+  "treeActivityAddedSuccessfully": "Tree activity added successfully",
+
+  "failedToSaveActivity": "Failed to save activity: {error}",
+  "@failedToSaveActivity": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+
+  "addFirstTreeActivity": "Add the first activity for this tree.",
+
+  "recordActivityForTree": "Record activity for {treeId}",
+  "@recordActivityForTree": {
+    "placeholders": {
+      "treeId": {
+        "type": "String"
+      }
+    }
+  },
+
+  "selectDate": "Select date",
+  "selectActivityDate": "Select activity date",
+  "describeActivityPerformed": "Describe the activity performed...",
+  "descriptionRequired": "Description is required",
+  "status": "Status",
+  "treeNotFound": "Tree Not Found",
+"noTreeFoundWithBarcode": "No tree was found with barcode:\n\n{code}",
+"@noTreeFoundWithBarcode": {
+  "placeholders": {
+    "code": {
+      "type": "String"
+    }
+  }
+},
+"scanAgain": "Scan Again",
+"enterTreeCode": "Enter Tree Code",
+"treeCodeExample": "Example: TR-0001",
+"findTree": "Find Tree",
+"scanTreeBarcode": "Scan Tree Barcode",
+"turnOnFlash": "Turn on flash",
+"turnOffFlash": "Turn off flash",
+"positionTreeBarcode": "Position the barcode attached to the tree inside the scanning frame.",
+"keepBarcodeSteady": "Keep the barcode steady inside the frame",
+"barcodeDetected": "Barcode detected",
+"scannerReady": "Scanner Ready",
+"readingBarcode": "Reading {code}",
+"@readingBarcode": {
+  "placeholders": {
+    "code": {
+      "type": "String"
+    }
+  }
+},
+"waitingForTreeBarcode": "Waiting for a tree barcode...",
+"enterTreeCodeManually": "Enter Tree Code Manually",
+"treeBarcodeInformation": "Each registered cashew tree has a unique barcode. Scan the barcode to quickly open the tree information.",
+"cancel": "Cancel",
+"createAccount": "Create Account",
+"registerFarmerOrStaff": "Register farmer or staff",
+"fullName": "Full Name",
+"username": "Username",
+"region": "Region",
+"district": "District",
+"ward": "Ward",
+"village": "Village",
+"phoneNumber": "Phone Number",
+"password": "Password",
+"confirmPassword": "Confirm Password",
+"register": "Register",
+"fullNameRequired": "Full name is required",
+"usernameRequired": "Username is required",
+"regionRequired": "Region is required",
+"districtRequired": "District is required",
+"wardRequired": "Ward is required",
+"villageRequired": "Village is required",
+"phoneNumberRequired": "Phone number is required",
+"passwordRequired": "Password is required",
+"minimumSixCharacters": "Minimum 6 characters",
+"confirmPasswordRequired": "Confirm password is required",
+"passwordsDoNotMatch": "Passwords do not match",
+"registrationSuccessful": "Registration successful",
+"cashewProductionManagementSystem": "Cashew Production\nManagement System",
+"signInToContinue": "Sign in to continue",
+"login": "Login",
+"loginSuccessful": "Login successful",
+"pleaseEnterUsername": "Please enter your username",
+"pleaseEnterPassword": "Please enter your password",
+"dontHaveAccount": "Don't have an account?",
+"showPassword": "Show password",
+"hidePassword": "Hide password"
+}

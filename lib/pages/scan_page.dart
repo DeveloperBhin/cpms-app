@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-import 'treesdetails_page.dart';
+import '../l10n/app_localizations.dart';
 import '../services/api_services/tree_api_services.dart';
+import '../theme/app_text_styles.dart';
+import 'treesdetails_page.dart';
 
 class ScanPage extends StatefulWidget {
   const ScanPage({super.key});
@@ -12,6 +14,10 @@ class ScanPage extends StatefulWidget {
 }
 
 class _ScanPageState extends State<ScanPage> {
+  // ==============================================================
+  // COLORS
+  // ==============================================================
+
   static const Color primaryGreen = Color(0xFF087A2F);
   static const Color backgroundColor = Color(0xFFF8FAF8);
   static const Color borderColor = Color(0xFFDCE8DF);
@@ -19,22 +25,28 @@ class _ScanPageState extends State<ScanPage> {
   static const Color textDark = Color(0xFF25402D);
   static const Color textGrey = Color(0xFF718078);
 
+  // ==============================================================
+  // STATE
+  // ==============================================================
+
   bool _isProcessing = false;
   bool _isFlashOn = false;
+
   String? _lastScannedCode;
 
   late final MobileScannerController _scannerController;
 
   // ==============================================================
-  // TEMPORARY TREE DATA
-  //
-  // Later this will be replaced by:
-  //
-  // ApiServices.getTreeByCode(code)
+  // LOCALIZATION
   // ==============================================================
 
+  AppLocalizations get _l10n => AppLocalizations.of(context)!;
 
- @override
+  // ==============================================================
+  // INIT
+  // ==============================================================
+
+  @override
   void initState() {
     super.initState();
 
@@ -45,6 +57,10 @@ class _ScanPageState extends State<ScanPage> {
     );
   }
 
+  // ==============================================================
+  // DISPOSE
+  // ==============================================================
+
   @override
   void dispose() {
     _scannerController.dispose();
@@ -54,6 +70,7 @@ class _ScanPageState extends State<ScanPage> {
   // ==============================================================
   // BARCODE DETECTED
   // ==============================================================
+
   Future<void> _onBarcodeDetected(
     BarcodeCapture capture,
   ) async {
@@ -72,7 +89,14 @@ class _ScanPageState extends State<ScanPage> {
       return;
     }
 
-    final String code = rawValue.trim().toUpperCase();
+    // ============================================================
+    // RAW BARCODE VALUE
+    //
+    // Do not localize barcode values.
+    // ==============================================================
+
+    final String code =
+        rawValue.trim().toUpperCase();
 
     setState(() {
       _isProcessing = true;
@@ -85,67 +109,78 @@ class _ScanPageState extends State<ScanPage> {
       return;
     }
 
-await _findTree(code);  }
+    await _findTree(code);
+  }
 
   // ==============================================================
   // FIND TREE
   // ==============================================================
-Future<void> _findTree(String code) async {
-  try {
-    final tree =
-        await TreeApiServices.getTreeByCode(
-      treeCode: code,
-    );
 
-    if (!mounted) {
-      return;
-    }
+  Future<void> _findTree(String code) async {
+    try {
+      final tree =
+          await TreeApiServices.getTreeByCode(
+        treeCode: code,
+      );
 
-    final treeId =
-        tree['id']?.toString() ?? '';
+      if (!mounted) {
+        return;
+      }
 
-    final farmId =
-        tree['farmId']?.toString() ?? '';
+      // ==========================================================
+      // RAW DATABASE IDS
+      //
+      // Never translate these values.
+      // ==========================================================
 
-    final blockId =
-        tree['blockId']?.toString() ?? '';
+      final treeId =
+          tree['id']?.toString() ?? '';
 
-    if (treeId.isEmpty ||
-        farmId.isEmpty ||
-        blockId.isEmpty) {
-      await _showTreeNotFound(code);
-      return;
-    }
+      final farmId =
+          tree['farmId']?.toString() ?? '';
 
-    await Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) =>
-            TreeDetailsPage(
-          farmId: farmId,
-          blockId: blockId,
-          treeId: treeId,
+      final blockId =
+          tree['blockId']?.toString() ?? '';
+
+      if (treeId.isEmpty ||
+          farmId.isEmpty ||
+          blockId.isEmpty) {
+        await _showTreeNotFound(code);
+        return;
+      }
+
+      await Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => TreeDetailsPage(
+            farmId: farmId,
+            blockId: blockId,
+            treeId: treeId,
+          ),
         ),
-      ),
-    );
-  } catch (e) {
-    debugPrint(
-      'TREE LOOKUP ERROR: $e',
-    );
+      );
+    } catch (e) {
+      debugPrint(
+        'TREE LOOKUP ERROR: $e',
+      );
 
-    if (!mounted) {
-      return;
+      if (!mounted) {
+        return;
+      }
+
+      await _showTreeNotFound(code);
     }
-
-    await _showTreeNotFound(code);
   }
-}
- // ==============================================================
+
+  // ==============================================================
   // TREE NOT FOUND
   // ==============================================================
+
   Future<void> _showTreeNotFound(
     String code,
   ) async {
+    final l10n = _l10n;
+
     await showDialog<void>(
       context: context,
       builder: (dialogContext) {
@@ -154,29 +189,29 @@ Future<void> _findTree(String code) async {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
           ),
-          title: const Row(
+          title: Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.error_outline,
                 color: Colors.red,
                 size: 22,
               ),
-              SizedBox(width: 9),
+              const SizedBox(width: 9),
               Text(
-                'Tree Not Found',
-                style: TextStyle(
+                l10n.treeNotFound,
+                style: const TextStyle(
                   color: textDark,
-                  fontSize: 14,
+                  fontSize: AppTextStyles.bodyLarge,
                   fontWeight: FontWeight.w700,
                 ),
               ),
             ],
           ),
           content: Text(
-            'No tree was found with barcode:\n\n$code',
+            l10n.noTreeFoundWithBarcode(code),
             style: const TextStyle(
               color: textGrey,
-              fontSize: 10,
+              fontSize: AppTextStyles.bodySmall,
               height: 1.5,
             ),
           ),
@@ -185,11 +220,11 @@ Future<void> _findTree(String code) async {
               onPressed: () {
                 Navigator.pop(dialogContext);
               },
-              child: const Text(
-                'Scan Again',
-                style: TextStyle(
+              child: Text(
+                l10n.scanAgain,
+                style: const TextStyle(
                   color: primaryGreen,
-                  fontSize: 10,
+                  fontSize: AppTextStyles.bodySmall,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -214,6 +249,7 @@ Future<void> _findTree(String code) async {
   // ==============================================================
   // FLASH
   // ==============================================================
+
   Future<void> _toggleFlash() async {
     await _scannerController.toggleTorch();
 
@@ -229,7 +265,10 @@ Future<void> _findTree(String code) async {
   // ==============================================================
   // MANUAL TREE CODE
   // ==============================================================
+
   Future<void> _manualTreeCode() async {
+    final l10n = _l10n;
+
     final TextEditingController controller =
         TextEditingController();
 
@@ -241,42 +280,46 @@ Future<void> _findTree(String code) async {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
           ),
-          title: const Text(
-            'Enter Tree Code',
-            style: TextStyle(
+          title: Text(
+            l10n.enterTreeCode,
+            style: const TextStyle(
               color: textDark,
-              fontSize: 14,
+              fontSize: AppTextStyles.bodyLarge,
               fontWeight: FontWeight.w700,
             ),
           ),
           content: TextField(
             controller: controller,
             autofocus: true,
-            textCapitalization: TextCapitalization.characters,
+            textCapitalization:
+                TextCapitalization.characters,
             style: const TextStyle(
               color: textDark,
-              fontSize: 11,
+              fontSize: AppTextStyles.body,
             ),
             decoration: InputDecoration(
-              hintText: 'Example: TR-0001',
+              hintText: l10n.treeCodeExample,
               hintStyle: const TextStyle(
                 color: textGrey,
-                fontSize: 10,
+                fontSize: AppTextStyles.bodySmall,
               ),
               filled: true,
               fillColor: backgroundColor,
-              contentPadding: const EdgeInsets.symmetric(
+              contentPadding:
+                  const EdgeInsets.symmetric(
                 horizontal: 13,
                 vertical: 12,
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(9),
+                borderRadius:
+                    BorderRadius.circular(9),
                 borderSide: const BorderSide(
                   color: borderColor,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(9),
+                borderRadius:
+                    BorderRadius.circular(9),
                 borderSide: const BorderSide(
                   color: primaryGreen,
                 ),
@@ -288,18 +331,23 @@ Future<void> _findTree(String code) async {
               onPressed: () {
                 Navigator.pop(dialogContext);
               },
-              child: const Text(
-                'Cancel',
-                style: TextStyle(
+              child: Text(
+                l10n.cancel,
+                style: const TextStyle(
                   color: textGrey,
-                  fontSize: 10,
+                  fontSize: AppTextStyles.bodySmall,
                 ),
               ),
             ),
             ElevatedButton(
               onPressed: () {
-                final value =
-                    controller.text.trim().toUpperCase();
+                // =================================================
+                // RAW TREE CODE
+                // =================================================
+
+                final value = controller.text
+                    .trim()
+                    .toUpperCase();
 
                 if (value.isEmpty) {
                   return;
@@ -315,13 +363,14 @@ Future<void> _findTree(String code) async {
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius:
+                      BorderRadius.circular(8),
                 ),
               ),
-              child: const Text(
-                'Find Tree',
-                style: TextStyle(
-                  fontSize: 9,
+              child: Text(
+                l10n.findTree,
+                style: const TextStyle(
+                  fontSize: AppTextStyles.bodySmall,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -348,23 +397,27 @@ Future<void> _findTree(String code) async {
       _lastScannedCode = result;
     });
 
-await _findTree(result);
+    await _findTree(result);
   }
 
   // ==============================================================
   // BUILD
   // ==============================================================
+
   @override
   Widget build(BuildContext context) {
+    final l10n = _l10n;
+
     return Scaffold(
       backgroundColor: backgroundColor,
       body: SafeArea(
         bottom: false,
         child: Column(
           children: [
-            // =====================================================
+            // ====================================================
             // HEADER
-            // =====================================================
+            // ====================================================
+
             Container(
               width: double.infinity,
               height: 55,
@@ -384,7 +437,8 @@ await _findTree(result);
                     onTap: () {
                       Navigator.pop(context);
                     },
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius:
+                        BorderRadius.circular(20),
                     child: const Padding(
                       padding: EdgeInsets.all(4),
                       child: Icon(
@@ -397,12 +451,12 @@ await _findTree(result);
 
                   const SizedBox(width: 8),
 
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Scan Tree Barcode',
-                      style: TextStyle(
+                      l10n.scanTreeBarcode,
+                      style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 14,
+                        fontSize: AppTextStyles.bodyLarge,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -410,6 +464,9 @@ await _findTree(result);
 
                   IconButton(
                     onPressed: _toggleFlash,
+                    tooltip: _isFlashOn
+                        ? l10n.turnOffFlash
+                        : l10n.turnOnFlash,
                     icon: Icon(
                       _isFlashOn
                           ? Icons.flash_on
@@ -422,9 +479,10 @@ await _findTree(result);
               ),
             ),
 
-            // =====================================================
+            // ====================================================
             // PAGE CONTENT
-            // =====================================================
+            // ====================================================
+
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(
@@ -435,30 +493,31 @@ await _findTree(result);
                 ),
                 child: Column(
                   children: [
-                    // =============================================
+                    // ============================================
                     // INTRODUCTION
-                    // =============================================
-                    const Text(
-                      'Scan Tree Barcode',
-                      style: TextStyle(
+                    // ============================================
+
+                    Text(
+                      l10n.scanTreeBarcode,
+                      style: const TextStyle(
                         color: textDark,
-                        fontSize: 16,
+                        fontSize: AppTextStyles.bodyLarge,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
 
                     const SizedBox(height: 7),
 
-                    const Padding(
-                      padding: EdgeInsets.symmetric(
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
                         horizontal: 25,
                       ),
                       child: Text(
-                        'Position the barcode attached to the tree inside the scanning frame.',
+                        l10n.positionTreeBarcode,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: textGrey,
-                          fontSize: 9,
+                          fontSize: AppTextStyles.bodySmall,
                           height: 1.5,
                         ),
                       ),
@@ -466,30 +525,34 @@ await _findTree(result);
 
                     const SizedBox(height: 22),
 
-                    // =============================================
+                    // ============================================
                     // SCANNER
-                    // =============================================
+                    // ============================================
+
                     _scannerCard(),
 
                     const SizedBox(height: 18),
 
-                    // =============================================
+                    // ============================================
                     // STATUS
-                    // =============================================
+                    // ============================================
+
                     _scannerStatus(),
 
                     const SizedBox(height: 18),
 
-                    // =============================================
+                    // ============================================
                     // MANUAL ENTRY
-                    // =============================================
+                    // ============================================
+
                     _manualEntryButton(),
 
                     const SizedBox(height: 18),
 
-                    // =============================================
+                    // ============================================
                     // INFORMATION
-                    // =============================================
+                    // ============================================
+
                     _informationCard(),
                   ],
                 ),
@@ -504,7 +567,10 @@ await _findTree(result);
   // ==============================================================
   // SCANNER CARD
   // ==============================================================
+
   Widget _scannerCard() {
+    final l10n = _l10n;
+
     return Container(
       width: double.infinity,
       height: 300,
@@ -520,7 +586,10 @@ await _findTree(result);
         child: Stack(
           alignment: Alignment.center,
           children: [
+            // ====================================================
             // CAMERA
+            // ====================================================
+
             Positioned.fill(
               child: MobileScanner(
                 controller: _scannerController,
@@ -528,7 +597,10 @@ await _findTree(result);
               ),
             ),
 
+            // ====================================================
             // DARK OVERLAY
+            // ====================================================
+
             Positioned.fill(
               child: IgnorePointer(
                 child: Container(
@@ -539,7 +611,10 @@ await _findTree(result);
               ),
             ),
 
+            // ====================================================
             // BARCODE SCAN AREA
+            // ====================================================
+
             Container(
               width: 280,
               height: 115,
@@ -553,7 +628,10 @@ await _findTree(result);
               ),
             ),
 
+            // ====================================================
             // TOP LEFT
+            // ====================================================
+
             Positioned(
               left: 28,
               top: 88,
@@ -563,7 +641,10 @@ await _findTree(result);
               ),
             ),
 
+            // ====================================================
             // TOP RIGHT
+            // ====================================================
+
             Positioned(
               right: 28,
               top: 88,
@@ -573,7 +654,10 @@ await _findTree(result);
               ),
             ),
 
+            // ====================================================
             // BOTTOM LEFT
+            // ====================================================
+
             Positioned(
               left: 28,
               bottom: 88,
@@ -583,7 +667,10 @@ await _findTree(result);
               ),
             ),
 
+            // ====================================================
             // BOTTOM RIGHT
+            // ====================================================
+
             Positioned(
               right: 28,
               bottom: 88,
@@ -593,7 +680,10 @@ await _findTree(result);
               ),
             ),
 
+            // ====================================================
             // SCAN LINE
+            // ====================================================
+
             Container(
               width: 245,
               height: 2,
@@ -612,17 +702,20 @@ await _findTree(result);
               ),
             ),
 
+            // ====================================================
             // INSTRUCTION
-            const Positioned(
+            // ====================================================
+
+            Positioned(
               bottom: 24,
               left: 20,
               right: 20,
               child: Text(
-                'Keep the barcode steady inside the frame',
+                l10n.keepBarcodeSteady,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 9,
+                  fontSize: AppTextStyles.bodySmall,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -636,6 +729,7 @@ await _findTree(result);
   // ==============================================================
   // CORNER
   // ==============================================================
+
   Widget _corner({
     required bool top,
     required bool left,
@@ -655,7 +749,10 @@ await _findTree(result);
   // ==============================================================
   // SCANNER STATUS
   // ==============================================================
+
   Widget _scannerStatus() {
+    final l10n = _l10n;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(
@@ -691,15 +788,16 @@ await _findTree(result);
 
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
               children: [
                 Text(
                   _isProcessing
-                      ? 'Barcode detected'
-                      : 'Scanner Ready',
+                      ? l10n.barcodeDetected
+                      : l10n.scannerReady,
                   style: const TextStyle(
                     color: textDark,
-                    fontSize: 9,
+                    fontSize: AppTextStyles.bodySmall,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -708,11 +806,13 @@ await _findTree(result);
 
                 Text(
                   _lastScannedCode != null
-                      ? 'Reading $_lastScannedCode'
-                      : 'Waiting for a tree barcode...',
+                      ? l10n.readingBarcode(
+                          _lastScannedCode!,
+                        )
+                      : l10n.waitingForTreeBarcode,
                   style: const TextStyle(
                     color: textGrey,
-                    fontSize: 8,
+                    fontSize: AppTextStyles.bodySmall,
                   ),
                 ),
               ],
@@ -736,7 +836,10 @@ await _findTree(result);
   // ==============================================================
   // MANUAL ENTRY
   // ==============================================================
+
   Widget _manualEntryButton() {
+    final l10n = _l10n;
+
     return SizedBox(
       width: double.infinity,
       height: 43,
@@ -746,10 +849,10 @@ await _findTree(result);
           Icons.keyboard_alt_outlined,
           size: 17,
         ),
-        label: const Text(
-          'Enter Tree Code Manually',
-          style: TextStyle(
-            fontSize: 9,
+        label: Text(
+          l10n.enterTreeCodeManually,
+          style: const TextStyle(
+            fontSize: AppTextStyles.bodySmall,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -769,7 +872,10 @@ await _findTree(result);
   // ==============================================================
   // INFORMATION
   // ==============================================================
+
   Widget _informationCard() {
+    final l10n = _l10n;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -780,24 +886,23 @@ await _findTree(result);
           color: borderColor,
         ),
       ),
-      child: const Row(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
+          const Icon(
             Icons.info_outline,
             color: primaryGreen,
             size: 18,
           ),
 
-          SizedBox(width: 10),
+          const SizedBox(width: 10),
 
           Expanded(
             child: Text(
-              'Each registered cashew tree has a unique barcode. '
-              'Scan the barcode to quickly open the tree information.',
-              style: TextStyle(
+              l10n.treeBarcodeInformation,
+              style: const TextStyle(
                 color: textGrey,
-                fontSize: 8,
+                fontSize: AppTextStyles.bodySmall,
                 height: 1.5,
               ),
             ),
@@ -811,6 +916,7 @@ await _findTree(result);
 // =================================================================
 // SCANNER CORNER PAINTER
 // =================================================================
+
 class _ScannerCornerPainter extends CustomPainter {
   final bool top;
   final bool left;

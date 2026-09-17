@@ -1,6 +1,7 @@
-name: tari_disease_detector
-description: "TARI DISEASE DETECTOR - AI-powered plant disease detection app"
+name: TARI 
+description: "TARI cashew production management system"
 publish_to: 'none'
+
 version: 1.0.0+1
 
 environment:
@@ -10,44 +11,63 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # Localization
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+
   # UI Icons
   cupertino_icons: ^1.0.8
-  
-  # State Management - Provider for app-wide state
+
+  # State Management
   provider: ^6.1.2
-  
-  # Camera access for live preview and capture
-  camera: ^0.12.0+2  
-  # Image picker for gallery access (alternative to camera)
+
+  # Camera
+  camera: ^0.12.0+2
+
+  # Image Picker
   image_picker: ^1.1.2
-  
-  # TensorFlow Lite for ML inference
+
+  # TensorFlow Lite
   tflite_flutter: ^0.12.1
-  
-  # Image processing utilities (for preprocessing before inference)
+
+  # Image Processing
   image: ^4.3.0
-  
-  # Path utilities for file operations
+
+  # Path Utilities
   path: ^1.9.0
-  
-  # Permission handling
+
+  # Permission Handling
   permission_handler: ^13.0.1
 
+  # File Picker
   file_picker: 10.3.3
-  
-  # URL launcher for opening external links
+
+  # URL Launcher
   url_launcher: ^6.2.5
+
+  # HTTP
   http: ^1.6.0
+
+  # Local Storage
   shared_preferences: ^2.5.5
+
+  # Barcode
   barcode_widget: ^2.0.4
   mobile_scanner: ^7.4.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
   flutter_lints: ^5.0.0
   flutter_launcher_icons: ^0.14.3
 
-# App icon configuration
+
+# ============================================================
+# APP ICON
+# ============================================================
+
 flutter_launcher_icons:
   android: true
   ios: true
@@ -55,12 +75,18 @@ flutter_launcher_icons:
   adaptive_icon_background: "#4CAF50"
   adaptive_icon_foreground: "assets/images/app_icon_foreground.png"
 
+
+# ============================================================
+# FLUTTER
+# ============================================================
+
 flutter:
   uses-material-design: true
-  
-  # Assets configuration for model and data files
+
+  # Enable generated localization classes
+  generate: true
+
   assets:
     - assets/model/
     - assets/data/
     - assets/images/
-

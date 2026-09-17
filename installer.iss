@@ -1,7 +1,7 @@
 #define MyAppName "TARI Disease Detector"
 #define MyAppVersion "1.0.0"
 #define MyAppPublisher "TARI"
-#define MyAppExeName "tari_disease_detector.exe"
+#define MyAppExeName "TARI.exe"
 
 [Setup]
 AppId={{A5F3E4C1-7B28-4D92-9C81-123456789ABC}
@@ -13,7 +13,7 @@ DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 
 OutputDir=installer_output
-OutputBaseFilename=TARI_Disease_Detector_Setup
+OutputBaseFilename=TARI_Setup
 
 Compression=lzma
 SolidCompression=yes

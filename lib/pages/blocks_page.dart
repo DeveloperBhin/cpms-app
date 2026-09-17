@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../services/api_services/block_api_services.dart';
+import '../theme/app_text_styles.dart';
 import 'addblocks_page.dart';
 import 'blocksdetails_page.dart';
 
@@ -15,16 +17,28 @@ class BlocksPage extends StatefulWidget {
   });
 
   @override
-  State<BlocksPage> createState() => _BlocksPageState();
+  State<BlocksPage> createState() =>
+      _BlocksPageState();
 }
 
 class _BlocksPageState extends State<BlocksPage> {
-  static const Color primaryGreen = Color(0xFF087A2F);
-  static const Color backgroundColor = Color(0xFFF8FAF8);
-  static const Color borderColor = Color(0xFFDCE8DF);
-  static const Color lightGreen = Color(0xFFE7F3EB);
-  static const Color textDark = Color(0xFF25402D);
-  static const Color textGrey = Color(0xFF718078);
+  static const Color primaryGreen =
+      Color(0xFF087A2F);
+
+  static const Color backgroundColor =
+      Color(0xFFF8FAF8);
+
+  static const Color borderColor =
+      Color(0xFFDCE8DF);
+
+  static const Color lightGreen =
+      Color(0xFFE7F3EB);
+
+  static const Color textDark =
+      Color(0xFF25402D);
+
+  static const Color textGrey =
+      Color(0xFF718078);
 
   bool _isLoading = true;
   String? _error;
@@ -34,7 +48,6 @@ class _BlocksPageState extends State<BlocksPage> {
   @override
   void initState() {
     super.initState();
-
     _loadBlocks();
   }
 
@@ -66,7 +79,13 @@ class _BlocksPageState extends State<BlocksPage> {
       if (!mounted) return;
 
       setState(() {
-        _error = e.toString();
+        _error = e
+            .toString()
+            .replaceFirst(
+              'Exception: ',
+              '',
+            );
+
         _isLoading = false;
       });
     }
@@ -85,55 +104,67 @@ class _BlocksPageState extends State<BlocksPage> {
       return 'BL----';
     }
 
-    final value = id.toString().padLeft(
-          4,
-          '0',
-        );
+    final value =
+        id.toString().padLeft(
+              4,
+              '0',
+            );
 
     return 'BL-$value';
   }
 
   String _blockName(
+    BuildContext context,
     Map<String, dynamic> block,
   ) {
+    final l10n =
+        AppLocalizations.of(context)!;
+
     final value = block['name'];
 
     if (value == null ||
         value.toString().trim().isEmpty) {
-      return 'Unnamed Block';
+      return l10n.unnamedBlock;
     }
 
     return value.toString();
   }
 
   String _blockSize(
+    BuildContext context,
     Map<String, dynamic> block,
   ) {
+    final l10n =
+        AppLocalizations.of(context)!;
+
     final value = block['size'];
 
     if (value == null) {
       return '-';
     }
 
-    final parsed = double.tryParse(
+    final parsed =
+        double.tryParse(
       value.toString(),
     );
 
     if (parsed == null) {
-      return '$value Acres';
+      return '$value ${l10n.acres}';
     }
 
-    if (parsed == parsed.roundToDouble()) {
-      return '${parsed.toInt()} Acres';
+    if (parsed ==
+        parsed.roundToDouble()) {
+      return '${parsed.toInt()} ${l10n.acres}';
     }
 
-    return '$parsed Acres';
+    return '$parsed ${l10n.acres}';
   }
 
   String _treeCount(
     Map<String, dynamic> block,
   ) {
-    final value = block['treeCount'];
+    final value =
+        block['treeCount'];
 
     if (value == null) {
       return '-';
@@ -145,7 +176,8 @@ class _BlocksPageState extends State<BlocksPage> {
   String _variety(
     Map<String, dynamic> block,
   ) {
-    final value = block['variety'];
+    final value =
+        block['variety'];
 
     if (value == null ||
         value.toString().trim().isEmpty) {
@@ -155,17 +187,34 @@ class _BlocksPageState extends State<BlocksPage> {
     return value.toString();
   }
 
+  String _displayFarmId() {
+    final numericId =
+        int.tryParse(
+      widget.farmId,
+    );
+
+    if (numericId == null) {
+      return widget.farmId;
+    }
+
+    return 'FM-${numericId.toString().padLeft(4, '0')}';
+  }
+
   // ============================================================
   // ADD BLOCK
   // ============================================================
 
   Future<void> _openAddBlock() async {
-    final added = await Navigator.push<bool>(
+    final added =
+        await Navigator.push<bool>(
       context,
       MaterialPageRoute(
-        builder: (context) => AddBlockPage(
-          farmId: widget.farmId,
-          farmName: widget.farmName,
+        builder: (context) =>
+            AddBlockPage(
+          farmId:
+              widget.farmId,
+          farmName:
+              widget.farmName,
         ),
       ),
     );
@@ -180,39 +229,59 @@ class _BlocksPageState extends State<BlocksPage> {
   // ============================================================
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
     return Scaffold(
-      backgroundColor: backgroundColor,
+      backgroundColor:
+          backgroundColor,
+
       body: SafeArea(
         bottom: false,
+
         child: Column(
           children: [
             _header(),
 
             Expanded(
               child: RefreshIndicator(
-                onRefresh: _loadBlocks,
-                color: primaryGreen,
-                child: SingleChildScrollView(
+                onRefresh:
+                    _loadBlocks,
+
+                color:
+                    primaryGreen,
+
+                child:
+                    SingleChildScrollView(
                   physics:
                       const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(
+
+                  padding:
+                      const EdgeInsets
+                          .fromLTRB(
                     13,
                     20,
                     13,
                     25,
                   ),
+
                   child: Column(
                     crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                        CrossAxisAlignment
+                            .start,
+
                     children: [
                       _farmInformation(),
 
-                      const SizedBox(height: 18),
+                      const SizedBox(
+                        height: 18,
+                      ),
 
                       _blocksHeader(),
 
-                      const SizedBox(height: 14),
+                      const SizedBox(
+                        height: 14,
+                      ),
 
                       _buildBlocksContent(),
                     ],
@@ -231,42 +300,73 @@ class _BlocksPageState extends State<BlocksPage> {
   // ============================================================
 
   Widget _header() {
+    final l10n =
+        AppLocalizations.of(context)!;
+
     return Container(
       width: double.infinity,
       height: 52,
-      padding: const EdgeInsets.symmetric(
+
+      padding:
+          const EdgeInsets.symmetric(
         horizontal: 14,
       ),
-      decoration: const BoxDecoration(
+
+      decoration:
+          const BoxDecoration(
         color: primaryGreen,
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(18),
-          bottomRight: Radius.circular(18),
+
+        borderRadius:
+            BorderRadius.only(
+          bottomLeft:
+              Radius.circular(18),
+          bottomRight:
+              Radius.circular(18),
         ),
       ),
+
       child: Row(
         children: [
           InkWell(
-            onTap: () => Navigator.pop(context),
-            borderRadius: BorderRadius.circular(20),
-            child: const Padding(
-              padding: EdgeInsets.all(3),
+            onTap: () =>
+                Navigator.pop(
+              context,
+            ),
+
+            borderRadius:
+                BorderRadius.circular(
+              20,
+            ),
+
+            child:
+                const Padding(
+              padding:
+                  EdgeInsets.all(3),
+
               child: Icon(
-                Icons.arrow_back_ios_new,
-                color: Colors.white,
+                Icons
+                    .arrow_back_ios_new,
+                color:
+                    Colors.white,
                 size: 14,
               ),
             ),
           ),
 
-          const SizedBox(width: 7),
+          const SizedBox(
+            width: 7,
+          ),
 
-          const Text(
-            'Farm Blocks',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
+          Text(
+            l10n.farmBlocks,
+
+            style:
+                const TextStyle(
+              color:
+                  Colors.white,
+              fontSize: AppTextStyles.bodyLarge,
+              fontWeight:
+                  FontWeight.w700,
             ),
           ),
         ],
@@ -279,36 +379,60 @@ class _BlocksPageState extends State<BlocksPage> {
   // ============================================================
 
   Widget _farmInformation() {
+    final l10n =
+        AppLocalizations.of(context)!;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
+
+      padding:
+          const EdgeInsets.all(
+        14,
+      ),
+
+      decoration:
+          BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(13),
+
+        borderRadius:
+            BorderRadius.circular(
+          13,
+        ),
+
         border: Border.all(
           color: borderColor,
         ),
       ),
+
       child: Column(
         crossAxisAlignment:
             CrossAxisAlignment.start,
+
         children: [
           Text(
             widget.farmName,
-            style: const TextStyle(
+
+            style:
+                const TextStyle(
               color: textDark,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
+              fontSize: AppTextStyles.body,
+              fontWeight:
+                  FontWeight.w700,
             ),
           ),
 
-          const SizedBox(height: 5),
+          const SizedBox(
+            height: 5,
+          ),
 
           Text(
-            'Farm ID: ${_displayFarmId()}',
-            style: const TextStyle(
+            '${l10n.farmId}: '
+            '${_displayFarmId()}',
+
+            style:
+                const TextStyle(
               color: textGrey,
-              fontSize: 8,
+              fontSize: AppTextStyles.bodySmall,
             ),
           ),
         ],
@@ -316,64 +440,91 @@ class _BlocksPageState extends State<BlocksPage> {
     );
   }
 
-  String _displayFarmId() {
-    final numericId = int.tryParse(
-      widget.farmId,
-    );
-
-    if (numericId == null) {
-      return widget.farmId;
-    }
-
-    return 'FM-${numericId.toString().padLeft(4, '0')}';
-  }
-
   // ============================================================
   // BLOCKS HEADER
   // ============================================================
 
   Widget _blocksHeader() {
+    final l10n =
+        AppLocalizations.of(context)!;
+
     return Row(
       mainAxisAlignment:
-          MainAxisAlignment.spaceBetween,
+          MainAxisAlignment
+              .spaceBetween,
+
       children: [
-        Text(
-          _blocks.isEmpty
-              ? 'Blocks'
-              : 'Blocks (${_blocks.length})',
-          style: const TextStyle(
-            color: textDark,
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
+        Expanded(
+          child: Text(
+            _blocks.isEmpty
+                ? l10n.blocks
+                : l10n.blockCount(
+                    _blocks.length,
+                  ),
+
+            style:
+                const TextStyle(
+              color: textDark,
+              fontSize: AppTextStyles.body,
+              fontWeight:
+                  FontWeight.w700,
+            ),
           ),
+        ),
+
+        const SizedBox(
+          width: 10,
         ),
 
         SizedBox(
           height: 38,
-          child: ElevatedButton.icon(
-            onPressed: _openAddBlock,
-            icon: const Icon(
+
+          child:
+              ElevatedButton.icon(
+            onPressed:
+                _openAddBlock,
+
+            icon:
+                const Icon(
               Icons.add,
               size: 15,
             ),
-            label: const Text(
-              'Add Block',
-              style: TextStyle(
-                fontSize: 9,
-                fontWeight: FontWeight.w700,
+
+            label: Text(
+              l10n.addBlock,
+
+              style:
+                  const TextStyle(
+                fontSize: AppTextStyles.bodySmall,
+                fontWeight:
+                    FontWeight.w700,
               ),
             ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: primaryGreen,
-              foregroundColor: Colors.white,
+
+            style:
+                ElevatedButton
+                    .styleFrom(
+              backgroundColor:
+                  primaryGreen,
+
+              foregroundColor:
+                  Colors.white,
+
               elevation: 0,
+
               padding:
-                  const EdgeInsets.symmetric(
+                  const EdgeInsets
+                      .symmetric(
                 horizontal: 14,
               ),
-              shape: RoundedRectangleBorder(
+
+              shape:
+                  RoundedRectangleBorder(
                 borderRadius:
-                    BorderRadius.circular(8),
+                    BorderRadius
+                        .circular(
+                  8,
+                ),
               ),
             ),
           ),
@@ -402,12 +553,18 @@ class _BlocksPageState extends State<BlocksPage> {
     return Column(
       children: _blocks
           .map(
-            (block) => Padding(
+            (block) =>
+                Padding(
               padding:
-                  const EdgeInsets.only(
+                  const EdgeInsets
+                      .only(
                 bottom: 12,
               ),
-              child: _blockCard(block),
+
+              child:
+                  _blockCard(
+                block,
+              ),
             ),
           )
           .toList(),
@@ -419,37 +576,58 @@ class _BlocksPageState extends State<BlocksPage> {
   // ============================================================
 
   Widget _loadingState() {
+    final l10n =
+        AppLocalizations.of(context)!;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(
+
+      padding:
+          const EdgeInsets
+              .symmetric(
         vertical: 45,
       ),
-      decoration: BoxDecoration(
+
+      decoration:
+          BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(13),
+
+        borderRadius:
+            BorderRadius.circular(
+          13,
+        ),
+
         border: Border.all(
           color: borderColor,
         ),
       ),
-      child: const Center(
+
+      child: Center(
         child: Column(
           children: [
-            SizedBox(
+            const SizedBox(
               width: 25,
               height: 25,
-              child: CircularProgressIndicator(
+
+              child:
+                  CircularProgressIndicator(
                 strokeWidth: 2.5,
-                color: primaryGreen,
+                color:
+                    primaryGreen,
               ),
             ),
 
-            SizedBox(height: 12),
+            const SizedBox(
+              height: 12,
+            ),
 
             Text(
-              'Loading blocks...',
-              style: TextStyle(
+              l10n.loadingBlocks,
+
+              style:
+                  const TextStyle(
                 color: textGrey,
-                fontSize: 10,
+                fontSize: AppTextStyles.bodySmall,
               ),
             ),
           ],
@@ -463,61 +641,102 @@ class _BlocksPageState extends State<BlocksPage> {
   // ============================================================
 
   Widget _errorState() {
+    final l10n =
+        AppLocalizations.of(context)!;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(25),
-      decoration: BoxDecoration(
+
+      padding:
+          const EdgeInsets.all(
+        25,
+      ),
+
+      decoration:
+          BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(13),
+
+        borderRadius:
+            BorderRadius.circular(
+          13,
+        ),
+
         border: Border.all(
           color: borderColor,
         ),
       ),
+
       child: Column(
         children: [
           const Icon(
             Icons.error_outline,
-            color: Colors.redAccent,
+            color:
+                Colors.redAccent,
             size: 35,
           ),
 
-          const SizedBox(height: 10),
+          const SizedBox(
+            height: 10,
+          ),
 
-          const Text(
-            'Unable to load blocks',
-            style: TextStyle(
+          Text(
+            l10n
+                .unableToLoadBlocks,
+
+            style:
+                const TextStyle(
               color: textDark,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
+              fontSize: AppTextStyles.body,
+              fontWeight:
+                  FontWeight.w700,
             ),
           ),
 
-          const SizedBox(height: 5),
+          const SizedBox(
+            height: 5,
+          ),
 
           Text(
             _error ?? '',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
+
+            textAlign:
+                TextAlign.center,
+
+            style:
+                const TextStyle(
               color: textGrey,
-              fontSize: 8,
+              fontSize: AppTextStyles.bodySmall,
             ),
           ),
 
-          const SizedBox(height: 15),
+          const SizedBox(
+            height: 15,
+          ),
 
           OutlinedButton.icon(
-            onPressed: _loadBlocks,
-            icon: const Icon(
+            onPressed:
+                _loadBlocks,
+
+            icon:
+                const Icon(
               Icons.refresh,
               size: 15,
             ),
-            label: const Text(
-              'Try Again',
+
+            label: Text(
+              l10n.tryAgain,
             ),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: primaryGreen,
-              side: const BorderSide(
-                color: primaryGreen,
+
+            style:
+                OutlinedButton
+                    .styleFrom(
+              foregroundColor:
+                  primaryGreen,
+
+              side:
+                  const BorderSide(
+                color:
+                    primaryGreen,
               ),
             ),
           ),
@@ -531,71 +750,116 @@ class _BlocksPageState extends State<BlocksPage> {
   // ============================================================
 
   Widget _emptyState() {
+    final l10n =
+        AppLocalizations.of(context)!;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(
+
+      padding:
+          const EdgeInsets
+              .symmetric(
         horizontal: 25,
         vertical: 40,
       ),
-      decoration: BoxDecoration(
+
+      decoration:
+          BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(13),
+
+        borderRadius:
+            BorderRadius.circular(
+          13,
+        ),
+
         border: Border.all(
           color: borderColor,
         ),
       ),
+
       child: Column(
         children: [
           Container(
             width: 55,
             height: 55,
-            decoration: const BoxDecoration(
+
+            decoration:
+                const BoxDecoration(
               color: lightGreen,
-              shape: BoxShape.circle,
+              shape:
+                  BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.grid_view_rounded,
-              color: primaryGreen,
+
+            child:
+                const Icon(
+              Icons
+                  .grid_view_rounded,
+              color:
+                  primaryGreen,
               size: 25,
             ),
           ),
 
-          const SizedBox(height: 14),
+          const SizedBox(
+            height: 14,
+          ),
 
-          const Text(
-            'No blocks yet',
-            style: TextStyle(
+          Text(
+            l10n.noBlocksYet,
+
+            style:
+                const TextStyle(
               color: textDark,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
+              fontSize: AppTextStyles.body,
+              fontWeight:
+                  FontWeight.w700,
             ),
           ),
 
-          const SizedBox(height: 6),
+          const SizedBox(
+            height: 6,
+          ),
 
-          const Text(
-            'Create the first block for this farm.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
+          Text(
+            l10n.createFirstBlock,
+
+            textAlign:
+                TextAlign.center,
+
+            style:
+                const TextStyle(
               color: textGrey,
-              fontSize: 9,
+              fontSize: AppTextStyles.bodySmall,
             ),
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(
+            height: 16,
+          ),
 
           ElevatedButton.icon(
-            onPressed: _openAddBlock,
-            icon: const Icon(
+            onPressed:
+                _openAddBlock,
+
+            icon:
+                const Icon(
               Icons.add,
               size: 15,
             ),
-            label: const Text(
-              'Add Block',
+
+            label: Text(
+              l10n.addBlock,
             ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: primaryGreen,
-              foregroundColor: Colors.white,
+
+            style:
+                ElevatedButton
+                    .styleFrom(
+              backgroundColor:
+                  primaryGreen,
+
+              foregroundColor:
+                  Colors.white,
+
               elevation: 0,
             ),
           ),
@@ -611,125 +875,188 @@ class _BlocksPageState extends State<BlocksPage> {
   Widget _blockCard(
     Map<String, dynamic> block,
   ) {
+    final l10n =
+        AppLocalizations.of(context)!;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
+
+      padding:
+          const EdgeInsets.all(
+        14,
+      ),
+
+      decoration:
+          BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(13),
+
+        borderRadius:
+            BorderRadius.circular(
+          13,
+        ),
+
         border: Border.all(
           color: borderColor,
         ),
       ),
+
       child: Column(
         crossAxisAlignment:
             CrossAxisAlignment.start,
+
         children: [
           Row(
             children: [
               Expanded(
                 child: Text(
-                  _blockName(block),
-                  style: const TextStyle(
+                  _blockName(
+                    context,
+                    block,
+                  ),
+
+                  style:
+                      const TextStyle(
                     color: textDark,
-                    fontSize: 11,
+                    fontSize: AppTextStyles.body,
                     fontWeight:
-                        FontWeight.w700,
+                        FontWeight
+                            .w700,
                   ),
                 ),
               ),
 
               Container(
                 padding:
-                    const EdgeInsets.symmetric(
+                    const EdgeInsets
+                        .symmetric(
                   horizontal: 8,
                   vertical: 5,
                 ),
-                decoration: BoxDecoration(
-                  color: lightGreen,
+
+                decoration:
+                    BoxDecoration(
+                  color:
+                      lightGreen,
+
                   borderRadius:
-                      BorderRadius.circular(6),
+                      BorderRadius
+                          .circular(
+                    6,
+                  ),
                 ),
+
                 child: Text(
-                  _displayBlockId(block),
-                  style: const TextStyle(
-                    color: primaryGreen,
-                    fontSize: 7,
+                  _displayBlockId(
+                    block,
+                  ),
+
+                  style:
+                      const TextStyle(
+                    color:
+                        primaryGreen,
+                    fontSize: AppTextStyles.bodySmall,
                     fontWeight:
-                        FontWeight.w600,
+                        FontWeight
+                            .w600,
                   ),
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(
+            height: 12,
+          ),
 
           Row(
             children: [
               Expanded(
-                child: _blockInfo(
-                  'Size',
-                  _blockSize(block),
+                child:
+                    _blockInfo(
+                  l10n.size,
+                  _blockSize(
+                    context,
+                    block,
+                  ),
                 ),
               ),
 
               Expanded(
-                child: _blockInfo(
-                  'Trees',
-                  _treeCount(block),
+                child:
+                    _blockInfo(
+                  l10n.trees,
+                  _treeCount(
+                    block,
+                  ),
                 ),
               ),
 
               Expanded(
-                child: _blockInfo(
-                  'Variety',
-                  _variety(block),
+                child:
+                    _blockInfo(
+                  l10n.variety,
+                  _variety(
+                    block,
+                  ),
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 13),
+          const SizedBox(
+            height: 13,
+          ),
 
           Align(
-            alignment: Alignment.centerRight,
+            alignment:
+                Alignment.centerRight,
+
             child: TextButton(
               onPressed: () {
                 final rawBlockId =
                     block['id'];
 
-                if (rawBlockId == null) {
+                if (rawBlockId ==
+                    null) {
                   return;
                 }
 
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) =>
-                        BlockDetailsPage(
+                    builder:
+                        (context) =>
+                            BlockDetailsPage(
                       farmId:
                           widget.farmId,
 
-                      // IMPORTANT:
-                      // send actual database ID,
-                      // e.g. "1", not "BL-0001".
+                      // Send actual DB ID:
+                      // 1, not BL-0001.
                       blockId:
-                          rawBlockId.toString(),
+                          rawBlockId
+                              .toString(),
 
                       blockName:
-                          _blockName(block),
+                          _blockName(
+                        context,
+                        block,
+                      ),
                     ),
                   ),
                 );
               },
-              child: const Text(
-                'View Block ›',
-                style: TextStyle(
-                  color: primaryGreen,
-                  fontSize: 9,
+
+              child: Text(
+                '${l10n.viewBlock} ›',
+
+                style:
+                    const TextStyle(
+                  color:
+                      primaryGreen,
+                  fontSize: AppTextStyles.bodySmall,
                   fontWeight:
-                      FontWeight.w700,
+                      FontWeight
+                          .w700,
                 ),
               ),
             ),
@@ -750,23 +1077,31 @@ class _BlocksPageState extends State<BlocksPage> {
     return Column(
       crossAxisAlignment:
           CrossAxisAlignment.start,
+
       children: [
         Text(
           label,
-          style: const TextStyle(
+
+          style:
+              const TextStyle(
             color: textGrey,
-            fontSize: 7,
+            fontSize: AppTextStyles.bodySmall,
           ),
         ),
 
-        const SizedBox(height: 4),
+        const SizedBox(
+          height: 4,
+        ),
 
         Text(
           value,
-          style: const TextStyle(
+
+          style:
+              const TextStyle(
             color: textDark,
-            fontSize: 9,
-            fontWeight: FontWeight.w600,
+            fontSize: AppTextStyles.bodySmall,
+            fontWeight:
+                FontWeight.w600,
           ),
         ),
       ],
