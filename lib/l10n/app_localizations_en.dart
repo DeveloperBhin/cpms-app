@@ -1145,4 +1145,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hidePassword => 'Hide password';
+
+  @override
+  String get latitude => 'Latitude';
+
+  @override
+  String get longitude => 'Longitude';
+
+  @override
+  String get validLatitudeRequired =>
+      'Please enter a valid latitude between -90 and 90.';
+
+  @override
+  String get validLongitudeRequired =>
+      'Please enter a valid longitude between -180 and 180.';
+
+  @override
+  String get bothCoordinatesRequired =>
+      'Both latitude and longitude are required.';
+
+  @override
+  String get invalidLatitude => 'Invalid latitude.';
+
+  @override
+  String get invalidLongitude => 'Invalid longitude.';
 }

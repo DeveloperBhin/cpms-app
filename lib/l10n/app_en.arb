@@ -561,5 +561,13 @@
 "pleaseEnterPassword": "Please enter your password",
 "dontHaveAccount": "Don't have an account?",
 "showPassword": "Show password",
-"hidePassword": "Hide password"
+"hidePassword": "Hide password",
+
+"latitude": "Latitude",
+"longitude": "Longitude",
+"validLatitudeRequired": "Please enter a valid latitude between -90 and 90.",
+"validLongitudeRequired": "Please enter a valid longitude between -180 and 180.",
+"bothCoordinatesRequired": "Both latitude and longitude are required.",
+"invalidLatitude": "Invalid latitude.",
+"invalidLongitude": "Invalid longitude."
 }
