@@ -38,6 +38,8 @@ class TreeApiServices {
     required String status,
     String? geometry,
     String? notes,
+    double? latitude,
+double? longitude,
   }) async {
     final token = await _getToken();
 

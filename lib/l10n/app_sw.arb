@@ -562,5 +562,12 @@
 "pleaseEnterPassword": "Tafadhali weka nenosiri",
 "dontHaveAccount": "Huna akaunti?",
 "showPassword": "Onyesha nenosiri",
-"hidePassword": "Ficha nenosiri"
+"hidePassword": "Ficha nenosiri",
+"latitude": "Latitudo",
+"longitude": "Longitudo",
+"validLatitudeRequired": "Tafadhali weka latitudo sahihi kati ya -90 na 90.",
+"validLongitudeRequired": "Tafadhali weka longitudo sahihi kati ya -180 na 180.",
+"bothCoordinatesRequired": "Latitudo na longitudo zote zinahitajika.",
+"invalidLatitude": "Latitudo si sahihi.",
+"invalidLongitude": "Longitudo si sahihi."
 }

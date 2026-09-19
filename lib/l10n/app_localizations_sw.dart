@@ -1161,4 +1161,28 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get hidePassword => 'Ficha nenosiri';
+
+  @override
+  String get latitude => 'Latitudo';
+
+  @override
+  String get longitude => 'Longitudo';
+
+  @override
+  String get validLatitudeRequired =>
+      'Tafadhali weka latitudo sahihi kati ya -90 na 90.';
+
+  @override
+  String get validLongitudeRequired =>
+      'Tafadhali weka longitudo sahihi kati ya -180 na 180.';
+
+  @override
+  String get bothCoordinatesRequired =>
+      'Latitudo na longitudo zote zinahitajika.';
+
+  @override
+  String get invalidLatitude => 'Latitudo si sahihi.';
+
+  @override
+  String get invalidLongitude => 'Longitudo si sahihi.';
 }

@@ -68,51 +68,124 @@ class _BlockDetailsPageState
   // LOAD TREES
   // ===============================================================
 
+  // Future<void> _loadTrees() async {
+  //   if (mounted) {
+  //     setState(() {
+  //       _isLoadingTrees = true;
+  //       _treeError = null;
+  //     });
+  //   }
+
+  //   try {
+  //     final result = await LocalDataService.instance.getTrees(
+  //       widget.farmId,
+  //       widget.blockId,
+  //     final result =
+  //         await TreeApiServices.getTreesByBlock(
+  //       farmId: widget.farmId,
+  //       blockId: widget.blockId,
+  //     );
+
+  //     debugPrint(
+  //       'BLOCK ${widget.blockId} -> TREES: ${result.length}',
+  //     );
+
+  //     if (!mounted) return;
+
+  //     setState(() {
+  //       trees = result;
+  //       _isLoadingTrees = false;
+  //     });
+  //   } catch (e) {
+  //     debugPrint(
+  //       'LOAD BLOCK TREES ERROR: $e',
+  //     );
+
+  //     if (!mounted) return;
+
+  //     setState(() {
+  //       _isLoadingTrees = false;
+
+  //       _treeError = e
+  //           .toString()
+  //           .replaceFirst(
+  //             'Exception: ',
+  //             '',
+  //           );
+  //     });
+  //   }
+  // }
+
+
   Future<void> _loadTrees() async {
-    if (mounted) {
-      setState(() {
-        _isLoadingTrees = true;
-        _treeError = null;
-      });
-    }
+  if (mounted) {
+    setState(() {
+      _isLoadingTrees = true;
+      _treeError = null;
+    });
+  }
 
-    try {
-      
-      final result =
-          await TreeApiServices.getTreesByBlock(
-        farmId: widget.farmId,
-        blockId: widget.blockId,
+  try {
+    // Load local/offline trees first.
+    final localTrees =
+        await LocalDataService.instance.getTrees(
+      widget.farmId,
+      widget.blockId,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      trees = List<Map<String, dynamic>>.from(
+        localTrees,
       );
+    });
 
-      debugPrint(
-        'BLOCK ${widget.blockId} -> TREES: ${result.length}',
+    debugPrint(
+      'BLOCK ${widget.blockId} -> LOCAL TREES: ${localTrees.length}',
+    );
+
+    // Then get the latest trees from the API.
+    final apiTrees =
+        await TreeApiServices.getTreesByBlock(
+      farmId: widget.farmId,
+      blockId: widget.blockId,
+    );
+
+    if (!mounted) return;
+
+    debugPrint(
+      'BLOCK ${widget.blockId} -> API TREES: ${apiTrees.length}',
+    );
+
+    setState(() {
+      trees = List<Map<String, dynamic>>.from(
+        apiTrees,
       );
+      _isLoadingTrees = false;
+    });
+  } catch (e) {
+    debugPrint(
+      'LOAD BLOCK TREES ERROR: $e',
+    );
 
-      if (!mounted) return;
+    if (!mounted) return;
 
-      setState(() {
-        trees = result;
-        _isLoadingTrees = false;
-      });
-    } catch (e) {
-      debugPrint(
-        'LOAD BLOCK TREES ERROR: $e',
-      );
+    setState(() {
+      _isLoadingTrees = false;
 
-      if (!mounted) return;
-
-      setState(() {
-        _isLoadingTrees = false;
-
+      // If local trees exist, continue showing them.
+      if (trees.isEmpty) {
         _treeError = e
             .toString()
             .replaceFirst(
               'Exception: ',
               '',
             );
-      });
-    }
+      }
+    });
   }
+}
 
   // ===============================================================
   // DISPLAY IDS

@@ -2239,6 +2239,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Hide password'**
   String get hidePassword;
+
+  /// No description provided for @latitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Latitude'**
+  String get latitude;
+
+  /// No description provided for @longitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Longitude'**
+  String get longitude;
+
+  /// No description provided for @validLatitudeRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid latitude between -90 and 90.'**
+  String get validLatitudeRequired;
+
+  /// No description provided for @validLongitudeRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid longitude between -180 and 180.'**
+  String get validLongitudeRequired;
+
+  /// No description provided for @bothCoordinatesRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Both latitude and longitude are required.'**
+  String get bothCoordinatesRequired;
+
+  /// No description provided for @invalidLatitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid latitude.'**
+  String get invalidLatitude;
+
+  /// No description provided for @invalidLongitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid longitude.'**
+  String get invalidLongitude;
 }
 
 class _AppLocalizationsDelegate

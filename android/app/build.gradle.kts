@@ -1,5 +1,4 @@
-import java.util.Properties
-import java.io.FileInputStream
+import java.io.File
 
 plugins {
     id("com.android.application")
@@ -7,12 +6,58 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+/*
+ * Read key.properties manually as UTF-8.
+ *
+ * This avoids java.util.Properties changing/interpreting
+ * special characters inside passwords.
+ */
 val keystorePropertiesFile = rootProject.file("key.properties")
-val keystoreProperties = Properties()
 
-if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
-}
+val keystoreProperties: Map<String, String> =
+    if (keystorePropertiesFile.exists()) {
+        keystorePropertiesFile
+            .readLines(Charsets.UTF_8)
+            .filter {
+                it.isNotBlank() &&
+                !it.trimStart().startsWith("#")
+            }
+            .associate { line ->
+                val index = line.indexOf('=')
+
+                require(index > 0) {
+                    "Invalid line in key.properties"
+                }
+
+                val key = line
+                    .substring(0, index)
+                    .trim()
+
+                // Do NOT trim the password/value.
+                // Everything after the first "=" is preserved literally.
+                val value = line.substring(index + 1)
+
+                key to value
+            }
+    } else {
+        emptyMap()
+    }
+
+/*
+ * Safe debugging.
+ *
+ * This DOES NOT print the actual passwords.
+ * It only prints their lengths and signing metadata.
+ *
+ * Remove this block after signing works.
+ */
+println(
+    "SIGNING CHECK: " +
+        "storeLength=${keystoreProperties["storePassword"]?.length}, " +
+        "keyLength=${keystoreProperties["keyPassword"]?.length}, " +
+        "alias=${keystoreProperties["keyAlias"]}, " +
+        "file=${keystoreProperties["storeFile"]}"
+)
 
 android {
     namespace = "com.olimata.planty"
@@ -40,13 +85,51 @@ android {
 
     signingConfigs {
         create("release") {
-            initWith(signingConfigs.getByName("debug"))
+
+            val releaseStoreFile =
+                keystoreProperties["storeFile"]
+                    ?: error(
+                        "storeFile is missing from android/key.properties"
+                    )
+
+            val releaseStorePassword =
+                keystoreProperties["storePassword"]
+                    ?: error(
+                        "storePassword is missing from android/key.properties"
+                    )
+
+            val releaseKeyAlias =
+                keystoreProperties["keyAlias"]
+                    ?: error(
+                        "keyAlias is missing from android/key.properties"
+                    )
+
+            val releaseKeyPassword =
+                keystoreProperties["keyPassword"]
+                    ?: error(
+                        "keyPassword is missing from android/key.properties"
+                    )
+
+            storeFile = file(releaseStoreFile)
+
+            storePassword = releaseStorePassword
+
+            keyAlias = releaseKeyAlias
+
+            keyPassword = releaseKeyPassword
+
+            /*
+             * Our new release keystore was explicitly created
+             * using -storetype JKS.
+             */
+            storeType = "JKS"
         }
     }
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig =
+                signingConfigs.getByName("release")
         }
     }
 }
