@@ -854,6 +854,150 @@ abstract class AppLocalizations {
   /// **'Enter a valid farm size'**
   String get validFarmSizeRequired;
 
+  /// No description provided for @drawFarmBoundary.
+  ///
+  /// In en, this message translates to:
+  /// **'Draw Farm Boundary (GPS)'**
+  String get drawFarmBoundary;
+
+  /// No description provided for @redrawFarmBoundary.
+  ///
+  /// In en, this message translates to:
+  /// **'Redraw Farm Boundary (GPS)'**
+  String get redrawFarmBoundary;
+
+  /// No description provided for @drawValidBoundary.
+  ///
+  /// In en, this message translates to:
+  /// **'Draw a valid polygon boundary before submitting.'**
+  String get drawValidBoundary;
+
+  /// No description provided for @drawBoundaryForSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Draw the farm boundary to calculate the farm size'**
+  String get drawBoundaryForSize;
+
+  /// No description provided for @farmBoundary.
+  ///
+  /// In en, this message translates to:
+  /// **'Draw Farm Boundary'**
+  String get farmBoundary;
+
+  /// No description provided for @mapPoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Point {number}'**
+  String mapPoint(int number);
+
+  /// No description provided for @undoLastPoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo last point'**
+  String get undoLastPoint;
+
+  /// No description provided for @clearAllPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all points'**
+  String get clearAllPoints;
+
+  /// No description provided for @waitingForGps.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for GPS...'**
+  String get waitingForGps;
+
+  /// No description provided for @gpsUnavailableRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS unavailable (tap to retry)'**
+  String get gpsUnavailableRetry;
+
+  /// No description provided for @gpsPointTooClose.
+  ///
+  /// In en, this message translates to:
+  /// **'You are still at the last point. Walk to the next corner of the farm first.'**
+  String get gpsPointTooClose;
+
+  /// No description provided for @gpsLowAccuracy.
+  ///
+  /// In en, this message translates to:
+  /// **'Point {count} added, but GPS accuracy is low (+/-{accuracy} m). Undo it and retry in an open area for a better result.'**
+  String gpsLowAccuracy(int count, int accuracy);
+
+  /// No description provided for @gpsFixUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not get a GPS fix. Move to an open area and try again.'**
+  String get gpsFixUnavailable;
+
+  /// No description provided for @gpsServicesRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enable GPS location services'**
+  String get gpsServicesRequired;
+
+  /// No description provided for @gpsPermissionPermanentlyDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Location permission is permanently denied. Enable it in app settings'**
+  String get gpsPermissionPermanentlyDenied;
+
+  /// No description provided for @gpsPermissionRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Location permission is required to map the farm'**
+  String get gpsPermissionRequired;
+
+  /// No description provided for @addThreeBoundaryPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least three points to form a boundary.'**
+  String get addThreeBoundaryPoints;
+
+  /// No description provided for @boundarySelfIntersecting.
+  ///
+  /// In en, this message translates to:
+  /// **'The boundary lines cross each other. Undo the last point or clear and start again.'**
+  String get boundarySelfIntersecting;
+
+  /// No description provided for @boundaryStartInstructions.
+  ///
+  /// In en, this message translates to:
+  /// **'Stand at one corner of your farm and tap \"Add my current location\". Then walk to each next corner and repeat.'**
+  String get boundaryStartInstructions;
+
+  /// No description provided for @boundaryPointsAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} points added. Add at least {remaining} more.'**
+  String boundaryPointsAdded(int count, int remaining);
+
+  /// No description provided for @boundaryArea.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} points  •  {area} acres'**
+  String boundaryArea(int count, String area);
+
+  /// No description provided for @gettingGpsLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Getting GPS location...'**
+  String get gettingGpsLocation;
+
+  /// No description provided for @addCurrentLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Add my current location'**
+  String get addCurrentLocation;
+
+  /// No description provided for @saveBoundary.
+  ///
+  /// In en, this message translates to:
+  /// **'Save boundary'**
+  String get saveBoundary;
+
   /// No description provided for @submitFarm.
   ///
   /// In en, this message translates to:
@@ -1253,50 +1397,14 @@ abstract class AppLocalizations {
   /// No description provided for @treeLocationDescription.
   ///
   /// In en, this message translates to:
-  /// **'Optional GPS coordinates for this tree.'**
+  /// **'Optional WKT point geometry for this tree.'**
   String get treeLocationDescription;
 
-  /// No description provided for @latitude.
+  /// No description provided for @geometry.
   ///
   /// In en, this message translates to:
-  /// **'Latitude'**
-  String get latitude;
-
-  /// No description provided for @longitude.
-  ///
-  /// In en, this message translates to:
-  /// **'Longitude'**
-  String get longitude;
-
-  /// No description provided for @invalidLatitude.
-  ///
-  /// In en, this message translates to:
-  /// **'Invalid latitude'**
-  String get invalidLatitude;
-
-  /// No description provided for @invalidLongitude.
-  ///
-  /// In en, this message translates to:
-  /// **'Invalid longitude'**
-  String get invalidLongitude;
-
-  /// No description provided for @validLatitudeRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter a valid latitude between -90 and 90.'**
-  String get validLatitudeRequired;
-
-  /// No description provided for @validLongitudeRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter a valid longitude between -180 and 180.'**
-  String get validLongitudeRequired;
-
-  /// No description provided for @bothCoordinatesRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter both latitude and longitude.'**
-  String get bothCoordinatesRequired;
+  /// **'Geometry'**
+  String get geometry;
 
   /// No description provided for @notes.
   ///

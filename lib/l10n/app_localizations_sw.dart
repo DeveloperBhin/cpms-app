@@ -406,6 +406,95 @@ class AppLocalizationsSw extends AppLocalizations {
   String get validFarmSizeRequired => 'Weka ukubwa sahihi wa shamba';
 
   @override
+  String get drawFarmBoundary => 'Chora Mpaka wa Shamba (GPS)';
+
+  @override
+  String get redrawFarmBoundary => 'Chora Upya Mpaka wa Shamba (GPS)';
+
+  @override
+  String get drawValidBoundary =>
+      'Chora mpaka halali wa poligoni kabla ya kutuma.';
+
+  @override
+  String get drawBoundaryForSize =>
+      'Chora mpaka wa shamba ili kuhesabu ukubwa wa shamba';
+
+  @override
+  String get farmBoundary => 'Chora Mpaka wa Shamba';
+
+  @override
+  String mapPoint(int number) {
+    return 'Nukta $number';
+  }
+
+  @override
+  String get undoLastPoint => 'Tengua nukta ya mwisho';
+
+  @override
+  String get clearAllPoints => 'Futa nukta zote';
+
+  @override
+  String get waitingForGps => 'Inasubiri GPS...';
+
+  @override
+  String get gpsUnavailableRetry => 'GPS haipatikani (gusa kujaribu tena)';
+
+  @override
+  String get gpsPointTooClose =>
+      'Bado uko kwenye nukta ya mwisho. Tembea hadi kona inayofuata ya shamba kwanza.';
+
+  @override
+  String gpsLowAccuracy(int count, int accuracy) {
+    return 'Nukta $count imeongezwa, lakini usahihi wa GPS ni mdogo (+/-$accuracy m). Tengua na ujaribu tena katika eneo wazi kwa matokeo bora.';
+  }
+
+  @override
+  String get gpsFixUnavailable =>
+      'Haikuwezekana kupata GPS. Hamia eneo wazi na ujaribu tena.';
+
+  @override
+  String get gpsServicesRequired => 'Washa huduma za eneo za GPS';
+
+  @override
+  String get gpsPermissionPermanentlyDenied =>
+      'Ruhusa ya eneo imekataliwa kabisa. Iwashe kwenye mipangilio ya simu';
+
+  @override
+  String get gpsPermissionRequired =>
+      'Ruhusa ya eneo inahitajika kuchora shamba';
+
+  @override
+  String get addThreeBoundaryPoints =>
+      'Ongeza angalau nukta tatu kuunda mpaka.';
+
+  @override
+  String get boundarySelfIntersecting =>
+      'Mistari ya mpaka inakatana. Tengua nukta ya mwisho au futa na uanze tena.';
+
+  @override
+  String get boundaryStartInstructions =>
+      'Simama kwenye kona moja ya shamba lako na uguse \"Ongeza eneo langu la sasa\". Kisha tembea hadi kila kona inayofuata na urudie.';
+
+  @override
+  String boundaryPointsAdded(int count, int remaining) {
+    return 'Nukta $count zimeongezwa. Ongeza $remaining zaidi.';
+  }
+
+  @override
+  String boundaryArea(int count, String area) {
+    return 'Nukta $count  •  $area ekari';
+  }
+
+  @override
+  String get gettingGpsLocation => 'Inapata eneo la GPS...';
+
+  @override
+  String get addCurrentLocation => 'Ongeza eneo langu la sasa';
+
+  @override
+  String get saveBoundary => 'Hifadhi mpaka';
+
+  @override
   String get submitFarm => 'Sajili Shamba';
 
   @override
@@ -611,30 +700,10 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get treeLocationDescription =>
-      'Kuratibu za GPS za mkorosho huu si lazima.';
+      'Jiometri ya WKT ya mkorosho huu si lazima.';
 
   @override
-  String get latitude => 'Latitudo';
-
-  @override
-  String get longitude => 'Longitudo';
-
-  @override
-  String get invalidLatitude => 'Latitudo si sahihi';
-
-  @override
-  String get invalidLongitude => 'Longitudo si sahihi';
-
-  @override
-  String get validLatitudeRequired => 'Weka latitudo sahihi kati ya -90 na 90.';
-
-  @override
-  String get validLongitudeRequired =>
-      'Weka longitudo sahihi kati ya -180 na 180.';
-
-  @override
-  String get bothCoordinatesRequired =>
-      'Weka latitudo na longitudo zote mbili.';
+  String get geometry => 'Jiometri';
 
   @override
   String get notes => 'Maelezo';

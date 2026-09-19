@@ -183,6 +183,54 @@
   "farmSize": "Ukubwa wa Shamba",
   "farmSizeRequired": "Ukubwa wa shamba unahitajika",
   "validFarmSizeRequired": "Weka ukubwa sahihi wa shamba",
+  "drawFarmBoundary": "Chora Mpaka wa Shamba (GPS)",
+  "redrawFarmBoundary": "Chora Upya Mpaka wa Shamba (GPS)",
+  "drawValidBoundary": "Chora mpaka halali wa poligoni kabla ya kutuma.",
+  "drawBoundaryForSize": "Chora mpaka wa shamba ili kuhesabu ukubwa wa shamba",
+  "acres": "Ekari",
+  "farmBoundary": "Chora Mpaka wa Shamba",
+  "mapPoint": "Nukta {number}",
+  "@mapPoint": {
+    "placeholders": {
+      "number": { "type": "int" }
+    }
+  },
+  "undoLastPoint": "Tengua nukta ya mwisho",
+  "clearAllPoints": "Futa nukta zote",
+  "waitingForGps": "Inasubiri GPS...",
+  "gpsUnavailableRetry": "GPS haipatikani (gusa kujaribu tena)",
+  "gpsPointTooClose": "Bado uko kwenye nukta ya mwisho. Tembea hadi kona inayofuata ya shamba kwanza.",
+  "gpsLowAccuracy": "Nukta {count} imeongezwa, lakini usahihi wa GPS ni mdogo (+/-{accuracy} m). Tengua na ujaribu tena katika eneo wazi kwa matokeo bora.",
+  "@gpsLowAccuracy": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "accuracy": { "type": "int" }
+    }
+  },
+  "gpsFixUnavailable": "Haikuwezekana kupata GPS. Hamia eneo wazi na ujaribu tena.",
+  "gpsServicesRequired": "Washa huduma za eneo za GPS",
+  "gpsPermissionPermanentlyDenied": "Ruhusa ya eneo imekataliwa kabisa. Iwashe kwenye mipangilio ya simu",
+  "gpsPermissionRequired": "Ruhusa ya eneo inahitajika kuchora shamba",
+  "addThreeBoundaryPoints": "Ongeza angalau nukta tatu kuunda mpaka.",
+  "boundarySelfIntersecting": "Mistari ya mpaka inakatana. Tengua nukta ya mwisho au futa na uanze tena.",
+  "boundaryStartInstructions": "Simama kwenye kona moja ya shamba lako na uguse \"Ongeza eneo langu la sasa\". Kisha tembea hadi kila kona inayofuata na urudie.",
+  "boundaryPointsAdded": "Nukta {count} zimeongezwa. Ongeza {remaining} zaidi.",
+  "@boundaryPointsAdded": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "remaining": { "type": "int" }
+    }
+  },
+  "boundaryArea": "Nukta {count}  •  {area} ekari",
+  "@boundaryArea": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "area": { "type": "String" }
+    }
+  },
+  "gettingGpsLocation": "Inapata eneo la GPS...",
+  "addCurrentLocation": "Ongeza eneo langu la sasa",
+  "saveBoundary": "Hifadhi mpaka",
 
   "submitFarm": "Sajili Shamba",
   "farmAddedSuccessfully": "Shamba limeongezwa kikamilifu",
@@ -276,15 +324,9 @@
   "treeStatusHint": "Hali ya mkorosho",
 
   "treeLocation": "Eneo la Mkorosho",
-  "treeLocationDescription": "Kuratibu za GPS za mkorosho huu si lazima.",
+  "treeLocationDescription": "Jiometri ya WKT ya mkorosho huu si lazima.",
 
-  "latitude": "Latitudo",
-  "longitude": "Longitudo",
-  "invalidLatitude": "Latitudo si sahihi",
-  "invalidLongitude": "Longitudo si sahihi",
-  "validLatitudeRequired": "Weka latitudo sahihi kati ya -90 na 90.",
-  "validLongitudeRequired": "Weka longitudo sahihi kati ya -180 na 180.",
-  "bothCoordinatesRequired": "Weka latitudo na longitudo zote mbili.",
+  "geometry": "Jiometri",
 
   "notes": "Maelezo",
   "treeNotesHint": "Maelezo ya ziada kuhusu mkorosho",

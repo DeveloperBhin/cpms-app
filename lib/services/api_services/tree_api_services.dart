@@ -8,8 +8,7 @@ class TreeApiServices {
   // IMPORTANT:
   // Use exactly the same baseUrl as FarmApiServices
   // and BlockApiServices.
-  static const String baseUrl =
-      'http://41.59.228.129:8087/api/v1';
+  static const String baseUrl = 'http://41.59.228.129:8087/api/v1';
 
   // ============================================================
   // TOKEN
@@ -37,29 +36,23 @@ class TreeApiServices {
     required String variety,
     required int plantingYear,
     required String status,
-    double? latitude,
-    double? longitude,
+    String? geometry,
     String? notes,
   }) async {
     final token = await _getToken();
 
-    final uri = Uri.parse(
-      '$baseUrl/farms/$farmId/blocks/$blockId/trees',
-    );
+    final uri = Uri.parse('$baseUrl/farms/$farmId/blocks/$blockId/trees');
 
     final body = <String, dynamic>{
       'variety': variety.trim(),
       'plantingYear': plantingYear,
       'status': status,
-      'latitude': latitude,
-      'longitude': longitude,
+      'geometry': geometry?.trim(),
       'notes': notes?.trim(),
     };
 
     debugPrint('CREATE TREE URL: $uri');
-    debugPrint(
-      'CREATE TREE BODY: ${jsonEncode(body)}',
-    );
+    debugPrint('CREATE TREE BODY: ${jsonEncode(body)}');
 
     final response = await http.post(
       uri,
@@ -71,25 +64,18 @@ class TreeApiServices {
       body: jsonEncode(body),
     );
 
-    debugPrint(
-      'CREATE TREE STATUS: ${response.statusCode}',
-    );
+    debugPrint('CREATE TREE STATUS: ${response.statusCode}');
 
-    debugPrint(
-      'CREATE TREE RESPONSE: ${response.body}',
-    );
+    debugPrint('CREATE TREE RESPONSE: ${response.body}');
 
-    if (response.statusCode >= 200 &&
-        response.statusCode < 300) {
+    if (response.statusCode >= 200 && response.statusCode < 300) {
       if (response.body.trim().isEmpty) {
         return {};
       }
 
       final decoded = jsonDecode(response.body);
 
-      return Map<String, dynamic>.from(
-        decoded as Map,
-      );
+      return Map<String, dynamic>.from(decoded as Map);
     }
 
     throw Exception(
@@ -108,30 +94,20 @@ class TreeApiServices {
   }) async {
     final token = await _getToken();
 
-    final uri = Uri.parse(
-      '$baseUrl/farms/$farmId/blocks/$blockId/trees',
-    );
+    final uri = Uri.parse('$baseUrl/farms/$farmId/blocks/$blockId/trees');
 
     debugPrint('GET TREES URL: $uri');
 
     final response = await http.get(
       uri,
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
+      headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
     );
 
-    debugPrint(
-      'GET TREES STATUS: ${response.statusCode}',
-    );
+    debugPrint('GET TREES STATUS: ${response.statusCode}');
 
-    debugPrint(
-      'GET TREES RESPONSE: ${response.body}',
-    );
+    debugPrint('GET TREES RESPONSE: ${response.body}');
 
-    if (response.statusCode >= 200 &&
-        response.statusCode < 300) {
+    if (response.statusCode >= 200 && response.statusCode < 300) {
       if (response.body.trim().isEmpty) {
         return [];
       }
@@ -140,22 +116,13 @@ class TreeApiServices {
 
       if (decoded is List) {
         return decoded
-            .map(
-              (item) => Map<String, dynamic>.from(
-                item as Map,
-              ),
-            )
+            .map((item) => Map<String, dynamic>.from(item as Map))
             .toList();
       }
 
-      if (decoded is Map &&
-          decoded['data'] is List) {
+      if (decoded is Map && decoded['data'] is List) {
         return (decoded['data'] as List)
-            .map(
-              (item) => Map<String, dynamic>.from(
-                item as Map,
-              ),
-            )
+            .map((item) => Map<String, dynamic>.from(item as Map))
             .toList();
       }
 
@@ -185,25 +152,15 @@ class TreeApiServices {
 
     final response = await http.get(
       uri,
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
+      headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
     );
 
-    debugPrint(
-      'GET TREE STATUS: ${response.statusCode}',
-    );
+    debugPrint('GET TREE STATUS: ${response.statusCode}');
 
-    debugPrint(
-      'GET TREE RESPONSE: ${response.body}',
-    );
+    debugPrint('GET TREE RESPONSE: ${response.body}');
 
-    if (response.statusCode >= 200 &&
-        response.statusCode < 300) {
-      return Map<String, dynamic>.from(
-        jsonDecode(response.body) as Map,
-      );
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return Map<String, dynamic>.from(jsonDecode(response.body) as Map);
     }
 
     throw Exception(
@@ -211,141 +168,96 @@ class TreeApiServices {
       '(${response.statusCode}): ${response.body}',
     );
   }
-static Future<List<Map<String, dynamic>>>
-    getMyTrees() async {
 
-  final token = await _getToken();
+  static Future<List<Map<String, dynamic>>> getMyTrees() async {
+    final token = await _getToken();
 
-  final uri = Uri.parse(
-    '$baseUrl/trees/my',
-  );
+    final uri = Uri.parse('$baseUrl/trees/my');
 
-  debugPrint('GET MY TREES URL: $uri');
+    debugPrint('GET MY TREES URL: $uri');
 
-  final response = await http.get(
-    uri,
-    headers: {
-      'Accept': 'application/json',
-      'Authorization': 'Bearer $token',
-    },
-  );
+    final response = await http.get(
+      uri,
+      headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
+    );
 
-  debugPrint(
-    'GET MY TREES STATUS: ${response.statusCode}',
-  );
+    debugPrint('GET MY TREES STATUS: ${response.statusCode}');
 
-  debugPrint(
-    'GET MY TREES RESPONSE: ${response.body}',
-  );
+    debugPrint('GET MY TREES RESPONSE: ${response.body}');
 
-  if (response.statusCode >= 200 &&
-      response.statusCode < 300) {
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      if (response.body.trim().isEmpty) {
+        return [];
+      }
 
-    if (response.body.trim().isEmpty) {
+      final decoded = jsonDecode(response.body);
+
+      if (decoded is List) {
+        return decoded
+            .map((item) => Map<String, dynamic>.from(item as Map))
+            .toList();
+      }
+
+      if (decoded is Map && decoded['data'] is List) {
+        return (decoded['data'] as List)
+            .map((item) => Map<String, dynamic>.from(item as Map))
+            .toList();
+      }
+
       return [];
     }
 
-    final decoded =
-        jsonDecode(response.body);
-
-    if (decoded is List) {
-      return decoded
-          .map(
-            (item) =>
-                Map<String, dynamic>.from(
-              item as Map,
-            ),
-          )
-          .toList();
-    }
-
-    if (decoded is Map &&
-        decoded['data'] is List) {
-
-      return (decoded['data'] as List)
-          .map(
-            (item) =>
-                Map<String, dynamic>.from(
-              item as Map,
-            ),
-          )
-          .toList();
-    }
-
-    return [];
-  }
-
-  throw Exception(
-    'Failed to load trees '
-    '(${response.statusCode}): '
-    '${response.body}',
-  );
-}
-
-static Future<Map<String, dynamic>> getTreeByCode({
-  required String treeCode,
-}) async {
-  final token = await _getToken();
-
-  final code = treeCode.trim().toUpperCase();
-
-  final uri = Uri.parse(
-    '$baseUrl/trees/code/${Uri.encodeComponent(code)}',
-  );
-
-  debugPrint('GET TREE BY CODE URL: $uri');
-
-  final response = await http.get(
-    uri,
-    headers: {
-      'Accept': 'application/json',
-      'Authorization': 'Bearer $token',
-    },
-  );
-
-  debugPrint(
-    'GET TREE BY CODE STATUS: ${response.statusCode}',
-  );
-
-  debugPrint(
-    'GET TREE BY CODE RESPONSE: ${response.body}',
-  );
-
-  if (response.statusCode >= 200 &&
-      response.statusCode < 300) {
-    if (response.body.trim().isEmpty) {
-      throw Exception(
-        'Tree response was empty',
-      );
-    }
-
-    final decoded =
-        jsonDecode(response.body);
-
-    if (decoded is Map) {
-      return Map<String, dynamic>.from(
-        decoded,
-      );
-    }
-
     throw Exception(
-      'Invalid tree response',
+      'Failed to load trees '
+      '(${response.statusCode}): '
+      '${response.body}',
     );
   }
 
-  if (response.statusCode == 404) {
+  static Future<Map<String, dynamic>> getTreeByCode({
+    required String treeCode,
+  }) async {
+    final token = await _getToken();
+
+    final code = treeCode.trim().toUpperCase();
+
+    final uri = Uri.parse('$baseUrl/trees/code/${Uri.encodeComponent(code)}');
+
+    debugPrint('GET TREE BY CODE URL: $uri');
+
+    final response = await http.get(
+      uri,
+      headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
+    );
+
+    debugPrint('GET TREE BY CODE STATUS: ${response.statusCode}');
+
+    debugPrint('GET TREE BY CODE RESPONSE: ${response.body}');
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      if (response.body.trim().isEmpty) {
+        throw Exception('Tree response was empty');
+      }
+
+      final decoded = jsonDecode(response.body);
+
+      if (decoded is Map) {
+        return Map<String, dynamic>.from(decoded);
+      }
+
+      throw Exception('Invalid tree response');
+    }
+
+    if (response.statusCode == 404) {
+      throw Exception('Tree not found');
+    }
+
     throw Exception(
-      'Tree not found',
+      'Failed to find tree '
+      '(${response.statusCode}): '
+      '${response.body}',
     );
   }
-
-  throw Exception(
-    'Failed to find tree '
-    '(${response.statusCode}): '
-    '${response.body}',
-  );
-}
-
 
   // ============================================================
   // DELETE TREE
@@ -364,22 +276,14 @@ static Future<Map<String, dynamic>> getTreeByCode({
 
     final response = await http.delete(
       uri,
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
+      headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
     );
 
-    debugPrint(
-      'DELETE TREE STATUS: ${response.statusCode}',
-    );
+    debugPrint('DELETE TREE STATUS: ${response.statusCode}');
 
-    debugPrint(
-      'DELETE TREE RESPONSE: ${response.body}',
-    );
+    debugPrint('DELETE TREE RESPONSE: ${response.body}');
 
-    if (response.statusCode < 200 ||
-        response.statusCode >= 300) {
+    if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception(
         'Failed to delete tree '
         '(${response.statusCode}): ${response.body}',

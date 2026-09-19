@@ -20,8 +20,7 @@ class TreeDetailsPage extends StatefulWidget {
   });
 
   @override
-  State<TreeDetailsPage> createState() =>
-      _TreeDetailsPageState();
+  State<TreeDetailsPage> createState() => _TreeDetailsPageState();
 }
 
 class _TreeDetailsPageState extends State<TreeDetailsPage> {
@@ -59,8 +58,7 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
   // LOCALIZATION
   // ===============================================================
 
-  AppLocalizations get _l10n =>
-      AppLocalizations.of(context)!;
+  AppLocalizations get _l10n => AppLocalizations.of(context)!;
 
   // ===============================================================
   // LOAD TREE FROM API
@@ -139,24 +137,9 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
     return value;
   }
 
-  String get _latitude {
-    final value = tree?['latitude'];
-
-    if (value == null) {
-      return '-';
-    }
-
-    return value.toString();
-  }
-
-  String get _longitude {
-    final value = tree?['longitude'];
-
-    if (value == null) {
-      return '-';
-    }
-
-    return value.toString();
+  String get _geometry {
+    final value = tree?['geometry']?.toString().trim();
+    return value == null || value.isEmpty ? '-' : value;
   }
 
   String get _farmName {
@@ -179,9 +162,9 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
     return value;
   }
 
-  bool get _hasCoordinates {
-    return tree?['latitude'] != null &&
-        tree?['longitude'] != null;
+  bool get _hasGeometry {
+    final value = tree?['geometry']?.toString().trim();
+    return value != null && value.isNotEmpty;
   }
 
   // ===============================================================
@@ -197,9 +180,7 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
         child: Column(
           children: [
             _header(),
-            Expanded(
-              child: _buildBody(),
-            ),
+            Expanded(child: _buildBody()),
           ],
         ),
       ),
@@ -216,9 +197,7 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
     return Container(
       width: double.infinity,
       height: 52,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 14,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: const BoxDecoration(
         color: primaryGreen,
         borderRadius: BorderRadius.only(
@@ -256,11 +235,7 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
           if (!_isLoading && tree != null)
             IconButton(
               onPressed: _loadTree,
-              icon: const Icon(
-                Icons.refresh,
-                color: Colors.white,
-                size: 19,
-              ),
+              icon: const Icon(Icons.refresh, color: Colors.white, size: 19),
               tooltip: l10n.refresh,
             ),
         ],
@@ -277,9 +252,7 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
 
     if (_isLoading) {
       return const Center(
-        child: CircularProgressIndicator(
-          color: primaryGreen,
-        ),
+        child: CircularProgressIndicator(color: primaryGreen),
       );
     }
 
@@ -288,9 +261,7 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
     }
 
     if (tree == null) {
-      return _errorView(
-        message: l10n.treeInformationNotFound,
-      );
+      return _errorView(message: l10n.treeInformationNotFound);
     }
 
     return RefreshIndicator(
@@ -298,12 +269,7 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
       onRefresh: _loadTree,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(
-          13,
-          20,
-          13,
-          30,
-        ),
+        padding: const EdgeInsets.fromLTRB(13, 20, 13, 30),
         child: Column(
           children: [
             _treeInformation(),
@@ -327,9 +293,7 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
   // ERROR
   // ===============================================================
 
-  Widget _errorView({
-    String? message,
-  }) {
+  Widget _errorView({String? message}) {
     final l10n = _l10n;
 
     return Center(
@@ -358,9 +322,7 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
               ),
               const SizedBox(height: 7),
               Text(
-                message ??
-                    _cleanError(_error) ??
-                    l10n.unknownError,
+                message ?? _cleanError(_error) ?? l10n.unknownError,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: textGrey,
@@ -370,13 +332,8 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: _loadTree,
-                icon: const Icon(
-                  Icons.refresh,
-                  size: 16,
-                ),
-                label: Text(
-                  l10n.tryAgain,
-                ),
+                icon: const Icon(Icons.refresh, size: 16),
+                label: Text(l10n.tryAgain),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryGreen,
                   foregroundColor: Colors.white,
@@ -431,8 +388,7 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       _treeCode,
@@ -457,52 +413,29 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
             ],
           ),
           const SizedBox(height: 18),
-          const Divider(
-            color: borderColor,
-            height: 1,
-          ),
+          const Divider(color: borderColor, height: 1),
           const SizedBox(height: 14),
-          _informationRow(
-            label: l10n.treeId,
-            value: _treeCode,
-          ),
+          _informationRow(label: l10n.treeId, value: _treeCode),
           const SizedBox(height: 10),
-          _informationRow(
-            label: l10n.farm,
-            value: _farmName,
-          ),
+          _informationRow(label: l10n.farm, value: _farmName),
           const SizedBox(height: 10),
           _informationRow(
             label: l10n.farmId,
-            value:
-                'FM-${widget.farmId.padLeft(4, '0')}',
+            value: 'FM-${widget.farmId.padLeft(4, '0')}',
           ),
           const SizedBox(height: 10),
-          _informationRow(
-            label: l10n.block,
-            value: _blockName,
-          ),
+          _informationRow(label: l10n.block, value: _blockName),
           const SizedBox(height: 10),
           _informationRow(
             label: l10n.blockId,
-            value:
-                'BL-${widget.blockId.padLeft(4, '0')}',
+            value: 'BL-${widget.blockId.padLeft(4, '0')}',
           ),
           const SizedBox(height: 10),
-          _informationRow(
-            label: l10n.variety,
-            value: _variety,
-          ),
+          _informationRow(label: l10n.variety, value: _variety),
           const SizedBox(height: 10),
-          _informationRow(
-            label: l10n.plantingYear,
-            value: _plantingYear,
-          ),
+          _informationRow(label: l10n.plantingYear, value: _plantingYear),
           const SizedBox(height: 10),
-          _informationRow(
-            label: l10n.status,
-            value: _formattedStatus(context),
-          ),
+          _informationRow(label: l10n.status, value: _formattedStatus(context)),
         ],
       ),
     );
@@ -514,10 +447,7 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
 
   Widget _statusBadge() {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 9,
-        vertical: 6,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
         color: _statusBackground(_status),
         borderRadius: BorderRadius.circular(7),
@@ -537,10 +467,7 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
   // INFORMATION ROW
   // ===============================================================
 
-  Widget _informationRow({
-    required String label,
-    required String value,
-  }) {
+  Widget _informationRow({required String label, required String value}) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -606,16 +533,10 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        const ScanPage(),
-                  ),
+                  MaterialPageRoute(builder: (context) => const ScanPage()),
                 );
               },
-              icon: const Icon(
-                Icons.barcode_reader,
-                size: 19,
-              ),
+              icon: const Icon(Icons.barcode_reader, size: 19),
               label: Text(
                 l10n.scanTreeBarcode,
                 style: const TextStyle(
@@ -628,8 +549,7 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.circular(9),
+                  borderRadius: BorderRadius.circular(9),
                 ),
               ),
             ),
@@ -673,17 +593,11 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
           Center(
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 18,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius:
-                    BorderRadius.circular(10),
-                border: Border.all(
-                  color: borderColor,
-                ),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: borderColor),
               ),
               child: BarcodeWidget(
                 barcode: Barcode.code128(),
@@ -721,10 +635,7 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
             height: 40,
             child: ElevatedButton.icon(
               onPressed: _showTreeBarcode,
-              icon: const Icon(
-                Icons.zoom_out_map,
-                size: 15,
-              ),
+              icon: const Icon(Icons.zoom_out_map, size: 15),
               label: Text(
                 l10n.enlargeBarcode,
                 style: const TextStyle(
@@ -737,8 +648,7 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
             ),
@@ -794,11 +704,8 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
                   ),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    border: Border.all(
-                      color: borderColor,
-                    ),
-                    borderRadius:
-                        BorderRadius.circular(10),
+                    border: Border.all(color: borderColor),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: BarcodeWidget(
                     barcode: Barcode.code128(),
@@ -827,8 +734,7 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                     ),
                     child: Text(
@@ -889,11 +795,10 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      l10n.gpsCoordinates,
+                      l10n.geometry,
                       style: const TextStyle(
                         color: textGrey,
                         fontSize: AppTextStyles.bodySmall,
@@ -901,10 +806,7 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      _hasCoordinates
-                          ? '$_latitude, $_longitude'
-                          : l10n
-                              .noGpsCoordinatesRecorded,
+                      _hasGeometry ? _geometry : l10n.noGpsCoordinatesRecorded,
                       style: const TextStyle(
                         color: textDark,
                         fontSize: AppTextStyles.bodySmall,
@@ -916,22 +818,11 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
               ),
             ],
           ),
-          if (_hasCoordinates) ...[
+          if (_hasGeometry) ...[
             const SizedBox(height: 14),
-            const Divider(
-              height: 1,
-              color: borderColor,
-            ),
+            const Divider(height: 1, color: borderColor),
             const SizedBox(height: 12),
-            _informationRow(
-              label: l10n.latitude,
-              value: _latitude,
-            ),
-            const SizedBox(height: 8),
-            _informationRow(
-              label: l10n.longitude,
-              value: _longitude,
-            ),
+            _informationRow(label: l10n.geometry, value: _geometry),
           ],
         ],
       ),
@@ -954,11 +845,7 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.notes_outlined,
-                color: primaryGreen,
-                size: 17,
-              ),
+              const Icon(Icons.notes_outlined, color: primaryGreen, size: 17),
               const SizedBox(width: 7),
               Text(
                 l10n.notes,
@@ -1023,8 +910,7 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
                 await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) =>
-                        TreeActivityPage(
+                    builder: (context) => TreeActivityPage(
                       // Raw database IDs.
                       // DO NOT LOCALIZE.
                       treeId: _rawTreeId,
@@ -1038,10 +924,7 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
                   await _loadTree();
                 }
               },
-              icon: const Icon(
-                Icons.add_task,
-                size: 16,
-              ),
+              icon: const Icon(Icons.add_task, size: 16),
               label: Text(
                 l10n.addViewTreeActivities,
                 style: const TextStyle(
@@ -1054,8 +937,7 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
             ),
@@ -1073,9 +955,7 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
   // Only the displayed text is translated.
   // ===============================================================
 
-  String _formattedStatus(
-    BuildContext context,
-  ) {
+  String _formattedStatus(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
     switch (_status.toUpperCase()) {
@@ -1089,8 +969,7 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
         return l10n.dead;
 
       default:
-        if (_status.trim().isEmpty ||
-            _status == '-') {
+        if (_status.trim().isEmpty || _status == '-') {
           return '-';
         }
 
@@ -1105,9 +984,7 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
   // DO NOT TRANSLATE.
   // ===============================================================
 
-  Color _statusColor(
-    String status,
-  ) {
+  Color _statusColor(String status) {
     switch (status.toUpperCase()) {
       case 'HEALTHY':
         return primaryGreen;
@@ -1130,9 +1007,7 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
   // DO NOT TRANSLATE.
   // ===============================================================
 
-  Color _statusBackground(
-    String status,
-  ) {
+  Color _statusBackground(String status) {
     switch (status.toUpperCase()) {
       case 'HEALTHY':
         return lightGreen;
@@ -1152,18 +1027,12 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
   // CLEAN ERROR
   // ===============================================================
 
-  String? _cleanError(
-    String? error,
-  ) {
-    if (error == null ||
-        error.trim().isEmpty) {
+  String? _cleanError(String? error) {
+    if (error == null || error.trim().isEmpty) {
       return null;
     }
 
-    return error.replaceFirst(
-      'Exception: ',
-      '',
-    );
+    return error.replaceFirst('Exception: ', '');
   }
 
   // ===============================================================
@@ -1174,9 +1043,7 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
     return BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(13),
-      border: Border.all(
-        color: borderColor,
-      ),
+      border: Border.all(color: borderColor),
     );
   }
 }

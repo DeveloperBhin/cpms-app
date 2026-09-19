@@ -77,9 +77,7 @@ class _BlockDetailsPageState
     }
 
     try {
-      final result = await LocalDataService.instance.getTrees(
-        widget.farmId,
-        widget.blockId,
+      
       final result =
           await TreeApiServices.getTreesByBlock(
         farmId: widget.farmId,

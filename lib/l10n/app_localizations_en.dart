@@ -402,6 +402,95 @@ class AppLocalizationsEn extends AppLocalizations {
   String get validFarmSizeRequired => 'Enter a valid farm size';
 
   @override
+  String get drawFarmBoundary => 'Draw Farm Boundary (GPS)';
+
+  @override
+  String get redrawFarmBoundary => 'Redraw Farm Boundary (GPS)';
+
+  @override
+  String get drawValidBoundary =>
+      'Draw a valid polygon boundary before submitting.';
+
+  @override
+  String get drawBoundaryForSize =>
+      'Draw the farm boundary to calculate the farm size';
+
+  @override
+  String get farmBoundary => 'Draw Farm Boundary';
+
+  @override
+  String mapPoint(int number) {
+    return 'Point $number';
+  }
+
+  @override
+  String get undoLastPoint => 'Undo last point';
+
+  @override
+  String get clearAllPoints => 'Clear all points';
+
+  @override
+  String get waitingForGps => 'Waiting for GPS...';
+
+  @override
+  String get gpsUnavailableRetry => 'GPS unavailable (tap to retry)';
+
+  @override
+  String get gpsPointTooClose =>
+      'You are still at the last point. Walk to the next corner of the farm first.';
+
+  @override
+  String gpsLowAccuracy(int count, int accuracy) {
+    return 'Point $count added, but GPS accuracy is low (+/-$accuracy m). Undo it and retry in an open area for a better result.';
+  }
+
+  @override
+  String get gpsFixUnavailable =>
+      'Could not get a GPS fix. Move to an open area and try again.';
+
+  @override
+  String get gpsServicesRequired => 'Please enable GPS location services';
+
+  @override
+  String get gpsPermissionPermanentlyDenied =>
+      'Location permission is permanently denied. Enable it in app settings';
+
+  @override
+  String get gpsPermissionRequired =>
+      'Location permission is required to map the farm';
+
+  @override
+  String get addThreeBoundaryPoints =>
+      'Add at least three points to form a boundary.';
+
+  @override
+  String get boundarySelfIntersecting =>
+      'The boundary lines cross each other. Undo the last point or clear and start again.';
+
+  @override
+  String get boundaryStartInstructions =>
+      'Stand at one corner of your farm and tap \"Add my current location\". Then walk to each next corner and repeat.';
+
+  @override
+  String boundaryPointsAdded(int count, int remaining) {
+    return '$count points added. Add at least $remaining more.';
+  }
+
+  @override
+  String boundaryArea(int count, String area) {
+    return '$count points  •  $area acres';
+  }
+
+  @override
+  String get gettingGpsLocation => 'Getting GPS location...';
+
+  @override
+  String get addCurrentLocation => 'Add my current location';
+
+  @override
+  String get saveBoundary => 'Save boundary';
+
+  @override
   String get submitFarm => 'Submit Farm';
 
   @override
@@ -604,30 +693,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get treeLocationDescription =>
-      'Optional GPS coordinates for this tree.';
+      'Optional WKT point geometry for this tree.';
 
   @override
-  String get latitude => 'Latitude';
-
-  @override
-  String get longitude => 'Longitude';
-
-  @override
-  String get invalidLatitude => 'Invalid latitude';
-
-  @override
-  String get invalidLongitude => 'Invalid longitude';
-
-  @override
-  String get validLatitudeRequired =>
-      'Enter a valid latitude between -90 and 90.';
-
-  @override
-  String get validLongitudeRequired =>
-      'Enter a valid longitude between -180 and 180.';
-
-  @override
-  String get bothCoordinatesRequired => 'Enter both latitude and longitude.';
+  String get geometry => 'Geometry';
 
   @override
   String get notes => 'Notes';

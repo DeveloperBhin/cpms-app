@@ -183,6 +183,53 @@
   "farmSize": "Farm Size",
   "farmSizeRequired": "Farm size is required",
   "validFarmSizeRequired": "Enter a valid farm size",
+  "drawFarmBoundary": "Draw Farm Boundary (GPS)",
+  "redrawFarmBoundary": "Redraw Farm Boundary (GPS)",
+  "drawValidBoundary": "Draw a valid polygon boundary before submitting.",
+  "drawBoundaryForSize": "Draw the farm boundary to calculate the farm size",
+  "farmBoundary": "Draw Farm Boundary",
+  "mapPoint": "Point {number}",
+  "@mapPoint": {
+    "placeholders": {
+      "number": { "type": "int" }
+    }
+  },
+  "undoLastPoint": "Undo last point",
+  "clearAllPoints": "Clear all points",
+  "waitingForGps": "Waiting for GPS...",
+  "gpsUnavailableRetry": "GPS unavailable (tap to retry)",
+  "gpsPointTooClose": "You are still at the last point. Walk to the next corner of the farm first.",
+  "gpsLowAccuracy": "Point {count} added, but GPS accuracy is low (+/-{accuracy} m). Undo it and retry in an open area for a better result.",
+  "@gpsLowAccuracy": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "accuracy": { "type": "int" }
+    }
+  },
+  "gpsFixUnavailable": "Could not get a GPS fix. Move to an open area and try again.",
+  "gpsServicesRequired": "Please enable GPS location services",
+  "gpsPermissionPermanentlyDenied": "Location permission is permanently denied. Enable it in app settings",
+  "gpsPermissionRequired": "Location permission is required to map the farm",
+  "addThreeBoundaryPoints": "Add at least three points to form a boundary.",
+  "boundarySelfIntersecting": "The boundary lines cross each other. Undo the last point or clear and start again.",
+  "boundaryStartInstructions": "Stand at one corner of your farm and tap \"Add my current location\". Then walk to each next corner and repeat.",
+  "boundaryPointsAdded": "{count} points added. Add at least {remaining} more.",
+  "@boundaryPointsAdded": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "remaining": { "type": "int" }
+    }
+  },
+  "boundaryArea": "{count} points  •  {area} acres",
+  "@boundaryArea": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "area": { "type": "String" }
+    }
+  },
+  "gettingGpsLocation": "Getting GPS location...",
+  "addCurrentLocation": "Add my current location",
+  "saveBoundary": "Save boundary",
 
   "submitFarm": "Submit Farm",
   "farmAddedSuccessfully": "Farm added successfully",
@@ -276,15 +323,9 @@
   "treeStatusHint": "Tree status",
 
   "treeLocation": "Tree Location",
-  "treeLocationDescription": "Optional GPS coordinates for this tree.",
+  "treeLocationDescription": "Optional WKT point geometry for this tree.",
 
-  "latitude": "Latitude",
-  "longitude": "Longitude",
-  "invalidLatitude": "Invalid latitude",
-  "invalidLongitude": "Invalid longitude",
-  "validLatitudeRequired": "Enter a valid latitude between -90 and 90.",
-  "validLongitudeRequired": "Enter a valid longitude between -180 and 180.",
-  "bothCoordinatesRequired": "Enter both latitude and longitude.",
+  "geometry": "Geometry",
 
   "notes": "Notes",
   "treeNotesHint": "Notes / tree description",

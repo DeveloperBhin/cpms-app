@@ -51,15 +51,22 @@ class LocalDataService {
     return _database!;
   }
 
-  String _localId(String type) => 'local_${type}_${DateTime.now().microsecondsSinceEpoch}';
+  String _localId(String type) =>
+      'local_${type}_${DateTime.now().microsecondsSinceEpoch}';
 
   Map<String, dynamic> _decode(Map<String, Object?> row) {
-    final value = Map<String, dynamic>.from(jsonDecode(row['payload']! as String));
+    final value = Map<String, dynamic>.from(
+      jsonDecode(row['payload']! as String),
+    );
     value['_pendingSync'] = row['pending'] == 1;
     return value;
   }
 
-  Future<List<Map<String, dynamic>>> _read(String table, {String? where, List<Object?>? args}) async {
+  Future<List<Map<String, dynamic>>> _read(
+    String table, {
+    String? where,
+    List<Object?>? args,
+  }) async {
     final rows = await (await _db).query(table, where: where, whereArgs: args);
     return rows.map(_decode).toList();
   }
@@ -73,17 +80,13 @@ class LocalDataService {
     required bool pending,
   }) async {
     final payload = Map<String, dynamic>.from(value)..remove('_pendingSync');
-    await (await _db).insert(
-      table,
-      {
-        'id': id,
-        if (farmId != null) 'farm_id': farmId,
-        if (blockId != null) 'block_id': blockId,
-        'payload': jsonEncode(payload),
-        'pending': pending ? 1 : 0,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await (await _db).insert(table, {
+      'id': id,
+      if (farmId != null) 'farm_id': farmId,
+      if (blockId != null) 'block_id': blockId,
+      'payload': jsonEncode(payload),
+      'pending': pending ? 1 : 0,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<List<Map<String, dynamic>>> getFarms() async {
@@ -98,21 +101,20 @@ class LocalDataService {
     return _read('farms');
   }
 
-  Future<Map<String, dynamic>> createFarm({required Map<String, dynamic> values}) async {
+  Future<Map<String, dynamic>> createFarm({
+    required Map<String, dynamic> values,
+  }) async {
     try {
       final result = await FarmApiServices.createFarm(
         name: values['name'] as String,
-        farmerId: values['farmerId'] as int,
         acreage: (values['acreage'] as num).toDouble(),
         plantingDate: values['plantingDate'] as String,
         farmType: values['farmType'] as String,
-        farmLocation: values['farmLocation'] as String,
+        geometry: values['geometry'] as String,
         region: values['region'] as String,
         district: values['district'] as String,
         ward: values['ward'] as String,
         village: values['village'] as String,
-        latitude: (values['latitude'] as num).toDouble(),
-        longitude: (values['longitude'] as num).toDouble(),
       );
       final id = result['id']?.toString();
       if (id != null) await _save('farms', result, id: id, pending: false);
@@ -132,7 +134,8 @@ class LocalDataService {
       final blocks = await BlockApiServices.getBlocksByFarm(farmId);
       for (final block in blocks) {
         final id = block['id']?.toString();
-        if (id != null) await _save('blocks', block, id: id, farmId: farmId, pending: false);
+        if (id != null)
+          await _save('blocks', block, id: id, farmId: farmId, pending: false);
       }
     } catch (_) {}
     return _read('blocks', where: 'farm_id = ?', args: [farmId]);
@@ -164,27 +167,52 @@ class LocalDataService {
         description: description,
       );
       final id = result['id']?.toString();
-      if (id != null) await _save('blocks', result, id: id, farmId: farmId, pending: false);
+      if (id != null)
+        await _save('blocks', result, id: id, farmId: farmId, pending: false);
       return result;
     } catch (_) {
       final local = Map<String, dynamic>.from(values)
         ..['id'] = _localId('block')
         ..['_pendingSync'] = true;
-      await _save('blocks', local, id: local['id'] as String, farmId: farmId, pending: true);
+      await _save(
+        'blocks',
+        local,
+        id: local['id'] as String,
+        farmId: farmId,
+        pending: true,
+      );
       return local;
     }
   }
 
-  Future<List<Map<String, dynamic>>> getTrees(String farmId, String blockId) async {
+  Future<List<Map<String, dynamic>>> getTrees(
+    String farmId,
+    String blockId,
+  ) async {
     await syncPending();
     try {
-      final trees = await TreeApiServices.getTreesByBlock(farmId: farmId, blockId: blockId);
+      final trees = await TreeApiServices.getTreesByBlock(
+        farmId: farmId,
+        blockId: blockId,
+      );
       for (final tree in trees) {
         final id = tree['id']?.toString();
-        if (id != null) await _save('trees', tree, id: id, farmId: farmId, blockId: blockId, pending: false);
+        if (id != null)
+          await _save(
+            'trees',
+            tree,
+            id: id,
+            farmId: farmId,
+            blockId: blockId,
+            pending: false,
+          );
       }
     } catch (_) {}
-    return _read('trees', where: 'farm_id = ? AND block_id = ?', args: [farmId, blockId]);
+    return _read(
+      'trees',
+      where: 'farm_id = ? AND block_id = ?',
+      args: [farmId, blockId],
+    );
   }
 
   Future<Map<String, dynamic>> createTree({
@@ -193,8 +221,7 @@ class LocalDataService {
     required String variety,
     required int plantingYear,
     required String status,
-    double? latitude,
-    double? longitude,
+    String? geometry,
     String? notes,
   }) async {
     final values = <String, dynamic>{
@@ -203,8 +230,7 @@ class LocalDataService {
       'variety': variety,
       'plantingYear': plantingYear,
       'status': status,
-      'latitude': latitude,
-      'longitude': longitude,
+      'geometry': geometry,
       'notes': notes,
     };
     try {
@@ -214,18 +240,32 @@ class LocalDataService {
         variety: variety,
         plantingYear: plantingYear,
         status: status,
-        latitude: latitude,
-        longitude: longitude,
+        geometry: geometry,
         notes: notes,
       );
       final id = result['id']?.toString();
-      if (id != null) await _save('trees', result, id: id, farmId: farmId, blockId: blockId, pending: false);
+      if (id != null)
+        await _save(
+          'trees',
+          result,
+          id: id,
+          farmId: farmId,
+          blockId: blockId,
+          pending: false,
+        );
       return result;
     } catch (_) {
       final local = Map<String, dynamic>.from(values)
         ..['id'] = _localId('tree')
         ..['_pendingSync'] = true;
-      await _save('trees', local, id: local['id'] as String, farmId: farmId, blockId: blockId, pending: true);
+      await _save(
+        'trees',
+        local,
+        id: local['id'] as String,
+        farmId: farmId,
+        blockId: blockId,
+        pending: true,
+      );
       return local;
     }
   }
@@ -234,7 +274,9 @@ class LocalDataService {
     final database = await _db;
     var total = 0;
     for (final table in ['farms', 'blocks', 'trees']) {
-      final result = await database.rawQuery('SELECT COUNT(*) AS count FROM $table WHERE pending = 1');
+      final result = await database.rawQuery(
+        'SELECT COUNT(*) AS count FROM $table WHERE pending = 1',
+      );
       total += (result.first['count'] as int?) ?? 0;
     }
     return total;
@@ -256,30 +298,51 @@ class LocalDataService {
     final database = await _db;
     final farms = await database.query('farms', where: 'pending = 1');
     for (final row in farms) {
-      final payload = Map<String, dynamic>.from(jsonDecode(row['payload']! as String));
+      final payload = Map<String, dynamic>.from(
+        jsonDecode(row['payload']! as String),
+      );
       try {
         final result = await FarmApiServices.createFarm(
           name: payload['name'] as String,
-          farmerId: payload['farmerId'] as int,
           acreage: (payload['acreage'] as num).toDouble(),
           plantingDate: payload['plantingDate'] as String,
           farmType: payload['farmType'] as String,
-          farmLocation: payload['farmLocation'] as String,
+          geometry: payload['geometry'] as String,
           region: payload['region'] as String,
           district: payload['district'] as String,
           ward: payload['ward'] as String,
           village: payload['village'] as String,
-          latitude: (payload['latitude'] as num).toDouble(),
-          longitude: (payload['longitude'] as num).toDouble(),
         );
         final newId = result['id']?.toString();
         if (newId == null) continue;
         final oldId = row['id']! as String;
         await database.transaction((transaction) async {
-          await transaction.delete('farms', where: 'id = ?', whereArgs: [oldId]);
-          await transaction.insert('farms', {'id': newId, 'payload': jsonEncode(result), 'pending': 0});
-          await _replaceParentId(transaction, 'blocks', 'farm_id', oldId, newId, 'farmId');
-          await _replaceParentId(transaction, 'trees', 'farm_id', oldId, newId, 'farmId');
+          await transaction.delete(
+            'farms',
+            where: 'id = ?',
+            whereArgs: [oldId],
+          );
+          await transaction.insert('farms', {
+            'id': newId,
+            'payload': jsonEncode(result),
+            'pending': 0,
+          });
+          await _replaceParentId(
+            transaction,
+            'blocks',
+            'farm_id',
+            oldId,
+            newId,
+            'farmId',
+          );
+          await _replaceParentId(
+            transaction,
+            'trees',
+            'farm_id',
+            oldId,
+            newId,
+            'farmId',
+          );
         });
       } catch (_) {
         break;
@@ -288,7 +351,9 @@ class LocalDataService {
 
     final blocks = await database.query('blocks', where: 'pending = 1');
     for (final row in blocks) {
-      final payload = Map<String, dynamic>.from(jsonDecode(row['payload']! as String));
+      final payload = Map<String, dynamic>.from(
+        jsonDecode(row['payload']! as String),
+      );
       try {
         final result = await BlockApiServices.createBlock(
           farmId: row['farm_id']! as String,
@@ -302,9 +367,25 @@ class LocalDataService {
         if (newId == null) continue;
         final oldId = row['id']! as String;
         await database.transaction((transaction) async {
-          await transaction.delete('blocks', where: 'id = ?', whereArgs: [oldId]);
-          await transaction.insert('blocks', {'id': newId, 'farm_id': row['farm_id'], 'payload': jsonEncode(result), 'pending': 0});
-          await _replaceParentId(transaction, 'trees', 'block_id', oldId, newId, 'blockId');
+          await transaction.delete(
+            'blocks',
+            where: 'id = ?',
+            whereArgs: [oldId],
+          );
+          await transaction.insert('blocks', {
+            'id': newId,
+            'farm_id': row['farm_id'],
+            'payload': jsonEncode(result),
+            'pending': 0,
+          });
+          await _replaceParentId(
+            transaction,
+            'trees',
+            'block_id',
+            oldId,
+            newId,
+            'blockId',
+          );
         });
       } catch (_) {
         break;
@@ -313,7 +394,9 @@ class LocalDataService {
 
     final trees = await database.query('trees', where: 'pending = 1');
     for (final row in trees) {
-      final payload = Map<String, dynamic>.from(jsonDecode(row['payload']! as String));
+      final payload = Map<String, dynamic>.from(
+        jsonDecode(row['payload']! as String),
+      );
       try {
         final result = await TreeApiServices.createTree(
           farmId: row['farm_id']! as String,
@@ -321,14 +404,19 @@ class LocalDataService {
           variety: payload['variety'] as String,
           plantingYear: payload['plantingYear'] as int,
           status: payload['status'] as String,
-          latitude: (payload['latitude'] as num?)?.toDouble(),
-          longitude: (payload['longitude'] as num?)?.toDouble(),
+          geometry: payload['geometry'] as String?,
           notes: payload['notes'] as String?,
         );
         final newId = result['id']?.toString();
         if (newId == null) continue;
         await database.delete('trees', where: 'id = ?', whereArgs: [row['id']]);
-        await database.insert('trees', {'id': newId, 'farm_id': row['farm_id'], 'block_id': row['block_id'], 'payload': jsonEncode(result), 'pending': 0});
+        await database.insert('trees', {
+          'id': newId,
+          'farm_id': row['farm_id'],
+          'block_id': row['block_id'],
+          'payload': jsonEncode(result),
+          'pending': 0,
+        });
       } catch (_) {
         break;
       }
@@ -343,10 +431,21 @@ class LocalDataService {
     String newId,
     String payloadKey,
   ) async {
-    final rows = await transaction.query(table, where: '$column = ?', whereArgs: [oldId]);
+    final rows = await transaction.query(
+      table,
+      where: '$column = ?',
+      whereArgs: [oldId],
+    );
     for (final row in rows) {
-      final payload = Map<String, dynamic>.from(jsonDecode(row['payload']! as String))..[payloadKey] = newId;
-      await transaction.update(table, {column: newId, 'payload': jsonEncode(payload)}, where: 'id = ?', whereArgs: [row['id']]);
+      final payload = Map<String, dynamic>.from(
+        jsonDecode(row['payload']! as String),
+      )..[payloadKey] = newId;
+      await transaction.update(
+        table,
+        {column: newId, 'payload': jsonEncode(payload)},
+        where: 'id = ?',
+        whereArgs: [row['id']],
+      );
     }
   }
 }

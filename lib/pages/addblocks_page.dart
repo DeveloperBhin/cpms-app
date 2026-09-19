@@ -1,56 +1,43 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../services/local_data_service.dart';
+import '../theme/app_text_styles.dart';
 
 class AddBlockPage extends StatefulWidget {
   final String farmId;
   final String farmName;
 
-  const AddBlockPage({
-    super.key,
-    required this.farmId,
-    required this.farmName,
-  });
+  const AddBlockPage({super.key, required this.farmId, required this.farmName});
 
   @override
-  State<AddBlockPage> createState() =>
-      _AddBlockPageState();
+  State<AddBlockPage> createState() => _AddBlockPageState();
 }
 
 class _AddBlockPageState extends State<AddBlockPage> {
   final _formKey = GlobalKey<FormState>();
 
-  final _blockNameController =
-      TextEditingController();
+  final _blockNameController = TextEditingController();
 
-  final _blockSizeController =
-      TextEditingController();
+  final _blockSizeController = TextEditingController();
 
-  final _numberOfTreesController =
-      TextEditingController();
+  final _numberOfTreesController = TextEditingController();
 
-  final _varietyController =
-      TextEditingController();
+  final _varietyController = TextEditingController();
 
-  final _notesController =
-      TextEditingController();
+  final _notesController = TextEditingController();
 
   bool _isLoading = false;
 
-  static const Color primaryGreen =
-      Color(0xFF087A2F);
+  static const Color primaryGreen = Color(0xFF087A2F);
 
-  static const Color fieldBackground =
-      Color(0xFFEAF4EE);
+  static const Color fieldBackground = Color(0xFFEAF4EE);
 
-  static const Color fieldBorder =
-      Color(0xFFD7E9DD);
+  static const Color fieldBorder = Color(0xFFD7E9DD);
 
-  static const Color textDark =
-      Color(0xFF304438);
+  static const Color textDark = Color(0xFF304438);
 
-  static const Color textGrey =
-      Color(0xFF718078);
+  static const Color textGrey = Color(0xFF718078);
 
   // ============================================================
   // DISPOSE
@@ -72,43 +59,29 @@ class _AddBlockPageState extends State<AddBlockPage> {
   // ============================================================
 
   Future<void> _submitBlock() async {
-    final l10n =
-        AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context)!;
 
     if (_isLoading) {
       return;
     }
 
-    final valid =
-        _formKey.currentState?.validate() ??
-            false;
+    final valid = _formKey.currentState?.validate() ?? false;
 
     if (!valid) {
       return;
     }
 
-    final size =
-        double.tryParse(
-      _blockSizeController.text.trim(),
-    );
+    final size = double.tryParse(_blockSizeController.text.trim());
 
-    final treeCount =
-        int.tryParse(
-      _numberOfTreesController.text.trim(),
-    );
+    final treeCount = int.tryParse(_numberOfTreesController.text.trim());
 
     if (size == null || size <= 0) {
-      _showError(
-        l10n.validBlockSizeRequired,
-      );
+      _showError(l10n.validBlockSizeRequired);
       return;
     }
 
-    if (treeCount == null ||
-        treeCount < 0) {
-      _showError(
-        l10n.validNumberOfTreesRequired,
-      );
+    if (treeCount == null || treeCount < 0) {
+      _showError(l10n.validNumberOfTreesRequired);
       return;
     }
 
@@ -117,58 +90,38 @@ class _AddBlockPageState extends State<AddBlockPage> {
     });
 
     try {
-        final result =
-          await LocalDataService.instance.createBlock(
+      final result = await LocalDataService.instance.createBlock(
         farmId: widget.farmId,
-        name:
-            _blockNameController.text.trim(),
+        name: _blockNameController.text.trim(),
         size: size,
-        variety:
-            _varietyController.text.trim(),
+        variety: _varietyController.text.trim(),
         treeCount: treeCount,
-        description:
-            _notesController.text.trim(),
+        description: _notesController.text.trim(),
       );
 
-      debugPrint(
-        'BLOCK CREATED: $result',
-      );
+      debugPrint('BLOCK CREATED: $result');
 
       if (!mounted) {
         return;
       }
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            l10n.blockAddedSuccessfully,
-          ),
-          backgroundColor:
-              primaryGreen,
+          content: Text(l10n.blockAddedSuccessfully),
+          backgroundColor: primaryGreen,
         ),
       );
 
       // Return true so BlocksPage reloads.
-      Navigator.pop(
-        context,
-        true,
-      );
+      Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) {
         return;
       }
 
-      debugPrint(
-        'CREATE BLOCK ERROR: $e',
-      );
+      debugPrint('CREATE BLOCK ERROR: $e');
 
-      _showError(
-        e.toString().replaceFirst(
-              'Exception: ',
-              '',
-            ),
-      );
+      _showError(e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) {
         setState(() {
@@ -182,20 +135,13 @@ class _AddBlockPageState extends State<AddBlockPage> {
   // ERROR
   // ============================================================
 
-  void _showError(
-    String message,
-  ) {
+  void _showError(String message) {
     if (!mounted) {
       return;
     }
 
-    ScaffoldMessenger.of(context)
-        .showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor:
-            Colors.red,
-      ),
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 
@@ -204,10 +150,7 @@ class _AddBlockPageState extends State<AddBlockPage> {
   // ============================================================
 
   String get _farmDisplayId {
-    final id =
-        int.tryParse(
-      widget.farmId,
-    );
+    final id = int.tryParse(widget.farmId);
 
     if (id == null) {
       return widget.farmId;
@@ -221,18 +164,13 @@ class _AddBlockPageState extends State<AddBlockPage> {
   // ============================================================
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
-    final l10n =
-        AppLocalizations.of(context)!;
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor:
-          primaryGreen,
+      backgroundColor: primaryGreen,
 
-      resizeToAvoidBottomInset:
-          true,
+      resizeToAvoidBottomInset: true,
 
       body: SafeArea(
         bottom: false,
@@ -241,16 +179,12 @@ class _AddBlockPageState extends State<AddBlockPage> {
           width: double.infinity,
           height: double.infinity,
 
-          decoration:
-              const BoxDecoration(
+          decoration: const BoxDecoration(
             color: Colors.white,
 
-            borderRadius:
-                BorderRadius.only(
-              bottomLeft:
-                  Radius.circular(28),
-              bottomRight:
-                  Radius.circular(28),
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(28),
+              bottomRight: Radius.circular(28),
             ),
           ),
 
@@ -264,23 +198,14 @@ class _AddBlockPageState extends State<AddBlockPage> {
                 width: double.infinity,
                 height: 52,
 
-                padding:
-                    const EdgeInsets
-                        .symmetric(
-                  horizontal: 14,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 14),
 
-                decoration:
-                    const BoxDecoration(
-                  color:
-                      primaryGreen,
+                decoration: const BoxDecoration(
+                  color: primaryGreen,
 
-                  borderRadius:
-                      BorderRadius.only(
-                    bottomLeft:
-                        Radius.circular(18),
-                    bottomRight:
-                        Radius.circular(18),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(18),
+                    bottomRight: Radius.circular(18),
                   ),
                 ),
 
@@ -290,45 +215,32 @@ class _AddBlockPageState extends State<AddBlockPage> {
                       onTap: _isLoading
                           ? null
                           : () {
-                              Navigator.pop(
-                                context,
-                              );
+                              Navigator.pop(context);
                             },
 
-                      borderRadius:
-                          BorderRadius
-                              .circular(20),
+                      borderRadius: BorderRadius.circular(20),
 
-                      child:
-                          const Padding(
-                        padding:
-                            EdgeInsets.all(3),
+                      child: const Padding(
+                        padding: EdgeInsets.all(3),
 
                         child: Icon(
-                          Icons
-                              .arrow_back_ios_new,
-                          color:
-                              Colors.white,
+                          Icons.arrow_back_ios_new,
+                          color: Colors.white,
                           size: 14,
                         ),
                       ),
                     ),
 
-                    const SizedBox(
-                      width: 7,
-                    ),
+                    const SizedBox(width: 7),
 
                     Expanded(
                       child: Text(
                         l10n.addBlock,
 
-                        style:
-                            const TextStyle(
-                          color:
-                              Colors.white,
+                        style: const TextStyle(
+                          color: Colors.white,
                           fontSize: AppTextStyles.body,
-                          fontWeight:
-                              FontWeight.w700,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
@@ -339,30 +251,18 @@ class _AddBlockPageState extends State<AddBlockPage> {
               // =================================================
               // FORM
               // =================================================
-
               Expanded(
-                child:
-                    SingleChildScrollView(
+                child: SingleChildScrollView(
                   keyboardDismissBehavior:
-                      ScrollViewKeyboardDismissBehavior
-                          .onDrag,
+                      ScrollViewKeyboardDismissBehavior.onDrag,
 
-                  padding:
-                      const EdgeInsets
-                          .fromLTRB(
-                    18,
-                    30,
-                    18,
-                    30,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(18, 30, 18, 30),
 
                   child: Form(
                     key: _formKey,
 
                     child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment
-                              .start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
 
                       children: [
                         // =======================================
@@ -371,39 +271,25 @@ class _AddBlockPageState extends State<AddBlockPage> {
 
                         _farmInformation(),
 
-                        const SizedBox(
-                          height: 18,
-                        ),
+                        const SizedBox(height: 18),
 
                         // =======================================
                         // BLOCK NAME
                         // =======================================
+                        _fieldLabel(l10n.blockName),
 
-                        _fieldLabel(
-                          l10n.blockName,
-                        ),
-
-                        const SizedBox(
-                          height: 6,
-                        ),
+                        const SizedBox(height: 6),
 
                         _buildField(
-                          controller:
-                              _blockNameController,
+                          controller: _blockNameController,
 
-                          hint:
-                              l10n.blockNameHint,
+                          hint: l10n.blockNameHint,
 
-                          textInputAction:
-                              TextInputAction.next,
+                          textInputAction: TextInputAction.next,
 
                           validator: (value) {
-                            if (value == null ||
-                                value
-                                    .trim()
-                                    .isEmpty) {
-                              return l10n
-                                  .blockNameRequired;
+                            if (value == null || value.trim().isEmpty) {
+                              return l10n.blockNameRequired;
                             }
 
                             return null;
@@ -415,49 +301,30 @@ class _AddBlockPageState extends State<AddBlockPage> {
                         // =======================================
                         // BLOCK SIZE
                         // =======================================
+                        _fieldLabel(l10n.blockSize),
 
-                        _fieldLabel(
-                          l10n.blockSize,
-                        ),
-
-                        const SizedBox(
-                          height: 6,
-                        ),
+                        const SizedBox(height: 6),
 
                         _buildField(
-                          controller:
-                              _blockSizeController,
+                          controller: _blockSizeController,
 
-                          hint:
-                              l10n.blockSizeHint,
+                          hint: l10n.blockSizeHint,
 
-                          keyboardType:
-                              const TextInputType
-                                  .numberWithOptions(
+                          keyboardType: const TextInputType.numberWithOptions(
                             decimal: true,
                           ),
 
-                          textInputAction:
-                              TextInputAction.next,
+                          textInputAction: TextInputAction.next,
 
                           validator: (value) {
-                            if (value == null ||
-                                value
-                                    .trim()
-                                    .isEmpty) {
-                              return l10n
-                                  .blockSizeRequired;
+                            if (value == null || value.trim().isEmpty) {
+                              return l10n.blockSizeRequired;
                             }
 
-                            final size =
-                                double.tryParse(
-                              value.trim(),
-                            );
+                            final size = double.tryParse(value.trim());
 
-                            if (size == null ||
-                                size <= 0) {
-                              return l10n
-                                  .validBlockSizeRequired;
+                            if (size == null || size <= 0) {
+                              return l10n.validBlockSizeRequired;
                             }
 
                             return null;
@@ -469,47 +336,28 @@ class _AddBlockPageState extends State<AddBlockPage> {
                         // =======================================
                         // NUMBER OF TREES
                         // =======================================
+                        _fieldLabel(l10n.numberOfTrees),
 
-                        _fieldLabel(
-                          l10n.numberOfTrees,
-                        ),
-
-                        const SizedBox(
-                          height: 6,
-                        ),
+                        const SizedBox(height: 6),
 
                         _buildField(
-                          controller:
-                              _numberOfTreesController,
+                          controller: _numberOfTreesController,
 
-                          hint:
-                              l10n
-                                  .numberOfTreesHint,
+                          hint: l10n.numberOfTreesHint,
 
-                          keyboardType:
-                              TextInputType.number,
+                          keyboardType: TextInputType.number,
 
-                          textInputAction:
-                              TextInputAction.next,
+                          textInputAction: TextInputAction.next,
 
                           validator: (value) {
-                            if (value == null ||
-                                value
-                                    .trim()
-                                    .isEmpty) {
-                              return l10n
-                                  .numberOfTreesRequired;
+                            if (value == null || value.trim().isEmpty) {
+                              return l10n.numberOfTreesRequired;
                             }
 
-                            final trees =
-                                int.tryParse(
-                              value.trim(),
-                            );
+                            final trees = int.tryParse(value.trim());
 
-                            if (trees == null ||
-                                trees < 0) {
-                              return l10n
-                                  .validNumberOfTreesRequired;
+                            if (trees == null || trees < 0) {
+                              return l10n.validNumberOfTreesRequired;
                             }
 
                             return null;
@@ -521,33 +369,20 @@ class _AddBlockPageState extends State<AddBlockPage> {
                         // =======================================
                         // CASHEW VARIETY
                         // =======================================
+                        _fieldLabel(l10n.cashewVariety),
 
-                        _fieldLabel(
-                          l10n.cashewVariety,
-                        ),
-
-                        const SizedBox(
-                          height: 6,
-                        ),
+                        const SizedBox(height: 6),
 
                         _buildField(
-                          controller:
-                              _varietyController,
+                          controller: _varietyController,
 
-                          hint:
-                              l10n
-                                  .cashewVarietyHint,
+                          hint: l10n.cashewVarietyHint,
 
-                          textInputAction:
-                              TextInputAction.next,
+                          textInputAction: TextInputAction.next,
 
                           validator: (value) {
-                            if (value == null ||
-                                value
-                                    .trim()
-                                    .isEmpty) {
-                              return l10n
-                                  .cashewVarietyRequired;
+                            if (value == null || value.trim().isEmpty) {
+                              return l10n.cashewVarietyRequired;
                             }
 
                             return null;
@@ -559,73 +394,46 @@ class _AddBlockPageState extends State<AddBlockPage> {
                         // =======================================
                         // DESCRIPTION
                         // =======================================
+                        _fieldLabel(l10n.description),
 
-                        _fieldLabel(
-                          l10n.description,
-                        ),
-
-                        const SizedBox(
-                          height: 6,
-                        ),
+                        const SizedBox(height: 6),
 
                         _buildField(
-                          controller:
-                              _notesController,
+                          controller: _notesController,
 
-                          hint:
-                              l10n
-                                  .blockDescriptionHint,
+                          hint: l10n.blockDescriptionHint,
 
                           minLines: 4,
                           maxLines: 4,
 
-                          textInputAction:
-                              TextInputAction
-                                  .newline,
+                          textInputAction: TextInputAction.newline,
                         ),
 
-                        const SizedBox(
-                          height: 35,
-                        ),
+                        const SizedBox(height: 35),
 
                         // =======================================
                         // SUBMIT
                         // =======================================
-
                         SizedBox(
-                          width:
-                              double.infinity,
+                          width: double.infinity,
                           height: 46,
 
-                          child:
-                              ElevatedButton(
-                            onPressed:
-                                _isLoading
-                                    ? null
-                                    : _submitBlock,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _submitBlock,
 
-                            style:
-                                ElevatedButton
-                                    .styleFrom(
-                              backgroundColor:
-                                  primaryGreen,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: primaryGreen,
 
-                              foregroundColor:
-                                  Colors.white,
+                              foregroundColor: Colors.white,
 
-                              disabledBackgroundColor:
-                                  primaryGreen
-                                      .withValues(
+                              disabledBackgroundColor: primaryGreen.withValues(
                                 alpha: 0.6,
                               ),
 
                               elevation: 0,
 
-                              shape:
-                                  RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius
-                                        .circular(8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
                               ),
                             ),
 
@@ -634,31 +442,23 @@ class _AddBlockPageState extends State<AddBlockPage> {
                                     width: 19,
                                     height: 19,
 
-                                    child:
-                                        CircularProgressIndicator(
+                                    child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      color:
-                                          Colors.white,
+                                      color: Colors.white,
                                     ),
                                   )
                                 : Text(
-                                    l10n
-                                        .submitBlock,
+                                    l10n.submitBlock,
 
-                                    style:
-                                        const TextStyle(
+                                    style: const TextStyle(
                                       fontSize: AppTextStyles.bodySmall,
-                                      fontWeight:
-                                          FontWeight
-                                              .w700,
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
                           ),
                         ),
 
-                        const SizedBox(
-                          height: 20,
-                        ),
+                        const SizedBox(height: 20),
                       ],
                     ),
                   ),
@@ -676,26 +476,19 @@ class _AddBlockPageState extends State<AddBlockPage> {
   // ============================================================
 
   Widget _farmInformation() {
-    final l10n =
-        AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context)!;
 
     return Container(
       width: double.infinity,
 
-      padding:
-          const EdgeInsets.all(13),
+      padding: const EdgeInsets.all(13),
 
-      decoration:
-          BoxDecoration(
-        color:
-            const Color(0xFFF4F9F5),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF4F9F5),
 
-        borderRadius:
-            BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(8),
 
-        border: Border.all(
-          color: fieldBorder,
-        ),
+        border: Border.all(color: fieldBorder),
       ),
 
       child: Row(
@@ -704,73 +497,54 @@ class _AddBlockPageState extends State<AddBlockPage> {
             width: 38,
             height: 38,
 
-            decoration:
-                BoxDecoration(
-              color:
-                  primaryGreen.withValues(
-                alpha: 0.10,
-              ),
+            decoration: BoxDecoration(
+              color: primaryGreen.withValues(alpha: 0.10),
 
-              borderRadius:
-                  BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(8),
             ),
 
-            child:
-                const Icon(
+            child: const Icon(
               Icons.agriculture_outlined,
-              color:
-                  primaryGreen,
+              color: primaryGreen,
               size: 20,
             ),
           ),
 
-          const SizedBox(
-            width: 11,
-          ),
+          const SizedBox(width: 11),
 
           Expanded(
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment
-                      .start,
+              crossAxisAlignment: CrossAxisAlignment.start,
 
               children: [
                 Text(
                   l10n.farm,
 
-                  style:
-                      const TextStyle(
+                  style: const TextStyle(
                     color: textGrey,
                     fontSize: AppTextStyles.bodySmall,
                   ),
                 ),
 
-                const SizedBox(
-                  height: 4,
-                ),
+                const SizedBox(height: 4),
 
                 Text(
                   widget.farmName,
 
-                  style:
-                      const TextStyle(
+                  style: const TextStyle(
                     color: textDark,
                     fontSize: AppTextStyles.bodySmall,
-                    fontWeight:
-                        FontWeight.w700,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
 
-                const SizedBox(
-                  height: 3,
-                ),
+                const SizedBox(height: 3),
 
                 Text(
                   '${l10n.farmId}: '
                   '$_farmDisplayId',
 
-                  style:
-                      const TextStyle(
+                  style: const TextStyle(
                     color: textGrey,
                     fontSize: AppTextStyles.bodySmall,
                   ),
@@ -787,18 +561,14 @@ class _AddBlockPageState extends State<AddBlockPage> {
   // FIELD LABEL
   // ============================================================
 
-  Widget _fieldLabel(
-    String label,
-  ) {
+  Widget _fieldLabel(String label) {
     return Text(
       label,
 
-      style:
-          const TextStyle(
+      style: const TextStyle(
         color: textDark,
         fontSize: AppTextStyles.bodySmall,
-        fontWeight:
-            FontWeight.w600,
+        fontWeight: FontWeight.w600,
       ),
     );
   }
@@ -808,18 +578,15 @@ class _AddBlockPageState extends State<AddBlockPage> {
   // ============================================================
 
   Widget _buildField({
-    required TextEditingController
-        controller,
+    required TextEditingController controller,
     required String hint,
     TextInputType? keyboardType,
-    String? Function(String?)?
-        validator,
+    String? Function(String?)? validator,
     bool readOnly = false,
     VoidCallback? onTap,
     int minLines = 1,
     int maxLines = 1,
-    TextInputAction?
-        textInputAction,
+    TextInputAction? textInputAction,
   }) {
     return TextFormField(
       controller: controller,
@@ -829,102 +596,63 @@ class _AddBlockPageState extends State<AddBlockPage> {
       onTap: onTap,
       minLines: minLines,
       maxLines: maxLines,
-      textInputAction:
-          textInputAction,
+      textInputAction: textInputAction,
 
       enabled: !_isLoading,
 
-      style:
-          const TextStyle(
+      style: const TextStyle(
         fontSize: AppTextStyles.bodySmall,
         color: textDark,
       ),
 
-      decoration:
-          InputDecoration(
+      decoration: InputDecoration(
         hintText: hint,
 
-        hintStyle:
-            TextStyle(
+        hintStyle: TextStyle(
           fontSize: AppTextStyles.bodySmall,
-          color:
-              Colors.grey.shade500,
+          color: Colors.grey.shade500,
         ),
 
         filled: true,
-        fillColor:
-            fieldBackground,
+        fillColor: fieldBackground,
         isDense: true,
 
-        contentPadding:
-            EdgeInsets.symmetric(
+        contentPadding: EdgeInsets.symmetric(
           horizontal: 13,
-          vertical:
-              maxLines > 1
-                  ? 15
-                  : 14,
+          vertical: maxLines > 1 ? 15 : 14,
         ),
 
-        enabledBorder:
-            OutlineInputBorder(
-          borderRadius:
-              BorderRadius.circular(8),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
 
-          borderSide:
-              const BorderSide(
-            color: fieldBorder,
-          ),
+          borderSide: const BorderSide(color: fieldBorder),
         ),
 
-        disabledBorder:
-            OutlineInputBorder(
-          borderRadius:
-              BorderRadius.circular(8),
+        disabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
 
-          borderSide:
-              const BorderSide(
-            color: fieldBorder,
-          ),
+          borderSide: const BorderSide(color: fieldBorder),
         ),
 
-        focusedBorder:
-            OutlineInputBorder(
-          borderRadius:
-              BorderRadius.circular(8),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
 
-          borderSide:
-              const BorderSide(
-            color: primaryGreen,
-            width: 1.2,
-          ),
+          borderSide: const BorderSide(color: primaryGreen, width: 1.2),
         ),
 
-        errorBorder:
-            OutlineInputBorder(
-          borderRadius:
-              BorderRadius.circular(8),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
 
-          borderSide:
-              const BorderSide(
-            color: Colors.red,
-          ),
+          borderSide: const BorderSide(color: Colors.red),
         ),
 
-        focusedErrorBorder:
-            OutlineInputBorder(
-          borderRadius:
-              BorderRadius.circular(8),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
 
-          borderSide:
-              const BorderSide(
-            color: Colors.red,
-          ),
+          borderSide: const BorderSide(color: Colors.red),
         ),
 
-        errorStyle:
-            const TextStyle(
-          fontSize: AppTextStyles.bodySmall,
-        ),
+        errorStyle: const TextStyle(fontSize: AppTextStyles.bodySmall),
       ),
     );
   }
@@ -934,8 +662,6 @@ class _AddBlockPageState extends State<AddBlockPage> {
   // ============================================================
 
   Widget _gap() {
-    return const SizedBox(
-      height: 14,
-    );
+    return const SizedBox(height: 14);
   }
 }
