@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:path/path.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
@@ -17,6 +18,46 @@ class LocalDataService {
       LocalDataService._();
 
   Database? _database;
+  StreamSubscription<List<ConnectivityResult>>?
+      _connectivitySubscription;
+  bool _syncInProgress = false;
+
+  Future<void> startConnectivityListener() async {
+    if (_connectivitySubscription != null) {
+      return;
+    }
+
+    final currentConnection =
+        await Connectivity().checkConnectivity();
+
+    if (_hasConnection(currentConnection)) {
+      await syncPending();
+    }
+
+    _connectivitySubscription =
+        Connectivity().onConnectivityChanged.listen(
+      (connection) {
+        if (_hasConnection(connection)) {
+          unawaited(syncPending());
+        }
+      },
+    );
+  }
+
+  Future<bool> hasNetworkConnection() async {
+    final connection =
+        await Connectivity().checkConnectivity();
+
+    return _hasConnection(connection);
+  }
+
+  bool _hasConnection(
+    List<ConnectivityResult> connection,
+  ) {
+    return connection.any(
+      (result) => result != ConnectivityResult.none,
+    );
+  }
 
   // ============================================================
   // DATABASE
@@ -464,6 +505,12 @@ class LocalDataService {
       '========================================',
     );
 
+    if (!await hasNetworkConnection()) {
+      return _saveFarmOffline(
+        normalizedValues,
+      );
+    }
+
     try {
       // ========================================================
       // ONLINE FIRST
@@ -760,6 +807,12 @@ class LocalDataService {
           'socketexception',
         ) ||
         message.contains(
+          'clientexception',
+        ) ||
+        message.contains(
+          'timeoutexception',
+        ) ||
+        message.contains(
           'failed host lookup',
         ) ||
         message.contains(
@@ -868,6 +921,12 @@ class LocalDataService {
           farmId,
     };
 
+    if (!await hasNetworkConnection()) {
+      return _saveBlockOffline(
+        values,
+      );
+    }
+
     try {
       final result =
           await BlockApiServices
@@ -905,32 +964,36 @@ class LocalDataService {
       }
 
       return result;
-    } catch (_) {
-      final local =
-          Map<String, dynamic>.from(
+    } catch (e) {
+      if (!_isNetworkError(e)) {
+        rethrow;
+      }
+
+      return _saveBlockOffline(
         values,
-      )
-            ..['id'] =
-                _localId(
-              'block',
-            )
-            ..['_pendingSync'] =
-                true;
-
-      await _save(
-        'blocks',
-        local,
-        id:
-            local['id']
-                as String,
-        farmId:
-            farmId,
-        pending:
-            true,
       );
-
-      return local;
     }
+  }
+
+  Future<Map<String, dynamic>> _saveBlockOffline(
+    Map<String, dynamic> values,
+  ) async {
+    final local =
+        Map<String, dynamic>.from(
+      values,
+    )
+          ..['id'] = _localId('block')
+          ..['_pendingSync'] = true;
+
+    await _save(
+      'blocks',
+      local,
+      id: local['id'] as String,
+      farmId: values['farmId'] as String,
+      pending: true,
+    );
+
+    return local;
   }
 
   // ============================================================
@@ -1030,6 +1093,12 @@ class LocalDataService {
           notes,
     };
 
+    if (!await hasNetworkConnection()) {
+      return _saveTreeOffline(
+        values,
+      );
+    }
+
     try {
       final result =
           await TreeApiServices
@@ -1073,34 +1142,37 @@ class LocalDataService {
       }
 
       return result;
-    } catch (_) {
-      final local =
-          Map<String, dynamic>.from(
+    } catch (e) {
+      if (!_isNetworkError(e)) {
+        rethrow;
+      }
+
+      return _saveTreeOffline(
         values,
-      )
-            ..['id'] =
-                _localId(
-              'tree',
-            )
-            ..['_pendingSync'] =
-                true;
-
-      await _save(
-        'trees',
-        local,
-        id:
-            local['id']
-                as String,
-        farmId:
-            farmId,
-        blockId:
-            blockId,
-        pending:
-            true,
       );
-
-      return local;
     }
+  }
+
+  Future<Map<String, dynamic>> _saveTreeOffline(
+    Map<String, dynamic> values,
+  ) async {
+    final local =
+        Map<String, dynamic>.from(
+      values,
+    )
+          ..['id'] = _localId('tree')
+          ..['_pendingSync'] = true;
+
+    await _save(
+      'trees',
+      local,
+      id: local['id'] as String,
+      farmId: values['farmId'] as String,
+      blockId: values['blockId'] as String,
+      pending: true,
+    );
+
+    return local;
   }
 
   // ============================================================
@@ -1184,6 +1256,20 @@ class LocalDataService {
   // ============================================================
 
   Future<void> syncPending() async {
+    if (_syncInProgress) {
+      return;
+    }
+
+    _syncInProgress = true;
+
+    try {
+      await _syncPendingData();
+    } finally {
+      _syncInProgress = false;
+    }
+  }
+
+  Future<void> _syncPendingData() async {
     final database =
         await _db;
 

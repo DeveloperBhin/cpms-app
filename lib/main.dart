@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -8,9 +10,14 @@ import 'pages/splash_page.dart';
 import 'providers/app_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/language_provider.dart';
+import 'services/local_data_service.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+
+  unawaited(
+    LocalDataService.instance.startConnectivityListener(),
+  );
 
   runApp(
     MultiProvider(
