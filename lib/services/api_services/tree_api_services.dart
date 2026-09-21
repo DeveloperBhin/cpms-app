@@ -1,36 +1,102 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+class TreeApiException implements Exception {
+  final String message;
+  final int? statusCode;
+
+  const TreeApiException(
+    this.message, {
+    this.statusCode,
+  });
+
+  bool get isUnauthorized =>
+      statusCode == 401 ||
+      statusCode == 403;
+
+  bool get isNotFound =>
+      statusCode == 404;
+
+  @override
+  String toString() => message;
+}
+
 class TreeApiServices {
-  // IMPORTANT:
-  // Use exactly the same baseUrl as FarmApiServices
-  // and BlockApiServices.
-  static const String baseUrl = 'http://41.59.228.129:8087/api/v1';
+  static const String baseUrl =
+      'http://41.59.228.129:8087/api/v1';
 
   // ============================================================
   // TOKEN
   // ============================================================
 
   static Future<String> _getToken() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs =
+        await SharedPreferences.getInstance();
 
-    final token = prefs.getString('token');
+    final token =
+        prefs.getString('token');
 
-    if (token == null || token.isEmpty) {
-      throw Exception('User is not logged in');
+    if (token == null ||
+        token.trim().isEmpty) {
+      throw const TreeApiException(
+        'Your login session is not available.',
+        statusCode: 401,
+      );
     }
 
-    return token;
+    return token.trim();
+  }
+
+  // ============================================================
+  // HEADERS
+  // ============================================================
+
+  static Future<Map<String, String>>
+      _headers({
+    bool includeContentType = false,
+  }) async {
+    final token = await _getToken();
+
+    return {
+      'Accept': 'application/json',
+      if (includeContentType)
+        'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+  }
+
+  // ============================================================
+  // HANDLE AUTHENTICATION ERROR
+  // ============================================================
+
+  static Future<void> _checkSession(
+    http.Response response,
+  ) async {
+    if (response.statusCode == 401 ||
+        response.statusCode == 403) {
+      final prefs =
+          await SharedPreferences.getInstance();
+
+      await prefs.remove('token');
+
+      throw TreeApiException(
+        'Your login session has expired. '
+        'Please log in again.',
+        statusCode: response.statusCode,
+      );
+    }
   }
 
   // ============================================================
   // CREATE TREE
   // ============================================================
 
-  static Future<Map<String, dynamic>> createTree({
+  static Future<Map<String, dynamic>>
+      createTree({
     required String farmId,
     required String blockId,
     required String variety,
@@ -39,11 +105,11 @@ class TreeApiServices {
     String? geometry,
     String? notes,
     double? latitude,
-double? longitude,
+    double? longitude,
   }) async {
-    final token = await _getToken();
-
-    final uri = Uri.parse('$baseUrl/farms/$farmId/blocks/$blockId/trees');
+    final uri = Uri.parse(
+      '$baseUrl/farms/$farmId/blocks/$blockId/trees',
+    );
 
     final body = <String, dynamic>{
       'variety': variety.trim(),
@@ -51,214 +117,519 @@ double? longitude,
       'status': status,
       'geometry': geometry?.trim(),
       'notes': notes?.trim(),
+
+      if (latitude != null)
+        'latitude': latitude,
+
+      if (longitude != null)
+        'longitude': longitude,
     };
 
-    debugPrint('CREATE TREE URL: $uri');
-    debugPrint('CREATE TREE BODY: ${jsonEncode(body)}');
-
-    final response = await http.post(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode(body),
+    debugPrint(
+      'CREATE TREE URL: $uri',
     );
 
-    debugPrint('CREATE TREE STATUS: ${response.statusCode}');
+    debugPrint(
+      'CREATE TREE BODY: '
+      '${jsonEncode(body)}',
+    );
 
-    debugPrint('CREATE TREE RESPONSE: ${response.body}');
+    try {
+      final response =
+          await http.post(
+        uri,
+        headers: await _headers(
+          includeContentType: true,
+        ),
+        body: jsonEncode(body),
+      );
 
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      if (response.body.trim().isEmpty) {
-        return {};
+      debugPrint(
+        'CREATE TREE STATUS: '
+        '${response.statusCode}',
+      );
+
+      debugPrint(
+        'CREATE TREE RESPONSE: '
+        '${response.body}',
+      );
+
+      await _checkSession(response);
+
+      if (response.statusCode >= 200 &&
+          response.statusCode < 300) {
+        if (response.body
+            .trim()
+            .isEmpty) {
+          return {};
+        }
+
+        final decoded =
+            jsonDecode(response.body);
+
+        if (decoded is Map) {
+          return Map<String, dynamic>.from(
+            decoded,
+          );
+        }
+
+        throw const TreeApiException(
+          'Invalid tree response from server.',
+        );
       }
 
-      final decoded = jsonDecode(response.body);
-
-      return Map<String, dynamic>.from(decoded as Map);
+      throw TreeApiException(
+        'Failed to create tree '
+        '(${response.statusCode}): '
+        '${response.body}',
+        statusCode:
+            response.statusCode,
+      );
+    } on SocketException {
+      throw const TreeApiException(
+        'Unable to connect to the server.',
+      );
+    } on http.ClientException {
+      throw const TreeApiException(
+        'Unable to connect to the server.',
+      );
     }
-
-    throw Exception(
-      'Failed to create tree '
-      '(${response.statusCode}): ${response.body}',
-    );
   }
 
   // ============================================================
   // GET TREES BY BLOCK
   // ============================================================
 
-  static Future<List<Map<String, dynamic>>> getTreesByBlock({
+  static Future<List<Map<String, dynamic>>>
+      getTreesByBlock({
     required String farmId,
     required String blockId,
   }) async {
-    final token = await _getToken();
-
-    final uri = Uri.parse('$baseUrl/farms/$farmId/blocks/$blockId/trees');
-
-    debugPrint('GET TREES URL: $uri');
-
-    final response = await http.get(
-      uri,
-      headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
+    final uri = Uri.parse(
+      '$baseUrl/farms/$farmId/blocks/$blockId/trees',
     );
 
-    debugPrint('GET TREES STATUS: ${response.statusCode}');
+    debugPrint(
+      'GET TREES URL: $uri',
+    );
 
-    debugPrint('GET TREES RESPONSE: ${response.body}');
+    try {
+      final response =
+          await http.get(
+        uri,
+        headers: await _headers(),
+      );
 
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      if (response.body.trim().isEmpty) {
+      debugPrint(
+        'GET TREES STATUS: '
+        '${response.statusCode}',
+      );
+
+      debugPrint(
+        'GET TREES RESPONSE: '
+        '${response.body}',
+      );
+
+      await _checkSession(response);
+
+      if (response.statusCode >= 200 &&
+          response.statusCode < 300) {
+        if (response.body
+            .trim()
+            .isEmpty) {
+          return [];
+        }
+
+        final decoded =
+            jsonDecode(response.body);
+
+        if (decoded is List) {
+          return decoded
+              .whereType<Map>()
+              .map(
+                (item) =>
+                    Map<String, dynamic>.from(
+                  item,
+                ),
+              )
+              .toList();
+        }
+
+        if (decoded is Map &&
+            decoded['data'] is List) {
+          return (decoded['data'] as List)
+              .whereType<Map>()
+              .map(
+                (item) =>
+                    Map<String, dynamic>.from(
+                  item,
+                ),
+              )
+              .toList();
+        }
+
         return [];
       }
 
-      final decoded = jsonDecode(response.body);
-
-      if (decoded is List) {
-        return decoded
-            .map((item) => Map<String, dynamic>.from(item as Map))
-            .toList();
-      }
-
-      if (decoded is Map && decoded['data'] is List) {
-        return (decoded['data'] as List)
-            .map((item) => Map<String, dynamic>.from(item as Map))
-            .toList();
-      }
-
-      return [];
+      throw TreeApiException(
+        'Failed to load trees '
+        '(${response.statusCode}): '
+        '${response.body}',
+        statusCode:
+            response.statusCode,
+      );
+    } on SocketException {
+      throw const TreeApiException(
+        'Unable to connect to the server.',
+      );
+    } on http.ClientException {
+      throw const TreeApiException(
+        'Unable to connect to the server.',
+      );
     }
-
-    throw Exception(
-      'Failed to load trees '
-      '(${response.statusCode}): ${response.body}',
-    );
   }
 
   // ============================================================
   // GET ONE TREE
   // ============================================================
 
-  static Future<Map<String, dynamic>> getTree({
+  static Future<Map<String, dynamic>>
+      getTree({
     required String farmId,
     required String blockId,
     required String treeId,
   }) async {
-    final token = await _getToken();
-
     final uri = Uri.parse(
-      '$baseUrl/farms/$farmId/blocks/$blockId/trees/$treeId',
+      '$baseUrl/farms/$farmId/blocks/'
+      '$blockId/trees/$treeId',
     );
 
-    final response = await http.get(
-      uri,
-      headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
+    debugPrint(
+      'GET TREE URL: $uri',
     );
 
-    debugPrint('GET TREE STATUS: ${response.statusCode}');
+    try {
+      final response =
+          await http.get(
+        uri,
+        headers: await _headers(),
+      );
 
-    debugPrint('GET TREE RESPONSE: ${response.body}');
+      debugPrint(
+        'GET TREE STATUS: '
+        '${response.statusCode}',
+      );
 
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      return Map<String, dynamic>.from(jsonDecode(response.body) as Map);
+      debugPrint(
+        'GET TREE RESPONSE: '
+        '${response.body}',
+      );
+
+      await _checkSession(response);
+
+      if (response.statusCode >= 200 &&
+          response.statusCode < 300) {
+        if (response.body
+            .trim()
+            .isEmpty) {
+          throw const TreeApiException(
+            'Tree response was empty.',
+          );
+        }
+
+        final decoded =
+            jsonDecode(response.body);
+
+        return _extractTree(decoded);
+      }
+
+      if (response.statusCode == 404) {
+        throw const TreeApiException(
+          'Tree not found.',
+          statusCode: 404,
+        );
+      }
+
+      throw TreeApiException(
+        'Failed to load tree '
+        '(${response.statusCode}): '
+        '${response.body}',
+        statusCode:
+            response.statusCode,
+      );
+    } on SocketException {
+      throw const TreeApiException(
+        'Unable to connect to the server.',
+      );
+    } on http.ClientException {
+      throw const TreeApiException(
+        'Unable to connect to the server.',
+      );
     }
-
-    throw Exception(
-      'Failed to load tree '
-      '(${response.statusCode}): ${response.body}',
-    );
   }
 
-  static Future<List<Map<String, dynamic>>> getMyTrees() async {
-    final token = await _getToken();
+  // ============================================================
+  // GET MY TREES
+  // ============================================================
 
-    final uri = Uri.parse('$baseUrl/trees/my');
+  static Future<List<Map<String, dynamic>>>
+      getMyTrees() async {
+    final uri =
+        Uri.parse('$baseUrl/trees/my');
 
-    debugPrint('GET MY TREES URL: $uri');
-
-    final response = await http.get(
-      uri,
-      headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
+    debugPrint(
+      'GET MY TREES URL: $uri',
     );
 
-    debugPrint('GET MY TREES STATUS: ${response.statusCode}');
+    try {
+      final response =
+          await http.get(
+        uri,
+        headers: await _headers(),
+      );
 
-    debugPrint('GET MY TREES RESPONSE: ${response.body}');
+      debugPrint(
+        'GET MY TREES STATUS: '
+        '${response.statusCode}',
+      );
 
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      if (response.body.trim().isEmpty) {
+      debugPrint(
+        'GET MY TREES RESPONSE: '
+        '${response.body}',
+      );
+
+      await _checkSession(response);
+
+      if (response.statusCode >= 200 &&
+          response.statusCode < 300) {
+        if (response.body
+            .trim()
+            .isEmpty) {
+          return [];
+        }
+
+        final decoded =
+            jsonDecode(response.body);
+
+        if (decoded is List) {
+          return decoded
+              .whereType<Map>()
+              .map(
+                (item) =>
+                    Map<String, dynamic>.from(
+                  item,
+                ),
+              )
+              .toList();
+        }
+
+        if (decoded is Map &&
+            decoded['data'] is List) {
+          return (decoded['data'] as List)
+              .whereType<Map>()
+              .map(
+                (item) =>
+                    Map<String, dynamic>.from(
+                  item,
+                ),
+              )
+              .toList();
+        }
+
         return [];
       }
 
-      final decoded = jsonDecode(response.body);
-
-      if (decoded is List) {
-        return decoded
-            .map((item) => Map<String, dynamic>.from(item as Map))
-            .toList();
-      }
-
-      if (decoded is Map && decoded['data'] is List) {
-        return (decoded['data'] as List)
-            .map((item) => Map<String, dynamic>.from(item as Map))
-            .toList();
-      }
-
-      return [];
+      throw TreeApiException(
+        'Failed to load trees '
+        '(${response.statusCode}): '
+        '${response.body}',
+        statusCode:
+            response.statusCode,
+      );
+    } on SocketException {
+      throw const TreeApiException(
+        'Unable to connect to the server.',
+      );
+    } on http.ClientException {
+      throw const TreeApiException(
+        'Unable to connect to the server.',
+      );
     }
-
-    throw Exception(
-      'Failed to load trees '
-      '(${response.statusCode}): '
-      '${response.body}',
-    );
   }
 
-  static Future<Map<String, dynamic>> getTreeByCode({
+  // ============================================================
+  // GET TREE BY BARCODE
+  // ============================================================
+
+  static Future<Map<String, dynamic>>
+      getTreeByCode({
     required String treeCode,
   }) async {
-    final token = await _getToken();
+    // Keep exactly what the scanner/manual input produced
+    // except surrounding spaces.
+    final code =
+        treeCode.trim();
 
-    final code = treeCode.trim().toUpperCase();
-
-    final uri = Uri.parse('$baseUrl/trees/code/${Uri.encodeComponent(code)}');
-
-    debugPrint('GET TREE BY CODE URL: $uri');
-
-    final response = await http.get(
-      uri,
-      headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
-    );
-
-    debugPrint('GET TREE BY CODE STATUS: ${response.statusCode}');
-
-    debugPrint('GET TREE BY CODE RESPONSE: ${response.body}');
-
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      if (response.body.trim().isEmpty) {
-        throw Exception('Tree response was empty');
-      }
-
-      final decoded = jsonDecode(response.body);
-
-      if (decoded is Map) {
-        return Map<String, dynamic>.from(decoded);
-      }
-
-      throw Exception('Invalid tree response');
+    if (code.isEmpty) {
+      throw const TreeApiException(
+        'Tree code cannot be empty.',
+      );
     }
 
-    if (response.statusCode == 404) {
-      throw Exception('Tree not found');
+    final encodedCode =
+        Uri.encodeComponent(code);
+
+    final uri = Uri.parse(
+      '$baseUrl/trees/code/$encodedCode',
+    );
+
+    debugPrint(
+      '================================',
+    );
+
+    debugPrint(
+      'TREE BARCODE LOOKUP',
+    );
+
+    debugPrint(
+      'BARCODE: [$code]',
+    );
+
+    debugPrint(
+      'BARCODE LENGTH: ${code.length}',
+    );
+
+    debugPrint(
+      'GET TREE BY CODE URL: $uri',
+    );
+
+    try {
+      final response =
+          await http.get(
+        uri,
+        headers: await _headers(),
+      );
+
+      debugPrint(
+        'GET TREE BY CODE STATUS: '
+        '${response.statusCode}',
+      );
+
+      debugPrint(
+        'GET TREE BY CODE RESPONSE: '
+        '${response.body}',
+      );
+
+      debugPrint(
+        '================================',
+      );
+
+      // Authentication failure is NOT tree-not-found.
+      await _checkSession(response);
+
+      // --------------------------------------------------------
+      // SUCCESS
+      // --------------------------------------------------------
+
+      if (response.statusCode >= 200 &&
+          response.statusCode < 300) {
+        if (response.body
+            .trim()
+            .isEmpty) {
+          throw const TreeApiException(
+            'Tree response was empty.',
+          );
+        }
+
+        final decoded =
+            jsonDecode(response.body);
+
+        final tree =
+            _extractTree(decoded);
+
+        debugPrint(
+          'TREE FOUND: $tree',
+        );
+
+        return tree;
+      }
+
+      // --------------------------------------------------------
+      // REAL 404
+      // --------------------------------------------------------
+
+      if (response.statusCode == 404) {
+        throw TreeApiException(
+          'Tree with code $code was not found.',
+          statusCode: 404,
+        );
+      }
+
+      // --------------------------------------------------------
+      // OTHER SERVER ERROR
+      // --------------------------------------------------------
+
+      throw TreeApiException(
+        'Failed to find tree '
+        '(${response.statusCode}): '
+        '${response.body}',
+        statusCode:
+            response.statusCode,
+      );
+    } on SocketException {
+      throw const TreeApiException(
+        'Unable to connect to the server.',
+      );
+    } on http.ClientException {
+      throw const TreeApiException(
+        'Unable to connect to the server.',
+      );
+    } on FormatException {
+      throw const TreeApiException(
+        'The server returned an invalid response.',
+      );
+    }
+  }
+
+  // ============================================================
+  // EXTRACT TREE FROM API RESPONSE
+  // ============================================================
+
+  static Map<String, dynamic> _extractTree(
+    dynamic decoded,
+  ) {
+    if (decoded is! Map) {
+      throw const TreeApiException(
+        'Invalid tree response from server.',
+      );
     }
 
-    throw Exception(
-      'Failed to find tree '
-      '(${response.statusCode}): '
-      '${response.body}',
+    final map =
+        Map<String, dynamic>.from(
+      decoded,
     );
+
+    // API may return:
+    //
+    // {
+    //   "id": ...
+    // }
+    //
+    // OR:
+    //
+    // {
+    //   "data": {
+    //      "id": ...
+    //   }
+    // }
+
+    if (map['data'] is Map) {
+      return Map<String, dynamic>.from(
+        map['data'] as Map,
+      );
+    }
+
+    return map;
   }
 
   // ============================================================
@@ -270,25 +641,51 @@ double? longitude,
     required String blockId,
     required String treeId,
   }) async {
-    final token = await _getToken();
-
     final uri = Uri.parse(
-      '$baseUrl/farms/$farmId/blocks/$blockId/trees/$treeId',
+      '$baseUrl/farms/$farmId/blocks/'
+      '$blockId/trees/$treeId',
     );
 
-    final response = await http.delete(
-      uri,
-      headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
+    debugPrint(
+      'DELETE TREE URL: $uri',
     );
 
-    debugPrint('DELETE TREE STATUS: ${response.statusCode}');
+    try {
+      final response =
+          await http.delete(
+        uri,
+        headers: await _headers(),
+      );
 
-    debugPrint('DELETE TREE RESPONSE: ${response.body}');
+      debugPrint(
+        'DELETE TREE STATUS: '
+        '${response.statusCode}',
+      );
 
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception(
-        'Failed to delete tree '
-        '(${response.statusCode}): ${response.body}',
+      debugPrint(
+        'DELETE TREE RESPONSE: '
+        '${response.body}',
+      );
+
+      await _checkSession(response);
+
+      if (response.statusCode < 200 ||
+          response.statusCode >= 300) {
+        throw TreeApiException(
+          'Failed to delete tree '
+          '(${response.statusCode}): '
+          '${response.body}',
+          statusCode:
+              response.statusCode,
+        );
+      }
+    } on SocketException {
+      throw const TreeApiException(
+        'Unable to connect to the server.',
+      );
+    } on http.ClientException {
+      throw const TreeApiException(
+        'Unable to connect to the server.',
       );
     }
   }

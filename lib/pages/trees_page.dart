@@ -511,129 +511,82 @@ class _TreePageState extends State<TreePage> {
       backgroundColor:
           backgroundColor,
 
-      body: SafeArea(
-        bottom: false,
-
-        child: Column(
+      body: Column(
           children: [
             // ==================================================
             // HEADER
             // ==================================================
 
-            Container(
-              width:
-                  double.infinity,
+            // ==================================================
+// HEADER
+// ==================================================
+Container(
+  width: double.infinity,
+  color: primaryGreen,
 
-              height: 55,
+  // Green covers the system/status-bar area.
+  // +8 puts the words/icons a little lower.
+  padding: EdgeInsets.only(
+    top: MediaQuery.of(context).padding.top + 8,
+  ),
 
-              padding:
-                  const EdgeInsets.symmetric(
-                horizontal: 16,
-              ),
-
-              decoration:
-                  const BoxDecoration(
-                color:
-                    primaryGreen,
-
-                borderRadius:
-                    BorderRadius.only(
-                  bottomLeft:
-                      Radius.circular(
-                    18,
-                  ),
-
-                  bottomRight:
-                      Radius.circular(
-                    18,
-                  ),
-                ),
-              ),
-
-              child: Row(
-                children: [
-                  // =============================================
-                  // BACK
-                  // =============================================
-
-                  InkWell(
-                    onTap:
-                        widget.onBack,
-
-                    borderRadius:
-                        BorderRadius.circular(
-                      20,
-                    ),
-
-                    child:
-                        const Padding(
-                      padding:
-                          EdgeInsets.all(
-                        3,
-                      ),
-
-                      child: Icon(
-                        Icons
-                            .arrow_back_ios_new,
-
-                        color:
-                            Colors.white,
-
-                        size: 14,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(
-                    width: 8,
-                  ),
-
-                  // =============================================
-                  // TITLE
-                  // =============================================
-
-                  Expanded(
-                    child: Text(
-                      l10n.trees,
-
-                      style:
-                          const TextStyle(
-                        color:
-                            Colors.white,
-
-                        fontSize: AppTextStyles.bodyLarge,
-
-                        fontWeight:
-                            FontWeight
-                                .w700,
-                      ),
-                    ),
-                  ),
-
-                  // =============================================
-                  // REFRESH
-                  // =============================================
-
-                  IconButton(
-                    onPressed:
-                        _loadDashboard,
-
-                    tooltip:
-                        l10n.refresh,
-
-                    icon:
-                        const Icon(
-                      Icons.refresh,
-
-                      color:
-                          Colors.white,
-
-                      size: 19,
-                    ),
-                  ),
-                ],
+  child: SizedBox(
+    height: 55,
+    child: Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 16,
+      ),
+      child: Row(
+        children: [
+          // =========================================
+          // BACK
+          // =========================================
+          InkWell(
+            onTap: widget.onBack,
+            borderRadius: BorderRadius.circular(20),
+            child: const Padding(
+              padding: EdgeInsets.all(3),
+              child: Icon(
+                Icons.arrow_back_ios_new,
+                color: Colors.white,
+                size: 14,
               ),
             ),
+          ),
+
+          const SizedBox(width: 8),
+
+          // =========================================
+          // TITLE
+          // =========================================
+          Expanded(
+            child: Text(
+              l10n.trees,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: AppTextStyles.bodyLarge,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+
+          // =========================================
+          // REFRESH
+          // =========================================
+          IconButton(
+            onPressed: _loadDashboard,
+            tooltip: l10n.refresh,
+            icon: const Icon(
+              Icons.refresh,
+              color: Colors.white,
+              size: 19,
+            ),
+          ),
+        ],
+      ),
+    ),
+  ),
+),
 
             // ==================================================
             // CONTENT
@@ -854,7 +807,7 @@ class _TreePageState extends State<TreePage> {
             ),
           ],
         ),
-      ),
+      
     );
   }
 

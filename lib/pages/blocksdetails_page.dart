@@ -324,17 +324,17 @@ class _BlockDetailsPageState
                 decoration:
                     const BoxDecoration(
                   color: primaryGreen,
-                  borderRadius:
-                      BorderRadius.only(
-                    bottomLeft:
-                        Radius.circular(
-                      18,
-                    ),
-                    bottomRight:
-                        Radius.circular(
-                      18,
-                    ),
-                  ),
+                  // borderRadius:
+                  //     BorderRadius.only(
+                  //   bottomLeft:
+                  //       Radius.circular(
+                  //     18,
+                  //   ),
+                  //   bottomRight:
+                  //       Radius.circular(
+                  //     18,
+                  //   ),
+                  // ),
                 ),
                 child: Row(
                   children: [

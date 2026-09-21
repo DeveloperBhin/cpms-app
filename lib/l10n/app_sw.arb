@@ -569,5 +569,10 @@
 "validLongitudeRequired": "Tafadhali weka longitudo sahihi kati ya -180 na 180.",
 "bothCoordinatesRequired": "Latitudo na longitudo zote zinahitajika.",
 "invalidLatitude": "Latitudo si sahihi.",
-"invalidLongitude": "Longitudo si sahihi."
+"invalidLongitude": "Longitudo si sahihi.",
+"home": "Nyumbani",
+"farms": "Mashamba",
+"trees": "Mikorosho",
+"activities": "Shughuli",
+"more": "Zaidi"
 }

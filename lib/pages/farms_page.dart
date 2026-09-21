@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 
-import '../services/local_data_service.dart';
 import '../l10n/app_localizations.dart';
 import '../services/api_services/farm_api_services.dart';
+import '../services/api_services/tree_api_services.dart';
+import '../services/local_data_service.dart';
 import '../theme/app_text_styles.dart';
+import '../widgets/farm_map.dart';
+
 import 'addfarm_page.dart';
 import 'farmdetails_page.dart';
-import '../services/api_services/tree_api_services.dart';
 
 class FarmsPage extends StatefulWidget {
   final VoidCallback? onHome;
@@ -25,201 +27,176 @@ class FarmsPage extends StatefulWidget {
   });
 
   @override
-  State<FarmsPage> createState() =>
-      _FarmsPageState();
+  State<FarmsPage> createState() => _FarmsPageState();
 }
 
 class _FarmsPageState extends State<FarmsPage> {
-  // =========================================================
+  // ===============================================================
   // COLORS
-  // =========================================================
+  // ===============================================================
 
-  static const Color primaryGreen =
-      Color(0xFF087A2F);
+  static const Color primaryGreen = Color(0xFF087A2F);
+  static const Color backgroundColor = Color(0xFFF8FAF8);
+  static const Color borderColor = Color(0xFFDCE8DF);
+  static const Color lightGreen = Color(0xFFE7F3EB);
+  static const Color textDark = Color(0xFF25402D);
+  static const Color textGrey = Color(0xFF718078);
 
-  static const Color backgroundColor =
-      Color(0xFFF8FAF8);
-
-  static const Color borderColor =
-      Color(0xFFDCE8DF);
-
-  static const Color lightGreen =
-      Color(0xFFE7F3EB);
-
-  static const Color textDark =
-      Color(0xFF25402D);
-
-  // =========================================================
+  // ===============================================================
   // STATE
-  // =========================================================
+  // ===============================================================
 
   bool _isLoading = true;
-
   String? _error;
 
-List<Map<String, dynamic>> _farms = [];
-List<Map<String, dynamic>> _trees = [];
-  // =========================================================
+  List<Map<String, dynamic>> _farms = [];
+  List<Map<String, dynamic>> _trees = [];
+
+  // ===============================================================
   // INIT
-  // =========================================================
+  // ===============================================================
 
   @override
   void initState() {
     super.initState();
-
     _loadFarms();
   }
 
-  // =========================================================
-  // LOAD FARMS
-  // =========================================================
-// Future<void> _loadFarms() async {
-//   if (mounted) {
-//     setState(() {
-//       _isLoading = true;
-//       _error = null;
-//     });
-//   }
+  // ===============================================================
+  // LOAD FARMS + TREES
+  // ===============================================================
 
-//     try {
-//       final farms = await LocalDataService.instance.getFarms();
-//   try {
-//     final results = await Future.wait([
-//       FarmApiServices.getMyFarms(),
-//       TreeApiServices.getMyTrees(),
-//     ]);
-
-//     if (!mounted) return;
-
-//     final farms =
-//         List<Map<String, dynamic>>.from(
-//       results[0],
-//     );
-
-//     final trees =
-//         List<Map<String, dynamic>>.from(
-//       results[1],
-//     );
-
-//     debugPrint(
-//       'FARMS PAGE -> FARMS: ${farms.length}',
-//     );
-
-//     debugPrint(
-//       'FARMS PAGE -> TREES: ${trees.length}',
-//     );
-
-//     setState(() {
-//       _farms = farms;
-//       _trees = trees;
-//     });
-//   } catch (e) {
-//     debugPrint(
-//       'FARMS PAGE LOAD ERROR: $e',
-//     );
-
-//     if (!mounted) return;
-
-//     setState(() {
-//       _error = e.toString().replaceFirst(
-//             'Exception: ',
-//             '',
-//           );
-//     });
-//   } finally {
-//     if (mounted) {
-//       setState(() {
-//         _isLoading = false;
-//       });
-//     }
-//   }
-// }
-
-
-Future<void> _loadFarms() async {
-  if (mounted) {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-  }
-
-  try {
-    final localFarms =
-        await LocalDataService.instance.getFarms();
-
+  Future<void> _loadFarms() async {
     if (mounted) {
       setState(() {
-        _farms =
-            List<Map<String, dynamic>>.from(localFarms);
+        _isLoading = true;
+        _error = null;
       });
     }
 
-    final results = await Future.wait([
-      FarmApiServices.getMyFarms(),
-      TreeApiServices.getMyTrees(),
-    ]);
+    // -------------------------------------------------------------
+    // 1. Load local farms first.
+    // -------------------------------------------------------------
 
-    if (!mounted) return;
+    try {
+      final localFarms =
+          await LocalDataService.instance.getFarms();
 
-    final apiFarms =
-        List<Map<String, dynamic>>.from(results[0]);
+      if (mounted && localFarms.isNotEmpty) {
+        setState(() {
+          _farms =
+              List<Map<String, dynamic>>.from(
+            localFarms,
+          );
+        });
+      }
+    } catch (e) {
+      debugPrint(
+        'FARMS PAGE LOCAL LOAD ERROR: $e',
+      );
+    }
 
-    final trees =
-        List<Map<String, dynamic>>.from(results[1]);
+    // -------------------------------------------------------------
+    // 2. Load latest farms + trees from backend.
+    // -------------------------------------------------------------
 
-    setState(() {
-      _farms = apiFarms;
-      _trees = trees;
-    });
-  } catch (e) {
-    debugPrint('FARMS PAGE LOAD ERROR: $e');
+    try {
+      final results = await Future.wait([
+        FarmApiServices.getMyFarms(),
+        TreeApiServices.getMyTrees(),
+      ]);
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    if (_farms.isEmpty) {
-      setState(() {
-        _error = e.toString().replaceFirst(
-          'Exception: ',
-          '',
+      final apiFarms =
+          List<Map<String, dynamic>>.from(
+        results[0],
+      );
+
+      final apiTrees =
+          List<Map<String, dynamic>>.from(
+        results[1],
+      );
+
+      debugPrint(
+        'FARMS PAGE -> FARMS: ${apiFarms.length}',
+      );
+
+      debugPrint(
+        'FARMS PAGE -> TREES: ${apiTrees.length}',
+      );
+
+      // Helpful while testing farm geometry.
+      for (final farm in apiFarms) {
+        debugPrint(
+          'FARM ${farm['id']} '
+          '${farm['name']} '
+          'GEOMETRY: ${farm['geometry']}',
         );
-      });
-    }
-  } finally {
-    if (mounted) {
+      }
+
+      // Helpful while testing tree positions.
+      for (final tree in apiTrees) {
+        debugPrint(
+          'TREE ${tree['treeCode'] ?? tree['id']} '
+          'FARM: ${tree['farmId']} '
+          'GEOMETRY: ${tree['geometry']}',
+        );
+      }
+
       setState(() {
-        _isLoading = false;
+        _farms = apiFarms;
+        _trees = apiTrees;
+        _error = null;
       });
+    } catch (e) {
+      debugPrint(
+        'FARMS PAGE API LOAD ERROR: $e',
+      );
+
+      if (!mounted) return;
+
+      // Keep local farms visible if we already have them.
+      if (_farms.isEmpty) {
+        setState(() {
+          _error = _cleanError(
+            e.toString(),
+          );
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
-}
 
-  // =========================================================
-  // FARM STATISTICS
-  // =========================================================
+  // ===============================================================
+  // STATISTICS
+  // ===============================================================
 
   int get _totalFarms {
     return _farms.length;
   }
 
   int get _totalTrees {
-  return _trees.length;
-}
+    return _trees.length;
+  }
 
   double get _totalAcres {
     return _farms.fold<double>(
       0,
       (total, farm) {
-        final value =
-            farm['acreage'];
+        final value = farm['acreage'];
 
         if (value == null) {
           return total;
         }
 
         if (value is num) {
-          return total +
-              value.toDouble();
+          return total + value.toDouble();
         }
 
         return total +
@@ -231,28 +208,81 @@ Future<void> _loadFarms() async {
     );
   }
 
-  // =========================================================
+  // ===============================================================
   // FORMAT NUMBER
-  // =========================================================
+  // ===============================================================
 
   String _formatNumber(
     double value,
   ) {
-    if (value ==
-        value.roundToDouble()) {
-      return value
-          .toInt()
-          .toString();
+    if (value == value.roundToDouble()) {
+      return value.toInt().toString();
     }
 
-    return value.toStringAsFixed(
-      2,
-    );
+    return value.toStringAsFixed(2);
   }
 
-  // =========================================================
+  // ===============================================================
+  // GET TREES FOR FARM
+  // ===============================================================
+
+  List<Map<String, dynamic>> _treesForFarm(
+    Map<String, dynamic> farm,
+  ) {
+    final farmId =
+        farm['id']?.toString();
+
+    if (farmId == null ||
+        farmId.trim().isEmpty) {
+      return [];
+    }
+
+    return _trees.where((tree) {
+      return tree['farmId']?.toString() ==
+          farmId;
+    }).toList();
+  }
+
+  // ===============================================================
+  // TREE COUNTS
+  // ===============================================================
+
+  int _healthyTrees(
+    List<Map<String, dynamic>> trees,
+  ) {
+    return trees.where((tree) {
+      return tree['status']
+              ?.toString()
+              .toUpperCase() ==
+          'HEALTHY';
+    }).length;
+  }
+
+  int _diseasedTrees(
+    List<Map<String, dynamic>> trees,
+  ) {
+    return trees.where((tree) {
+      return tree['status']
+              ?.toString()
+              .toUpperCase() ==
+          'DISEASED';
+    }).length;
+  }
+
+  int _deadTrees(
+    List<Map<String, dynamic>> trees,
+  ) {
+    return trees.where((tree) {
+      return tree['status']
+              ?.toString()
+              .toUpperCase() ==
+          'DEAD';
+    }).length;
+  }
+
+  // ===============================================================
   // BUILD
-  // =========================================================
+  // ===============================================================
 
   @override
   Widget build(
@@ -262,84 +292,87 @@ Future<void> _loadFarms() async {
         AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor:
-          backgroundColor,
-
-      body: SafeArea(
-        bottom: false,
-
-        child: Column(
+      backgroundColor: backgroundColor,
+      body: Column(
           children: [
-            // =================================================
+            // =====================================================
             // HEADER
-            // =================================================
+            // =====================================================
 
-            Container(
-              width:
-                  double.infinity,
+           // =====================================================
+// HEADER
+// =====================================================
+Container(
+  width: double.infinity,
+  color: primaryGreen,
 
-              height: 52,
+  // Green reaches the very top.
+  // +8 moves the header content slightly lower.
+  padding: EdgeInsets.only(
+    top: MediaQuery.of(context).padding.top + 8,
+  ),
 
-              padding:
-                  const EdgeInsets.symmetric(
-                horizontal: 14,
-              ),
-
-              decoration:
-                  const BoxDecoration(
-                color:
-                    primaryGreen,
-
-                borderRadius:
-                    BorderRadius.only(
-                  bottomLeft:
-                      Radius.circular(
-                    18,
-                  ),
-
-                  bottomRight:
-                      Radius.circular(
-                    18,
-                  ),
-                ),
-              ),
-
-              alignment:
-                  Alignment.centerLeft,
-
-              child: Text(
-                l10n.farmDashboard,
-
-                style:
-                    const TextStyle(
-                  color:
-                      Colors.white,
-
-  fontSize: AppTextStyles.bodyLarge,
-                  fontWeight:
-                      FontWeight.w700,
-                ),
+  child: SizedBox(
+    height: 52,
+    child: Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 14,
+      ),
+      child: Row(
+        children: [
+          InkWell(
+            onTap: widget.onBack,
+            borderRadius: BorderRadius.circular(20),
+            child: const Padding(
+              padding: EdgeInsets.all(3),
+              child: Icon(
+                Icons.arrow_back_ios_new,
+                color: Colors.white,
+                size: 14,
               ),
             ),
+          ),
 
-            // =================================================
+          const SizedBox(width: 8),
+
+          Expanded(
+            child: Text(
+              l10n.farmDashboard,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: AppTextStyles.bodyLarge,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+
+          IconButton(
+            onPressed: _loadFarms,
+            tooltip: l10n.refresh,
+            icon: const Icon(
+              Icons.refresh,
+              color: Colors.white,
+              size: 19,
+            ),
+          ),
+        ],
+      ),
+    ),
+  ),
+),
+
+            // =====================================================
             // CONTENT
-            // =================================================
+            // =====================================================
 
             Expanded(
-              child:
-                  RefreshIndicator(
-                color:
-                    primaryGreen,
-
-                onRefresh:
-                    _loadFarms,
-
+              child: RefreshIndicator(
+                color: primaryGreen,
+                onRefresh: _loadFarms,
                 child:
                     SingleChildScrollView(
                   physics:
                       const AlwaysScrollableScrollPhysics(),
-
                   padding:
                       const EdgeInsets
                           .fromLTRB(
@@ -348,28 +381,26 @@ Future<void> _loadFarms() async {
                     12,
                     25,
                   ),
-
                   child: Column(
                     crossAxisAlignment:
                         CrossAxisAlignment
                             .start,
-
                     children: [
-                      // =========================================
+                      // ===========================================
                       // STATISTICS
-                      // =========================================
+                      // ===========================================
 
                       Row(
                         children: [
                           Expanded(
-                            child:
-                                _statCard(
+                            child: _statCard(
                               title:
                                   l10n.farms,
-
                               value:
                                   _totalFarms
                                       .toString(),
+                              icon: Icons
+                                  .agriculture_outlined,
                             ),
                           ),
 
@@ -378,15 +409,15 @@ Future<void> _loadFarms() async {
                           ),
 
                           Expanded(
-                            child:
-                                _statCard(
+                            child: _statCard(
                               title:
                                   l10n.acres,
-
                               value:
                                   _formatNumber(
                                 _totalAcres,
                               ),
+                              icon: Icons
+                                  .landscape_outlined,
                             ),
                           ),
 
@@ -395,114 +426,122 @@ Future<void> _loadFarms() async {
                           ),
 
                           Expanded(
-                            child:
-                                _statCard(
-  title: l10n.trees,
-  value: _totalTrees.toString(),
-),
+                            child: _statCard(
+                              title:
+                                  l10n.trees,
+                              value:
+                                  _totalTrees
+                                      .toString(),
+                              icon: Icons
+                                  .park_outlined,
+                            ),
                           ),
                         ],
                       ),
 
                       const SizedBox(
-                        height: 24,
+                        height: 22,
                       ),
 
-                      // =========================================
-                      // ADD FARM BUTTON
-                      // =========================================
+                      // ===========================================
+                      // ADD FARM
+                      // ===========================================
 
-                      Align(
-                        alignment:
-                            Alignment
-                                .centerRight,
-
-                        child: SizedBox(
-                          height: 40,
-
-                          child:
-                              ElevatedButton
-                                  .icon(
-                            onPressed:
-                                () async {
-                              final created =
-                                  await Navigator
-                                      .push<
-                                          bool>(
-                                context,
-
-                                MaterialPageRoute(
-                                  builder:
-                                      (context) =>
-                                          const AddFarmPage(),
-                                ),
-                              );
-
-                              if (created ==
-                                  true) {
-                                await _loadFarms();
-                              }
-                            },
-
-                            icon:
-                                const Icon(
-                              Icons.add,
-
-                              size: 16,
-                            ),
-
-                            label: Text(
-                              l10n.addFarm,
-
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              l10n.farms,
                               style:
                                   const TextStyle(
+                                color:
+                                    textDark,
                                 fontSize:
-                                    AppTextStyles.bodySmall,
-
+                                    AppTextStyles
+                                        .bodyLarge,
                                 fontWeight:
                                     FontWeight
-                                        .w700,
+                                        .w800,
                               ),
                             ),
+                          ),
 
-                            style:
+                          SizedBox(
+                            height: 40,
+                            child:
                                 ElevatedButton
-                                    .styleFrom(
-                              backgroundColor:
-                                  primaryGreen,
+                                    .icon(
+                              onPressed:
+                                  () async {
+                                final created =
+                                    await Navigator
+                                        .push<
+                                            bool>(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder:
+                                        (context) =>
+                                            const AddFarmPage(),
+                                  ),
+                                );
 
-                              foregroundColor:
-                                  Colors.white,
-
-                              elevation: 0,
-
-                              padding:
-                                  const EdgeInsets
-                                      .symmetric(
-                                horizontal:
-                                    16,
+                                if (created ==
+                                    true) {
+                                  await _loadFarms();
+                                }
+                              },
+                              icon:
+                                  const Icon(
+                                Icons.add,
+                                size: 16,
                               ),
-
-                              shape:
-                                  RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius
-                                        .circular(
-                                  9,
+                              label: Text(
+                                l10n.addFarm,
+                                style:
+                                    const TextStyle(
+                                  fontSize:
+                                      AppTextStyles
+                                          .bodySmall,
+                                  fontWeight:
+                                      FontWeight
+                                          .w700,
+                                ),
+                              ),
+                              style:
+                                  ElevatedButton
+                                      .styleFrom(
+                                backgroundColor:
+                                    primaryGreen,
+                                foregroundColor:
+                                    Colors.white,
+                                elevation: 0,
+                                padding:
+                                    const EdgeInsets
+                                        .symmetric(
+                                  horizontal:
+                                      16,
+                                ),
+                                shape:
+                                    RoundedRectangleBorder(
+                                  borderRadius:
+                                      BorderRadius
+                                          .circular(
+                                    9,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
+                        ],
                       ),
 
                       const SizedBox(
-                        height: 18,
+                        height: 16,
                       ),
 
-                      // =========================================
-                      // FARM CONTENT
-                      // =========================================
+                      // ===========================================
+                      // FARMS
+                      // ===========================================
 
                       _buildFarmContent(
                         context,
@@ -514,13 +553,13 @@ Future<void> _loadFarms() async {
             ),
           ],
         ),
-      ),
+      
     );
   }
 
-  // =========================================================
+  // ===============================================================
   // FARM CONTENT
-  // =========================================================
+  // ===============================================================
 
   Widget _buildFarmContent(
     BuildContext context,
@@ -528,217 +567,61 @@ Future<void> _loadFarms() async {
     final l10n =
         AppLocalizations.of(context)!;
 
-    // ---------------------------------------------------------
+    // -------------------------------------------------------------
     // Loading
-    // ---------------------------------------------------------
+    // -------------------------------------------------------------
 
-    if (_isLoading) {
+    if (_isLoading && _farms.isEmpty) {
       return const Padding(
         padding:
             EdgeInsets.symmetric(
           vertical: 60,
         ),
-
         child: Center(
           child:
               CircularProgressIndicator(
-            color:
-                primaryGreen,
+            color: primaryGreen,
           ),
         ),
       );
     }
 
-    // ---------------------------------------------------------
+    // -------------------------------------------------------------
     // Error
-    // ---------------------------------------------------------
+    // -------------------------------------------------------------
 
-    if (_error != null) {
-      return Container(
-        width:
-            double.infinity,
-
-        padding:
-            const EdgeInsets
-                .symmetric(
-          horizontal: 20,
-          vertical: 35,
-        ),
-
-        decoration:
-            BoxDecoration(
-          color:
-              Colors.white,
-
-          borderRadius:
-              BorderRadius.circular(
-            14,
-          ),
-
-          border:
-              Border.all(
-            color:
-                borderColor,
-          ),
-        ),
-
-        child: Column(
-          children: [
-            const Icon(
-              Icons.error_outline,
-
-              color:
-                  Colors.red,
-
-              size: 38,
-            ),
-
-            const SizedBox(
-              height: 12,
-            ),
-
-            Text(
-              l10n.unableToLoadFarms,
-
-              textAlign:
-                  TextAlign.center,
-
-              style:
-                  const TextStyle(
-                color:
-                    textDark,
-
-                fontSize: AppTextStyles.bodyLarge,
-
-                fontWeight:
-                    FontWeight.w700,
-              ),
-            ),
-
-            const SizedBox(
-              height: 7,
-            ),
-
-            Text(
-              _error!,
-
-              textAlign:
-                  TextAlign.center,
-
-              style:
-                  const TextStyle(
-                color:
-                    Color(
-                  0xFF718078,
-                ),
-
-  fontSize: AppTextStyles.bodySmall,
-                fontWeight:
-                    FontWeight.w500,
-              ),
-            ),
-
-            const SizedBox(
-              height: 15,
-            ),
-
-            SizedBox(
-              height: 38,
-
-              child:
-                  ElevatedButton.icon(
-                onPressed:
-                    _loadFarms,
-
-                icon:
-                    const Icon(
-                  Icons.refresh,
-
-                  size: 15,
-                ),
-
-                label: Text(
-                  l10n.retry,
-
-                  style:
-                      const TextStyle(
-                    fontSize: AppTextStyles.bodySmall,
-
-                    fontWeight:
-                        FontWeight
-                            .w700,
-                  ),
-                ),
-
-                style:
-                    ElevatedButton
-                        .styleFrom(
-                  backgroundColor:
-                      primaryGreen,
-
-                  foregroundColor:
-                      Colors.white,
-
-                  elevation: 0,
-
-                  shape:
-                      RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius
-                            .circular(
-                      9,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+    if (_error != null &&
+        _farms.isEmpty) {
+      return _errorCard(
+        context,
       );
     }
 
-    // ---------------------------------------------------------
+    // -------------------------------------------------------------
     // No farms
-    // ---------------------------------------------------------
+    // -------------------------------------------------------------
 
     if (_farms.isEmpty) {
       return Container(
-        width:
-            double.infinity,
-
+        width: double.infinity,
         padding:
-            const EdgeInsets
-                .symmetric(
+            const EdgeInsets.symmetric(
           horizontal: 20,
           vertical: 45,
         ),
-
-        decoration:
-            BoxDecoration(
-          color:
-              Colors.white,
-
+        decoration: BoxDecoration(
+          color: Colors.white,
           borderRadius:
-              BorderRadius.circular(
-            14,
-          ),
-
-          border:
-              Border.all(
-            color:
-                borderColor,
+              BorderRadius.circular(14),
+          border: Border.all(
+            color: borderColor,
           ),
         ),
-
         child: Column(
           children: [
             const Icon(
-              Icons
-                  .agriculture_outlined,
-
-              color:
-                  primaryGreen,
-
+              Icons.agriculture_outlined,
+              color: primaryGreen,
               size: 42,
             ),
 
@@ -748,17 +631,14 @@ Future<void> _loadFarms() async {
 
             Text(
               l10n.noFarmsAddedYet,
-
               textAlign:
                   TextAlign.center,
-
               style:
                   const TextStyle(
-                color:
-                    textDark,
-
-                fontSize: AppTextStyles.bodyLarge,
-
+                color: textDark,
+                fontSize:
+                    AppTextStyles
+                        .bodyLarge,
                 fontWeight:
                     FontWeight.w700,
               ),
@@ -769,21 +649,15 @@ Future<void> _loadFarms() async {
             ),
 
             Text(
-              l10n
-                  .addFirstFarmMessage,
-
+              l10n.addFirstFarmMessage,
               textAlign:
                   TextAlign.center,
-
               style:
                   const TextStyle(
-                color:
-                    Color(
-                  0xFF718078,
-                ),
-
-                fontSize: AppTextStyles.bodySmall,
-
+                color: textGrey,
+                fontSize:
+                    AppTextStyles
+                        .bodySmall,
                 fontWeight:
                     FontWeight.w500,
               ),
@@ -793,22 +667,19 @@ Future<void> _loadFarms() async {
       );
     }
 
-    // ---------------------------------------------------------
+    // -------------------------------------------------------------
     // Farms available
-    // ---------------------------------------------------------
+    // -------------------------------------------------------------
 
     return Column(
-      children:
-          _farms.map(
+      children: _farms.map(
         (farm) {
           return Padding(
             padding:
                 const EdgeInsets.only(
               bottom: 16,
             ),
-
-            child:
-                _featuredFarm(
+            child: _featuredFarm(
               context,
               farm,
             ),
@@ -818,61 +689,171 @@ Future<void> _loadFarms() async {
     );
   }
 
-  // =========================================================
+  // ===============================================================
+  // ERROR CARD
+  // ===============================================================
+
+  Widget _errorCard(
+    BuildContext context,
+  ) {
+    final l10n =
+        AppLocalizations.of(context)!;
+
+    return Container(
+      width: double.infinity,
+      padding:
+          const EdgeInsets.symmetric(
+        horizontal: 20,
+        vertical: 35,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius:
+            BorderRadius.circular(14),
+        border: Border.all(
+          color: borderColor,
+        ),
+      ),
+      child: Column(
+        children: [
+          const Icon(
+            Icons.error_outline,
+            color: Colors.red,
+            size: 38,
+          ),
+
+          const SizedBox(
+            height: 12,
+          ),
+
+          Text(
+            l10n.unableToLoadFarms,
+            textAlign:
+                TextAlign.center,
+            style:
+                const TextStyle(
+              color: textDark,
+              fontSize:
+                  AppTextStyles
+                      .bodyLarge,
+              fontWeight:
+                  FontWeight.w700,
+            ),
+          ),
+
+          const SizedBox(
+            height: 7,
+          ),
+
+          Text(
+            _error ?? '',
+            textAlign:
+                TextAlign.center,
+            style:
+                const TextStyle(
+              color: textGrey,
+              fontSize:
+                  AppTextStyles
+                      .bodySmall,
+              fontWeight:
+                  FontWeight.w500,
+            ),
+          ),
+
+          const SizedBox(
+            height: 15,
+          ),
+
+          SizedBox(
+            height: 38,
+            child:
+                ElevatedButton.icon(
+              onPressed: _loadFarms,
+              icon: const Icon(
+                Icons.refresh,
+                size: 15,
+              ),
+              label: Text(
+                l10n.retry,
+                style:
+                    const TextStyle(
+                  fontSize:
+                      AppTextStyles
+                          .bodySmall,
+                  fontWeight:
+                      FontWeight
+                          .w700,
+                ),
+              ),
+              style:
+                  ElevatedButton
+                      .styleFrom(
+                backgroundColor:
+                    primaryGreen,
+                foregroundColor:
+                    Colors.white,
+                elevation: 0,
+                shape:
+                    RoundedRectangleBorder(
+                  borderRadius:
+                      BorderRadius
+                          .circular(
+                    9,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ===============================================================
   // STAT CARD
-  // =========================================================
+  // ===============================================================
 
   Widget _statCard({
     required String title,
     required String value,
+    required IconData icon,
   }) {
     return Container(
-      height: 78,
-
+      height: 82,
       padding:
-          const EdgeInsets
-              .fromLTRB(
+          const EdgeInsets.fromLTRB(
         10,
         10,
         8,
         8,
       ),
-
-      decoration:
-          BoxDecoration(
-        color:
-            Colors.white,
-
+      decoration: BoxDecoration(
+        color: Colors.white,
         borderRadius:
-            BorderRadius.circular(
-          12,
-        ),
-
-        border:
-            Border.all(
-          color:
-              borderColor,
+            BorderRadius.circular(12),
+        border: Border.all(
+          color: borderColor,
         ),
       ),
-
       child: Column(
         crossAxisAlignment:
             CrossAxisAlignment.start,
-
         children: [
           Row(
             children: [
               Container(
-                width: 16,
-                height: 16,
-
+                width: 20,
+                height: 20,
                 decoration:
                     const BoxDecoration(
-                  color:
-                      lightGreen,
-
+                  color: lightGreen,
                   shape:
                       BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  size: 12,
+                  color: primaryGreen,
                 ),
               ),
 
@@ -883,22 +864,18 @@ Future<void> _loadFarms() async {
               Expanded(
                 child: Text(
                   title,
-
                   maxLines: 1,
-
                   overflow:
                       TextOverflow
                           .ellipsis,
-
                   style:
                       const TextStyle(
-                    color:
-                        Color(
+                    color: Color(
                       0xFF68766D,
                     ),
-
-                    fontSize: AppTextStyles.bodySmall,
-
+                    fontSize:
+                        AppTextStyles
+                            .bodySmall,
                     fontWeight:
                         FontWeight
                             .w600,
@@ -908,23 +885,17 @@ Future<void> _loadFarms() async {
             ],
           ),
 
-          const SizedBox(
-            height: 7,
-          ),
+          const Spacer(),
 
           Text(
             value,
-
             style:
                 const TextStyle(
-              color:
-                  primaryGreen,
-
-              fontSize: AppTextStyles.heading,
-
+              color: primaryGreen,
+              fontSize:
+                  AppTextStyles.heading,
               fontWeight:
                   FontWeight.w800,
-
               height: 1,
             ),
           ),
@@ -933,9 +904,9 @@ Future<void> _loadFarms() async {
     );
   }
 
-  // =========================================================
+  // ===============================================================
   // FEATURED FARM
-  // =========================================================
+  // ===============================================================
 
   Widget _featuredFarm(
     BuildContext context,
@@ -972,148 +943,166 @@ Future<void> _loadFarms() async {
       farm,
     );
 
+    // -------------------------------------------------------------
+    // IMPORTANT:
+    // Only trees belonging to this farm are passed to its map.
+    // -------------------------------------------------------------
+
+    final farmTrees =
+        _treesForFarm(farm);
+
+    final healthy =
+        _healthyTrees(farmTrees);
+
+    final diseased =
+        _diseasedTrees(farmTrees);
+
+    final dead =
+        _deadTrees(farmTrees);
+
     return Container(
-      width:
-          double.infinity,
-
+      width: double.infinity,
       padding:
-          const EdgeInsets
-              .fromLTRB(
+          const EdgeInsets.fromLTRB(
         14,
         14,
         14,
         14,
       ),
-
-      decoration:
-          BoxDecoration(
-        color:
-            Colors.white,
-
+      decoration: BoxDecoration(
+        color: Colors.white,
         borderRadius:
-            BorderRadius.circular(
-          14,
-        ),
-
-        border:
-            Border.all(
-          color:
-              borderColor,
+            BorderRadius.circular(14),
+        border: Border.all(
+          color: borderColor,
         ),
       ),
-
       child: Column(
         crossAxisAlignment:
             CrossAxisAlignment.start,
-
         children: [
+          // =======================================================
+          // FARM NAME
+          // =======================================================
+
           Row(
-  children: [
-    Expanded(
-      child: Text(
-        displayFarmName,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
-          color: textDark,
-          fontSize: AppTextStyles.bodyLarge,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-    ),
-    if (farm['_pendingSync'] == true)
-      const Tooltip(
-        message: 'Waiting to sync',
-        child: Icon(
-          Icons.cloud_upload_outlined,
-          color: Colors.orange,
-          size: 17,
-        ),
-      ),
-  ],
-),
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration:
+                    const BoxDecoration(
+                  color: lightGreen,
+                  shape:
+                      BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons
+                      .agriculture_outlined,
+                  color: primaryGreen,
+                  size: 19,
+                ),
+              ),
 
-  //         Row(
-  //           children: [
-  //             Expanded(
-  //               child: Text(
-  //                 farmName,
-  //         // =====================================================
-  //         // FARM NAME
-  //         // =====================================================
+              const SizedBox(
+                width: 10,
+              ),
 
-  //         Text(
-  //           displayFarmName,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment
+                          .start,
+                  children: [
+                    Text(
+                      displayFarmName,
+                      maxLines: 1,
+                      overflow:
+                          TextOverflow
+                              .ellipsis,
+                      style:
+                          const TextStyle(
+                        color: textDark,
+                        fontSize:
+                            AppTextStyles
+                                .bodyLarge,
+                        fontWeight:
+                            FontWeight
+                                .w800,
+                      ),
+                    ),
 
-  //           style:
-  //               const TextStyle(
-  //             color:
-  //                 textDark,
+                    const SizedBox(
+                      height: 3,
+                    ),
 
-  // fontSize: AppTextStyles.bodyLarge,
+                    Text(
+                      '${farmTrees.length} ${l10n.trees}',
+                      style:
+                          const TextStyle(
+                        color: textGrey,
+                        fontSize:
+                            AppTextStyles
+                                .bodySmall,
+                        fontWeight:
+                            FontWeight
+                                .w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
-  //             fontWeight:
-  //                 FontWeight.w800,
-  //           ),
-  //               ),
-  //             ),
-  //             if (farm['_pendingSync'] == true)
-  //               const Tooltip(
-  //                 message: 'Waiting to sync',
-  //                 child: Icon(
-  //                   Icons.cloud_upload_outlined,
-  //                   color: Colors.orange,
-  //                   size: 17,
-  //                 ),
-  //               ),
-  //           ],
-  //         ),
-
-          const SizedBox(
-            height: 6,
+              if (farm['_pendingSync'] ==
+                  true)
+                const Tooltip(
+                  message:
+                      'Waiting to sync',
+                  child: Icon(
+                    Icons
+                        .cloud_upload_outlined,
+                    color:
+                        Colors.orange,
+                    size: 17,
+                  ),
+                ),
+            ],
           ),
 
-          // =====================================================
+          const SizedBox(
+            height: 10,
+          ),
+
+          // =======================================================
           // LOCATION
-          // =====================================================
+          // =======================================================
 
           Row(
             children: [
               const Icon(
                 Icons
                     .location_on_outlined,
-
-                size: 12,
-
-                color:
-                    Color(
-                  0xFF718078,
-                ),
+                size: 13,
+                color: textGrey,
               ),
 
               const SizedBox(
-                width: 3,
+                width: 4,
               ),
 
               Expanded(
                 child: Text(
                   location,
-
                   maxLines: 1,
-
                   overflow:
                       TextOverflow
                           .ellipsis,
-
                   style:
                       const TextStyle(
-                    color:
-                        Color(
-                      0xFF718078,
-                    ),
-
-                    fontSize: AppTextStyles.bodySmall,
-
+                    color: textGrey,
+                    fontSize:
+                        AppTextStyles
+                            .bodySmall,
                     fontWeight:
                         FontWeight
                             .w500,
@@ -1127,164 +1116,376 @@ Future<void> _loadFarms() async {
             height: 12,
           ),
 
-          // =====================================================
-          // FARM TYPE BADGE
-          // =====================================================
+          // =======================================================
+          // FARM TYPE + ACREAGE
+          // =======================================================
+
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _farmBadge(
+                icon:
+                    Icons.category_outlined,
+                label: farmType,
+              ),
+
+              _farmBadge(
+                icon:
+                    Icons.landscape_outlined,
+                label:
+                    '$acreage ${l10n.acres}',
+              ),
+
+              _farmBadge(
+                icon:
+                    Icons.park_outlined,
+                label:
+                    '${farmTrees.length} ${l10n.trees}',
+              ),
+            ],
+          ),
+
+          const SizedBox(
+            height: 15,
+          ),
+
+          // =======================================================
+          // FARM MAP
+          //
+          // Polygon = farm geometry from database.
+          // Markers = tree coordinates from database.
+          // =======================================================
+
+          FarmMap(
+            farm: farm,
+            trees: farmTrees,
+            compact: true,
+          ),
+
+          const SizedBox(
+            height: 13,
+          ),
+
+          // =======================================================
+          // TREE STATUS SUMMARY
+          // =======================================================
 
           Container(
+            width: double.infinity,
             padding:
-                const EdgeInsets
-                    .symmetric(
-              horizontal: 9,
-              vertical: 6,
+                const EdgeInsets.symmetric(
+              horizontal: 10,
+              vertical: 10,
             ),
-
-            decoration:
-                BoxDecoration(
+            decoration: BoxDecoration(
               color:
-                  lightGreen,
-
+                  const Color(
+                0xFFF9FBF9,
+              ),
               borderRadius:
-                  BorderRadius
-                      .circular(
-                7,
+                  BorderRadius.circular(
+                9,
+              ),
+              border: Border.all(
+                color: borderColor,
               ),
             ),
+            child: Row(
+              children: [
+                Expanded(
+                  child:
+                      _treeStatusItem(
+                    color:
+                        primaryGreen,
+                    value: healthy,
+                    label: 'Healthy',
+                  ),
+                ),
 
-            child: Text(
-              farmType,
+                _verticalDivider(),
 
-              style:
-                  const TextStyle(
-                color:
-                    primaryGreen,
+                Expanded(
+                  child:
+                      _treeStatusItem(
+                    color:
+                        const Color(
+                      0xFFD97706,
+                    ),
+                    value:
+                        diseased,
+                    label:
+                        'Diseased',
+                  ),
+                ),
 
-                fontSize: AppTextStyles.bodySmall,
+                _verticalDivider(),
 
-                fontWeight:
-                    FontWeight
-                        .w600,
-              ),
+                Expanded(
+                  child:
+                      _treeStatusItem(
+                    color:
+                        const Color(
+                      0xFFB91C1C,
+                    ),
+                    value: dead,
+                    label: 'Dead',
+                  ),
+                ),
+              ],
             ),
           ),
 
           const SizedBox(
-            height: 8,
+            height: 13,
           ),
 
-          // =====================================================
-          // ACREAGE + PLANTING DATE + VIEW BUTTON
-          // =====================================================
+          // =======================================================
+          // PLANTING DATE
+          // =======================================================
 
-          Row(
-            crossAxisAlignment:
-                CrossAxisAlignment.end,
-
-            children: [
-              Expanded(
-                child: Text(
-                  '$acreage ${l10n.acres}'
-                  '${_plantingDateText(context, farm)}',
-
-                  maxLines: 2,
-
-                  overflow:
-                      TextOverflow
-                          .ellipsis,
-
-                  style:
-                      const TextStyle(
-                    color:
-                        Color(
-                      0xFF68766D,
-                    ),
-
-                    fontSize: AppTextStyles.bodySmall,
-
-                    fontWeight:
-                        FontWeight
-                            .w500,
+          if (_plantingDateText(
+            context,
+            farm,
+          ).isNotEmpty)
+            Padding(
+              padding:
+                  const EdgeInsets.only(
+                bottom: 12,
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons
+                        .calendar_today_outlined,
+                    size: 13,
+                    color: textGrey,
                   ),
-                ),
-              ),
 
-              const SizedBox(
-                width: 10,
-              ),
+                  const SizedBox(
+                    width: 5,
+                  ),
 
-              SizedBox(
-                height: 42,
-
-                child:
-                    ElevatedButton(
-                  onPressed:
-                      () async {
-                    await Navigator
-                        .push(
-                      context,
-
-                      MaterialPageRoute(
-                        builder:
-                            (context) =>
-                                FarmDetailsPage(
-                          farm: farm,
-                        ),
+                  Expanded(
+                    child: Text(
+                      _plantingDateText(
+                        context,
+                        farm,
+                      ).replaceFirst(
+                        ' • ',
+                        '',
                       ),
-                    );
-                  },
-
-                  style:
-                      ElevatedButton
-                          .styleFrom(
-                    backgroundColor:
-                        primaryGreen,
-
-                    foregroundColor:
-                        Colors.white,
-
-                    elevation: 0,
-
-                    padding:
-                        const EdgeInsets
-                            .symmetric(
-                      horizontal:
-                          22,
-                    ),
-
-                    shape:
-                        RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius
-                              .circular(
-                        9,
+                      style:
+                          const TextStyle(
+                        color: textGrey,
+                        fontSize:
+                            AppTextStyles
+                                .bodySmall,
+                        fontWeight:
+                            FontWeight
+                                .w500,
                       ),
                     ),
                   ),
+                ],
+              ),
+            ),
 
-                  child: Text(
-                    l10n.viewFarm,
+          // =======================================================
+          // VIEW FARM
+          // =======================================================
 
-                    style:
-                        const TextStyle(
-                      fontSize: AppTextStyles.bodySmall,
-
-                      fontWeight:
-                          FontWeight
-                              .w700,
+          SizedBox(
+            width: double.infinity,
+            height: 42,
+            child:
+                ElevatedButton.icon(
+              onPressed: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        FarmDetailsPage(
+                      farm: farm,
                     ),
+                  ),
+                );
+
+                // Refresh when coming back from details.
+                if (mounted) {
+                  await _loadFarms();
+                }
+              },
+              icon: const Icon(
+                Icons
+                    .visibility_outlined,
+                size: 17,
+              ),
+              label: Text(
+                l10n.viewFarm,
+                style:
+                    const TextStyle(
+                  fontSize:
+                      AppTextStyles
+                          .bodySmall,
+                  fontWeight:
+                      FontWeight
+                          .w700,
+                ),
+              ),
+              style:
+                  ElevatedButton
+                      .styleFrom(
+                backgroundColor:
+                    primaryGreen,
+                foregroundColor:
+                    Colors.white,
+                elevation: 0,
+                shape:
+                    RoundedRectangleBorder(
+                  borderRadius:
+                      BorderRadius
+                          .circular(
+                    9,
                   ),
                 ),
               ),
-            ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  // =========================================================
-  // FARM HELPERS
-  // =========================================================
+  // ===============================================================
+  // FARM BADGE
+  // ===============================================================
+
+  Widget _farmBadge({
+    required IconData icon,
+    required String label,
+  }) {
+    return Container(
+      padding:
+          const EdgeInsets.symmetric(
+        horizontal: 9,
+        vertical: 6,
+      ),
+      decoration: BoxDecoration(
+        color: lightGreen,
+        borderRadius:
+            BorderRadius.circular(7),
+      ),
+      child: Row(
+        mainAxisSize:
+            MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            color: primaryGreen,
+            size: 13,
+          ),
+
+          const SizedBox(
+            width: 5,
+          ),
+
+          Text(
+            label,
+            style:
+                const TextStyle(
+              color: primaryGreen,
+              fontSize:
+                  AppTextStyles
+                      .bodySmall,
+              fontWeight:
+                  FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ===============================================================
+  // TREE STATUS
+  // ===============================================================
+
+  Widget _treeStatusItem({
+    required Color color,
+    required int value,
+    required String label,
+  }) {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment:
+              MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration:
+                  BoxDecoration(
+                color: color,
+                shape:
+                    BoxShape.circle,
+              ),
+            ),
+
+            const SizedBox(
+              width: 5,
+            ),
+
+            Text(
+              value.toString(),
+              style:
+                  const TextStyle(
+                color: textDark,
+                fontSize:
+                    AppTextStyles
+                        .body,
+                fontWeight:
+                    FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(
+          height: 3,
+        ),
+
+        Text(
+          label,
+          maxLines: 1,
+          overflow:
+              TextOverflow.ellipsis,
+          style:
+              const TextStyle(
+            color: textGrey,
+            fontSize:
+                AppTextStyles
+                    .bodySmall,
+            fontWeight:
+                FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _verticalDivider() {
+    return Container(
+      width: 1,
+      height: 31,
+      color: borderColor,
+    );
+  }
+
+  // ===============================================================
+  // FARM ACREAGE
+  // ===============================================================
 
   String _getFarmAcreage(
     Map<String, dynamic> farm,
@@ -1316,9 +1517,12 @@ Future<void> _loadFarms() async {
     );
   }
 
-  // =========================================================
+  // ===============================================================
   // FARM TYPE
-  // =========================================================
+  //
+  // Backend enum values are not translated or modified.
+  // Only their displayed labels are localized.
+  // ===============================================================
 
   String _getFarmTypeLabel(
     BuildContext context,
@@ -1350,9 +1554,9 @@ Future<void> _loadFarms() async {
     }
   }
 
-  // =========================================================
+  // ===============================================================
   // FARM LOCATION
-  // =========================================================
+  // ===============================================================
 
   String _getFarmLocation(
     BuildContext context,
@@ -1414,9 +1618,9 @@ Future<void> _loadFarms() async {
     return l10n.locationNotAvailable;
   }
 
-  // =========================================================
+  // ===============================================================
   // PLANTING DATE
-  // =========================================================
+  // ===============================================================
 
   String _plantingDateText(
     BuildContext context,
@@ -1439,10 +1643,23 @@ Future<void> _loadFarms() async {
         '$plantingDate';
   }
 
-  // =========================================================
+  // ===============================================================
+  // CLEAN ERROR
+  // ===============================================================
+
+  String _cleanError(
+    String error,
+  ) {
+    return error.replaceFirst(
+      'Exception: ',
+      '',
+    );
+  }
+
+  // ===============================================================
   // NAV ITEM
-  // Kept because it existed in your original page.
-  // =========================================================
+  // Kept for compatibility with your existing FarmsPage.
+  // ===============================================================
 
   Widget _navigationItem({
     required IconData icon,
@@ -1452,25 +1669,19 @@ Future<void> _loadFarms() async {
   }) {
     return Expanded(
       child: InkWell(
-        onTap:
-            onTap,
-
+        onTap: onTap,
         child: Column(
           mainAxisAlignment:
               MainAxisAlignment.center,
-
           children: [
             Icon(
               icon,
-
               size: 17,
-
-              color:
-                  selected
-                      ? primaryGreen
-                      : const Color(
-                          0xFF9AA39D,
-                        ),
+              color: selected
+                  ? primaryGreen
+                  : const Color(
+                      0xFF9AA39D,
+                    ),
             ),
 
             const SizedBox(
@@ -1479,24 +1690,21 @@ Future<void> _loadFarms() async {
 
             Text(
               label,
-
-              style:
-                  TextStyle(
-                fontSize: AppTextStyles.bodySmall,
-
+              style: TextStyle(
+                fontSize:
+                    AppTextStyles
+                        .bodySmall,
                 fontWeight:
                     selected
                         ? FontWeight
                             .w700
                         : FontWeight
                             .w500,
-
-                color:
-                    selected
-                        ? primaryGreen
-                        : const Color(
-                            0xFF9AA39D,
-                          ),
+                color: selected
+                    ? primaryGreen
+                    : const Color(
+                        0xFF9AA39D,
+                      ),
               ),
             ),
           ],
