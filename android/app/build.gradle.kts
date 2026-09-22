@@ -43,6 +43,13 @@ val keystoreProperties: Map<String, String> =
         emptyMap()
     }
 
+val hasReleaseSigning = listOf(
+    "storeFile",
+    "storePassword",
+    "keyAlias",
+    "keyPassword",
+).all { key -> !keystoreProperties[key].isNullOrEmpty() }
+
 /*
  * Safe debugging.
  *
@@ -84,52 +91,35 @@ android {
     }
 
     signingConfigs {
-        create("release") {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(keystoreProperties.getValue("storeFile"))
+                storePassword = keystoreProperties.getValue("storePassword")
+                keyAlias = keystoreProperties.getValue("keyAlias")
+                keyPassword = keystoreProperties.getValue("keyPassword")
 
-            val releaseStoreFile =
-                keystoreProperties["storeFile"]
-                    ?: error(
-                        "storeFile is missing from android/key.properties"
-                    )
-
-            val releaseStorePassword =
-                keystoreProperties["storePassword"]
-                    ?: error(
-                        "storePassword is missing from android/key.properties"
-                    )
-
-            val releaseKeyAlias =
-                keystoreProperties["keyAlias"]
-                    ?: error(
-                        "keyAlias is missing from android/key.properties"
-                    )
-
-            val releaseKeyPassword =
-                keystoreProperties["keyPassword"]
-                    ?: error(
-                        "keyPassword is missing from android/key.properties"
-                    )
-
-            storeFile = file(releaseStoreFile)
-
-            storePassword = releaseStorePassword
-
-            keyAlias = releaseKeyAlias
-
-            keyPassword = releaseKeyPassword
-
-            /*
-             * Our new release keystore was explicitly created
-             * using -storetype JKS.
-             */
-            storeType = "JKS"
+                /*
+                 * Our new release keystore was explicitly created
+                 * using -storetype JKS.
+                 */
+                storeType = "JKS"
+            }
+        } else {
+            println(
+                "Release signing is not configured; using the debug key. " +
+                    "Create android/key.properties for a signed release."
+            )
         }
     }
 
     buildTypes {
         release {
             signingConfig =
-                signingConfigs.getByName("release")
+                if (hasReleaseSigning) {
+                    signingConfigs.getByName("release")
+                } else {
+                    signingConfigs.getByName("debug")
+                }
         }
     }
 }

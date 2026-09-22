@@ -151,8 +151,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get registeredTrees => 'Mikorosho Iliyosajiliwa';
 
   @override
-  String get searchTreeHint =>
-      'Tafuta mkorosho kwa namba, shamba, kitalu au aina';
+  String get searchTreeHint => 'Tafuta mkorosho';
 
   @override
   String treeCount(int count) {

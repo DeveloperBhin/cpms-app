@@ -58,7 +58,7 @@
 
   "totalTrees": "Jumla ya Mikorosho",
   "registeredTrees": "Mikorosho Iliyosajiliwa",
-  "searchTreeHint": "Tafuta mkorosho kwa namba, shamba, kitalu au aina",
+  "searchTreeHint": "Tafuta mkorosho",
 
   "treeCount": "Mikorosho {count}",
   "@treeCount": {
