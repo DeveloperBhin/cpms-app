@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
-import '../services/api_services/api_services.dart';
+import '../providers/auth_provider.dart';
 import '../theme/app_text_styles.dart';
+
 import 'register_page.dart';
 import 'main_page.dart';
 
@@ -32,6 +34,10 @@ class _LoginPageState extends State<LoginPage> {
   AppLocalizations get _l10n =>
       AppLocalizations.of(context)!;
 
+  // ============================================================
+  // DISPOSE
+  // ============================================================
+
   @override
   void dispose() {
     _usernameController.dispose();
@@ -44,7 +50,14 @@ class _LoginPageState extends State<LoginPage> {
   // ============================================================
 
   Future<void> _login() async {
+    // Remove keyboard
+    FocusScope.of(context).unfocus();
+
     if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (_isLoading) {
       return;
     }
 
@@ -53,33 +66,78 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      final result = await ApiServices.login(
+      final authProvider =
+          context.read<AuthProvider>();
+
+      // ========================================================
+      // LOGIN THROUGH AUTH PROVIDER
+      // ========================================================
+
+      await authProvider.login(
         username: _usernameController.text.trim(),
         password: _passwordController.text,
       );
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      // ========================================================
+      // VERIFY AUTHENTICATION STATE
+      // ========================================================
+
+      if (!authProvider.isAuthenticated) {
+        throw Exception(
+          'Unable to authenticate user',
+        );
+      }
+
+      // ========================================================
+      // LOGIN SUCCESSFUL
+      // ========================================================
+
+      ScaffoldMessenger.of(context)
+          .hideCurrentSnackBar();
+
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
         SnackBar(
           content: Text(
-            result['message']?.toString() ??
-                _l10n.loginSuccessful,
+            _l10n.loginSuccessful,
           ),
           backgroundColor: primaryGreen,
+          behavior: SnackBarBehavior.floating,
         ),
       );
 
-      Navigator.pushReplacement(
-        context,
+      // ========================================================
+      // GO TO MAIN PAGE
+      //
+      // Remove LoginPage and all previous authentication routes.
+      // ========================================================
+
+      Navigator.of(context)
+          .pushAndRemoveUntil(
         MaterialPageRoute(
-          builder: (context) => const MainPage(),
+          builder: (_) =>
+              const MainPage(),
         ),
+        (route) => false,
       );
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      debugPrint(
+        'LOGIN ERROR: $e',
+      );
+
+      ScaffoldMessenger.of(context)
+          .hideCurrentSnackBar();
+
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
         SnackBar(
           content: Text(
             e.toString().replaceFirst(
@@ -88,6 +146,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
           ),
           backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
         ),
       );
     } finally {
@@ -110,6 +169,7 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       backgroundColor: primaryGreen,
       resizeToAvoidBottomInset: true,
+
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -125,7 +185,8 @@ class _LoginPageState extends State<LoginPage> {
                 child: Container(
                   width: 74,
                   height: 74,
-                  decoration: const BoxDecoration(
+                  decoration:
+                      const BoxDecoration(
                     color: Colors.white,
                     shape: BoxShape.circle,
                   ),
@@ -148,51 +209,79 @@ class _LoginPageState extends State<LoginPage> {
             Expanded(
               child: Container(
                 width: double.infinity,
-                decoration: const BoxDecoration(
+                decoration:
+                    const BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(30),
-                    bottomRight: Radius.circular(30),
+                  borderRadius:
+                      BorderRadius.only(
+                    bottomLeft:
+                        Radius.circular(30),
+                    bottomRight:
+                        Radius.circular(30),
                   ),
                 ),
-                child: SingleChildScrollView(
+                child:
+                    SingleChildScrollView(
                   keyboardDismissBehavior:
                       ScrollViewKeyboardDismissBehavior
                           .onDrag,
-                  padding: const EdgeInsets.symmetric(
+                  padding:
+                      const EdgeInsets
+                          .symmetric(
                     horizontal: 32,
                   ),
                   child: Form(
                     key: _formKey,
                     child: Column(
                       children: [
-                        const SizedBox(height: 18),
+                        const SizedBox(
+                          height: 18,
+                        ),
 
                         // ======================================
                         // TITLE
                         // ======================================
 
                         Text(
-                          l10n.cashewProductionManagementSystem,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-fontSize: AppTextStyles.heading,                            height: 1.05,
-                            fontWeight: FontWeight.w800,
-                            color: titleColor,
+                          l10n
+                              .cashewProductionManagementSystem,
+                          textAlign:
+                              TextAlign.center,
+                          style:
+                              const TextStyle(
+                            fontSize:
+                                AppTextStyles
+                                    .heading,
+                            height: 1.05,
+                            fontWeight:
+                                FontWeight
+                                    .w800,
+                            color:
+                                titleColor,
                           ),
                         ),
 
-                        const SizedBox(height: 10),
+                        const SizedBox(
+                          height: 10,
+                        ),
 
                         Text(
-                          l10n.signInToContinue,
+                          l10n
+                              .signInToContinue,
+                          textAlign:
+                              TextAlign.center,
                           style: TextStyle(
-                            fontSize: AppTextStyles.bodySmall,
-                            color: Colors.grey.shade500,
+                            fontSize:
+                                AppTextStyles
+                                    .bodySmall,
+                            color: Colors
+                                .grey.shade500,
                           ),
                         ),
 
-                        const SizedBox(height: 34),
+                        const SizedBox(
+                          height: 34,
+                        ),
 
                         // ======================================
                         // USERNAME
@@ -201,20 +290,43 @@ fontSize: AppTextStyles.heading,                            height: 1.05,
                         TextFormField(
                           controller:
                               _usernameController,
+                          enabled:
+                              !_isLoading,
                           keyboardType:
-                              TextInputType.text,
+                              TextInputType
+                                  .text,
                           textInputAction:
-                              TextInputAction.next,
-                          style: const TextStyle(
-fontSize: AppTextStyles.bodySmall,                            color: titleColor,
+                              TextInputAction
+                                  .next,
+                          autocorrect: false,
+                          enableSuggestions:
+                              false,
+                          style:
+                              const TextStyle(
+                            fontSize:
+                                AppTextStyles
+                                    .bodySmall,
+                            color:
+                                titleColor,
                           ),
                           decoration:
                               _inputDecoration(
-                            hintText: l10n.username,
+                            hintText:
+                                l10n.username,
+                            prefixIcon:
+                                const Icon(
+                              Icons
+                                  .person_outline,
+                              size: 19,
+                            ),
                           ),
-                          validator: (value) {
-                            if (value == null ||
-                                value.trim().isEmpty) {
+                          validator:
+                              (value) {
+                            if (value ==
+                                    null ||
+                                value
+                                    .trim()
+                                    .isEmpty) {
                               return l10n
                                   .pleaseEnterUsername;
                             }
@@ -223,7 +335,9 @@ fontSize: AppTextStyles.bodySmall,                            color: titleColor,
                           },
                         ),
 
-                        const SizedBox(height: 14),
+                        const SizedBox(
+                          height: 14,
+                        ),
 
                         // ======================================
                         // PASSWORD
@@ -232,33 +346,62 @@ fontSize: AppTextStyles.bodySmall,                            color: titleColor,
                         TextFormField(
                           controller:
                               _passwordController,
+                          enabled:
+                              !_isLoading,
                           obscureText:
                               _obscurePassword,
                           textInputAction:
-                              TextInputAction.done,
-                          onFieldSubmitted: (_) {
+                              TextInputAction
+                                  .done,
+                          autocorrect: false,
+                          enableSuggestions:
+                              false,
+
+                          onFieldSubmitted:
+                              (_) {
                             if (!_isLoading) {
                               _login();
                             }
                           },
-                          style: const TextStyle(
-                            fontSize: AppTextStyles.bodySmall,
-                            color: titleColor,
+
+                          style:
+                              const TextStyle(
+                            fontSize:
+                                AppTextStyles
+                                    .bodySmall,
+                            color:
+                                titleColor,
                           ),
+
                           decoration:
                               _inputDecoration(
-                            hintText: l10n.password,
-                            suffixIcon: IconButton(
-                              onPressed: () {
-                                setState(() {
-                                  _obscurePassword =
-                                      !_obscurePassword;
-                                });
-                              },
+                            hintText:
+                                l10n.password,
+                            prefixIcon:
+                                const Icon(
+                              Icons
+                                  .lock_outline,
+                              size: 19,
+                            ),
+                            suffixIcon:
+                                IconButton(
+                              onPressed:
+                                  _isLoading
+                                      ? null
+                                      : () {
+                                          setState(
+                                            () {
+                                              _obscurePassword =
+                                                  !_obscurePassword;
+                                            },
+                                          );
+                                        },
                               tooltip:
                                   _obscurePassword
-                                      ? l10n.showPassword
-                                      : l10n.hidePassword,
+                                      ? l10n
+                                          .showPassword
+                                      : l10n
+                                          .hidePassword,
                               icon: Icon(
                                 _obscurePassword
                                     ? Icons
@@ -267,13 +410,18 @@ fontSize: AppTextStyles.bodySmall,                            color: titleColor,
                                         .visibility_outlined,
                                 size: 18,
                                 color: Colors
-                                    .grey.shade500,
+                                    .grey
+                                    .shade500,
                               ),
                             ),
                           ),
-                          validator: (value) {
-                            if (value == null ||
-                                value.isEmpty) {
+
+                          validator:
+                              (value) {
+                            if (value ==
+                                    null ||
+                                value
+                                    .isEmpty) {
                               return l10n
                                   .pleaseEnterPassword;
                             }
@@ -282,60 +430,79 @@ fontSize: AppTextStyles.bodySmall,                            color: titleColor,
                           },
                         ),
 
-                        const SizedBox(height: 27),
+                        const SizedBox(
+                          height: 27,
+                        ),
 
                         // ======================================
                         // LOGIN BUTTON
                         // ======================================
 
                         SizedBox(
-                          width: double.infinity,
+                          width:
+                              double.infinity,
                           height: 47,
-                          child: ElevatedButton(
-                            onPressed: _isLoading
-                                ? null
-                                : _login,
+                          child:
+                              ElevatedButton(
+                            onPressed:
+                                _isLoading
+                                    ? null
+                                    : _login,
                             style:
-                                ElevatedButton.styleFrom(
+                                ElevatedButton
+                                    .styleFrom(
                               backgroundColor:
                                   primaryGreen,
                               foregroundColor:
                                   Colors.white,
                               disabledBackgroundColor:
                                   primaryGreen
-                                      .withOpacity(0.65),
+                                      .withValues(
+                                alpha: 0.65,
+                              ),
                               elevation: 0,
                               shape:
                                   RoundedRectangleBorder(
                                 borderRadius:
-                                    BorderRadius.circular(
+                                    BorderRadius
+                                        .circular(
                                   8,
                                 ),
                               ),
                             ),
-                            child: _isLoading
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child:
-                                        CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : Text(
-                                    l10n.login,
-                                    style:
-                                        const TextStyle(
-                                      fontSize: AppTextStyles.small,
-                                      fontWeight:
-                                          FontWeight.w700,
-                                    ),
-                                  ),
+                            child:
+                                _isLoading
+                                    ? const SizedBox(
+                                        width:
+                                            20,
+                                        height:
+                                            20,
+                                        child:
+                                            CircularProgressIndicator(
+                                          strokeWidth:
+                                              2,
+                                          color:
+                                              Colors.white,
+                                        ),
+                                      )
+                                    : Text(
+                                        l10n.login,
+                                        style:
+                                            const TextStyle(
+                                          fontSize:
+                                              AppTextStyles
+                                                  .small,
+                                          fontWeight:
+                                              FontWeight
+                                                  .w700,
+                                        ),
+                                      ),
                           ),
                         ),
 
-                        const SizedBox(height: 18),
+                        const SizedBox(
+                          height: 18,
+                        ),
 
                         // ======================================
                         // REGISTER
@@ -343,45 +510,63 @@ fontSize: AppTextStyles.bodySmall,                            color: titleColor,
 
                         Row(
                           mainAxisAlignment:
-                              MainAxisAlignment.center,
+                              MainAxisAlignment
+                                  .center,
                           children: [
-                            Text(
-                              '${l10n.dontHaveAccount} ',
-                              style:
-                                  const TextStyle(
-                                color: primaryGreen,
-fontSize: AppTextStyles.small,
-                                fontWeight:
-                                    FontWeight.w500,
+                            Flexible(
+                              child: Text(
+                                '${l10n.dontHaveAccount} ',
+                                style:
+                                    const TextStyle(
+                                  color:
+                                      primaryGreen,
+                                  fontSize:
+                                      AppTextStyles
+                                          .small,
+                                  fontWeight:
+                                      FontWeight
+                                          .w500,
+                                ),
                               ),
                             ),
-
                             GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder:
-                                        (context) =>
-                                            const RegisterPage(),
-                                  ),
-                                );
-                              },
+                              onTap:
+                                  _isLoading
+                                      ? null
+                                      : () {
+                                          Navigator
+                                              .push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder:
+                                                  (
+                                                context,
+                                              ) =>
+                                                      const RegisterPage(),
+                                            ),
+                                          );
+                                        },
                               child: Text(
                                 l10n.register,
                                 style:
                                     const TextStyle(
-                                  color: primaryGreen,
-                                  fontSize: AppTextStyles.small,
+                                  color:
+                                      primaryGreen,
+                                  fontSize:
+                                      AppTextStyles
+                                          .small,
                                   fontWeight:
-                                      FontWeight.w800,
+                                      FontWeight
+                                          .w800,
                                 ),
                               ),
                             ),
                           ],
                         ),
 
-                        const SizedBox(height: 30),
+                        const SizedBox(
+                          height: 30,
+                        ),
                       ],
                     ),
                   ),
@@ -409,48 +594,72 @@ fontSize: AppTextStyles.small,
 
   InputDecoration _inputDecoration({
     required String hintText,
+    Widget? prefixIcon,
     Widget? suffixIcon,
   }) {
     return InputDecoration(
       hintText: hintText,
       hintStyle: TextStyle(
         color: Colors.grey.shade500,
-        fontSize: AppTextStyles.tiny,
+        fontSize:
+            AppTextStyles.tiny,
       ),
+
       filled: true,
       fillColor: fieldBackground,
       isDense: true,
+
+      prefixIcon: prefixIcon,
       suffixIcon: suffixIcon,
+
+      prefixIconColor:
+          Colors.grey.shade600,
+
       contentPadding:
           const EdgeInsets.symmetric(
         horizontal: 14,
         vertical: 15,
       ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(9),
-        borderSide: const BorderSide(
+
+      enabledBorder:
+          OutlineInputBorder(
+        borderRadius:
+            BorderRadius.circular(9),
+        borderSide:
+            const BorderSide(
           color: Color(0xFFD9EADF),
           width: 1,
         ),
       ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(9),
-        borderSide: const BorderSide(
+
+      focusedBorder:
+          OutlineInputBorder(
+        borderRadius:
+            BorderRadius.circular(9),
+        borderSide:
+            const BorderSide(
           color: primaryGreen,
           width: 1.3,
         ),
       ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(9),
-        borderSide: const BorderSide(
+
+      errorBorder:
+          OutlineInputBorder(
+        borderRadius:
+            BorderRadius.circular(9),
+        borderSide:
+            const BorderSide(
           color: Colors.red,
           width: 1,
         ),
       ),
+
       focusedErrorBorder:
           OutlineInputBorder(
-        borderRadius: BorderRadius.circular(9),
-        borderSide: const BorderSide(
+        borderRadius:
+            BorderRadius.circular(9),
+        borderSide:
+            const BorderSide(
           color: Colors.red,
           width: 1.3,
         ),

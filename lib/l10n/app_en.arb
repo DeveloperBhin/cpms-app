@@ -569,5 +569,10 @@
 "validLongitudeRequired": "Please enter a valid longitude between -180 and 180.",
 "bothCoordinatesRequired": "Both latitude and longitude are required.",
 "invalidLatitude": "Invalid latitude.",
-"invalidLongitude": "Invalid longitude."
+"invalidLongitude": "Invalid longitude.",
+"home": "Home",
+"farms": "Farms",
+"trees": "Trees",
+"activities": "Activities",
+"more": "More"
 }

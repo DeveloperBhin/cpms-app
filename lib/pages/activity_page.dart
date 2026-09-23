@@ -546,82 +546,88 @@ class _ActivityPageState extends State<ActivityPage> {
 
     return Scaffold(
       backgroundColor: backgroundColor,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
+      body: Column(
           children: [
             // ==================================================
             // HEADER
             // ==================================================
 
-            Container(
-              width: double.infinity,
-              height: 55,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14,
-              ),
-              decoration: const BoxDecoration(
-                color: primaryGreen,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(18),
-                  bottomRight: Radius.circular(18),
+            // ==================================================
+// HEADER
+// ==================================================
+Container(
+  width: double.infinity,
+  color: primaryGreen,
+
+  // Make the top/status-bar area green too.
+  // +8 moves the header content slightly lower.
+  padding: EdgeInsets.only(
+    top: MediaQuery.of(context).padding.top + 8,
+  ),
+
+  child: SizedBox(
+    height: 55,
+    child: Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 14,
+      ),
+      child: Row(
+        children: [
+          // BACK BUTTON
+          if (widget.onBack != null) ...[
+            InkWell(
+              onTap: widget.onBack,
+              borderRadius: BorderRadius.circular(20),
+              child: const Padding(
+                padding: EdgeInsets.all(4),
+                child: Icon(
+                  Icons.arrow_back_ios_new,
+                  color: Colors.white,
+                  size: 15,
                 ),
               ),
-              child: Row(
-                children: [
-                  if (widget.onBack != null) ...[
-                    InkWell(
-                      onTap: widget.onBack,
-                      borderRadius:
-                          BorderRadius.circular(20),
-                      child: const Padding(
-                        padding: EdgeInsets.all(4),
-                        child: Icon(
-                          Icons.arrow_back_ios_new,
-                          color: Colors.white,
-                          size: 15,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
+            ),
+            const SizedBox(width: 8),
+          ],
 
-                  Expanded(
-                    child: Text(
-                      l10n.activities,
-                      style: const TextStyle(
-                        color: Colors.white,
-  fontSize: AppTextStyles.bodyLarge,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(
-                      horizontal: 9,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(
-                        alpha: 0.15,
-                      ),
-                      borderRadius:
-                          BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '${_activities.length}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: AppTextStyles.bodySmall,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
+          // TITLE
+          Expanded(
+            child: Text(
+              l10n.activities,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: AppTextStyles.bodyLarge,
+                fontWeight: FontWeight.w700,
               ),
             ),
+          ),
+
+          // ACTIVITY COUNT
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 9,
+              vertical: 5,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(
+                alpha: 0.15,
+              ),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              '${_activities.length}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: AppTextStyles.bodySmall,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  ),
+),
 
             // ==================================================
             // BODY
@@ -953,7 +959,7 @@ class _ActivityPageState extends State<ActivityPage> {
             ),
           ],
         ),
-      ),
+      
     );
   }
 

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
+
 class BottomNav extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;
@@ -12,27 +14,23 @@ class BottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return SafeArea(
       minimum: const EdgeInsets.fromLTRB(
-        18, // clearer left margin
-        8,  // space above navbar
-        18, // clearer right margin
-        16, // clearer bottom margin
+        18,
+        8,
+        18,
+        16,
       ),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-
-          // More visible rounded corners
           borderRadius: BorderRadius.circular(26),
-
-          // Makes the shape visible on light backgrounds
           border: Border.all(
             color: const Color(0xFFDCE8DF),
             width: 1,
           ),
-
-          // Stronger floating effect
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(
@@ -44,99 +42,83 @@ class BottomNav extends StatelessWidget {
             ),
           ],
         ),
-
-        // Important for BottomNavigationBar
-        // to follow the rounded shape.
         clipBehavior: Clip.antiAlias,
-
         child: BottomNavigationBar(
           currentIndex: currentIndex,
           onTap: onTap,
-
           type: BottomNavigationBarType.fixed,
-
           backgroundColor: Colors.white,
-
-          selectedItemColor:
-              const Color(0xFF087A2F),
-
-          unselectedItemColor:
-              const Color(0xFF9AA39D),
-
+          selectedItemColor: const Color(0xFF087A2F),
+          unselectedItemColor: const Color(0xFF9AA39D),
           selectedFontSize: 10,
           unselectedFontSize: 9,
-
-          selectedLabelStyle:
-              const TextStyle(
+          selectedLabelStyle: const TextStyle(
             fontWeight: FontWeight.w700,
           ),
-
-          unselectedLabelStyle:
-              const TextStyle(
+          unselectedLabelStyle: const TextStyle(
             fontWeight: FontWeight.w500,
           ),
-
           elevation: 0,
 
-          items: const [
+          items: [
             BottomNavigationBarItem(
-              icon: Icon(
+              icon: const Icon(
                 Icons.home_outlined,
                 size: 20,
               ),
-              activeIcon: Icon(
+              activeIcon: const Icon(
                 Icons.home,
                 size: 20,
               ),
-              label: 'Home',
+              label: l10n.home,
             ),
 
             BottomNavigationBarItem(
-              icon: Icon(
+              icon: const Icon(
                 Icons.crop_square_outlined,
                 size: 20,
               ),
-              activeIcon: Icon(
+              activeIcon: const Icon(
                 Icons.crop_square,
                 size: 20,
               ),
-              label: 'Farms',
+              label: l10n.farms,
             ),
 
             BottomNavigationBarItem(
-              icon: Icon(
+              icon: const Icon(
                 Icons.park_outlined,
                 size: 20,
               ),
-              activeIcon: Icon(
+              activeIcon: const Icon(
                 Icons.park,
                 size: 20,
               ),
-              label: 'Trees',
+              label: l10n.trees,
             ),
 
             BottomNavigationBarItem(
-              icon: Icon(
+              icon: const Icon(
                 Icons.assignment_outlined,
                 size: 20,
               ),
-              activeIcon: Icon(
+              activeIcon: const Icon(
                 Icons.assignment,
                 size: 20,
               ),
-              label: 'Activities',
+              label: l10n.activities,
             ),
 
             BottomNavigationBarItem(
-              icon: Icon(
+              icon: const Icon(
                 Icons.menu_outlined,
                 size: 20,
               ),
-              activeIcon: Icon(
+              activeIcon: const Icon(
                 Icons.menu,
                 size: 20,
               ),
-              label: 'More',
+              label: l10n.more,
             ),
           ],
         ),

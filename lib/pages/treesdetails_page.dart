@@ -1,11 +1,18 @@
+import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:barcode_widget/barcode_widget.dart';
+import 'package:path_provider/path_provider.dart';
+
 import '../l10n/app_localizations.dart';
+import '../services/api_services/tree_api_services.dart';
+import '../theme/app_text_styles.dart';
 
 import 'scan_page.dart';
 import 'tree_activity_page.dart';
-import '../services/api_services/tree_api_services.dart';
-import '../theme/app_text_styles.dart';
 
 class TreeDetailsPage extends StatefulWidget {
   final String farmId;
@@ -42,7 +49,15 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
   Map<String, dynamic>? tree;
 
   bool _isLoading = true;
+  bool _isDownloadingBarcode = false;
+
   String? _error;
+
+  // ===============================================================
+  // BARCODE
+  // ===============================================================
+
+  final GlobalKey _barcodeDownloadKey = GlobalKey();
 
   // ===============================================================
   // INIT
@@ -61,7 +76,7 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
   AppLocalizations get _l10n => AppLocalizations.of(context)!;
 
   // ===============================================================
-  // LOAD TREE FROM API
+  // LOAD TREE
   // ===============================================================
 
   Future<void> _loadTree() async {
@@ -107,7 +122,7 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
     final apiCode = tree?['treeCode']?.toString();
 
     if (apiCode != null && apiCode.trim().isNotEmpty) {
-      return apiCode;
+      return apiCode.trim().toUpperCase();
     }
 
     return 'TR-${_rawTreeId.padLeft(6, '0')}';
@@ -127,7 +142,6 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
 
   String _notes(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-
     final value = tree?['notes']?.toString().trim();
 
     if (value == null || value.isEmpty) {
@@ -168,6 +182,161 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
   }
 
   // ===============================================================
+  // DOWNLOAD BARCODE
+  // ===============================================================
+
+  Future<void> _downloadBarcode() async {
+    if (_isDownloadingBarcode) return;
+
+    try {
+      setState(() {
+        _isDownloadingBarcode = true;
+      });
+
+      // Allow the current barcode widget to finish painting.
+      await Future.delayed(const Duration(milliseconds: 150));
+
+      final RenderObject? renderObject =
+          _barcodeDownloadKey.currentContext?.findRenderObject();
+
+      if (renderObject == null || renderObject is! RenderRepaintBoundary) {
+        throw Exception('Barcode image is not ready.');
+      }
+
+      final ui.Image image = await renderObject.toImage(
+        pixelRatio: 4.0,
+      );
+
+      final ByteData? byteData = await image.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
+
+      if (byteData == null) {
+        throw Exception('Unable to generate barcode image.');
+      }
+
+      final Uint8List pngBytes = byteData.buffer.asUint8List();
+
+      final Directory directory = await _getBarcodeDirectory();
+
+      if (!await directory.exists()) {
+        await directory.create(recursive: true);
+      }
+
+      final String safeCode = _treeCode.replaceAll(
+        RegExp(r'[^A-Za-z0-9_-]'),
+        '_',
+      );
+
+      final String fileName = '${safeCode}_barcode.png';
+
+      final File file = File(
+        '${directory.path}${Platform.pathSeparator}$fileName',
+      );
+
+      await file.writeAsBytes(
+        pngBytes,
+        flush: true,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            backgroundColor: primaryGreen,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 5),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Barcode downloaded successfully',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  file.path,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: AppTextStyles.bodySmall,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+            content: Text(
+              'Unable to download barcode: ${_cleanError(e.toString())}',
+            ),
+          ),
+        );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isDownloadingBarcode = false;
+        });
+      }
+    }
+  }
+
+  // ===============================================================
+  // DOWNLOAD DIRECTORY
+  // ===============================================================
+
+  Future<Directory> _getBarcodeDirectory() async {
+    // Windows:
+    // Save directly to the user's Downloads folder when available.
+    if (Platform.isWindows) {
+      final String? userProfile = Platform.environment['USERPROFILE'];
+
+      if (userProfile != null && userProfile.trim().isNotEmpty) {
+        final downloads = Directory(
+          '$userProfile${Platform.pathSeparator}Downloads',
+        );
+
+        if (await downloads.exists()) {
+          return downloads;
+        }
+      }
+
+      return getApplicationDocumentsDirectory();
+    }
+
+    // Android:
+    //
+    // We intentionally use the application's documents directory here.
+    // This avoids relying on hard-coded Android storage paths and keeps
+    // the implementation compatible with modern Android storage rules.
+    if (Platform.isAndroid) {
+      return getApplicationDocumentsDirectory();
+    }
+
+    // Linux/macOS or any other supported desktop platform.
+    final downloads = await getDownloadsDirectory();
+
+    if (downloads != null) {
+      return downloads;
+    }
+
+    return getApplicationDocumentsDirectory();
+  }
+
+  // ===============================================================
   // BUILD
   // ===============================================================
 
@@ -180,7 +349,9 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
         child: Column(
           children: [
             _header(),
-            Expanded(child: _buildBody()),
+            Expanded(
+              child: _buildBody(),
+            ),
           ],
         ),
       ),
@@ -200,10 +371,10 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: const BoxDecoration(
         color: primaryGreen,
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(18),
-          bottomRight: Radius.circular(18),
-        ),
+        // borderRadius: BorderRadius.only(
+        //   bottomLeft: Radius.circular(18),
+        //   bottomRight: Radius.circular(18),
+        // ),
       ),
       child: Row(
         children: [
@@ -235,7 +406,11 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
           if (!_isLoading && tree != null)
             IconButton(
               onPressed: _loadTree,
-              icon: const Icon(Icons.refresh, color: Colors.white, size: 19),
+              icon: const Icon(
+                Icons.refresh,
+                color: Colors.white,
+                size: 19,
+              ),
               tooltip: l10n.refresh,
             ),
         ],
@@ -252,7 +427,9 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
 
     if (_isLoading) {
       return const Center(
-        child: CircularProgressIndicator(color: primaryGreen),
+        child: CircularProgressIndicator(
+          color: primaryGreen,
+        ),
       );
     }
 
@@ -261,7 +438,9 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
     }
 
     if (tree == null) {
-      return _errorView(message: l10n.treeInformationNotFound);
+      return _errorView(
+        message: l10n.treeInformationNotFound,
+      );
     }
 
     return RefreshIndicator(
@@ -269,19 +448,34 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
       onRefresh: _loadTree,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(13, 20, 13, 30),
+        padding: const EdgeInsets.fromLTRB(
+          13,
+          20,
+          13,
+          30,
+        ),
         child: Column(
           children: [
             _treeInformation(),
+
             const SizedBox(height: 18),
+
             _scanTreeButton(),
+
             const SizedBox(height: 18),
+
             _treeCodeCard(),
+
             const SizedBox(height: 18),
+
             _locationCard(),
+
             const SizedBox(height: 18),
+
             _notesCard(),
+
             const SizedBox(height: 18),
+
             _activityActions(),
           ],
         ),
@@ -290,10 +484,12 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
   }
 
   // ===============================================================
-  // ERROR
+  // ERROR VIEW
   // ===============================================================
 
-  Widget _errorView({String? message}) {
+  Widget _errorView({
+    String? message,
+  }) {
     final l10n = _l10n;
 
     return Center(
@@ -322,7 +518,9 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
               ),
               const SizedBox(height: 7),
               Text(
-                message ?? _cleanError(_error) ?? l10n.unknownError,
+                message ??
+                    _cleanError(_error) ??
+                    l10n.unknownError,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: textGrey,
@@ -332,8 +530,13 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: _loadTree,
-                icon: const Icon(Icons.refresh, size: 16),
-                label: Text(l10n.tryAgain),
+                icon: const Icon(
+                  Icons.refresh,
+                  size: 16,
+                ),
+                label: Text(
+                  l10n.tryAgain,
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryGreen,
                   foregroundColor: Colors.white,
@@ -413,29 +616,50 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
             ],
           ),
           const SizedBox(height: 18),
-          const Divider(color: borderColor, height: 1),
+          const Divider(
+            color: borderColor,
+            height: 1,
+          ),
           const SizedBox(height: 14),
-          _informationRow(label: l10n.treeId, value: _treeCode),
+          _informationRow(
+            label: l10n.treeId,
+            value: _treeCode,
+          ),
           const SizedBox(height: 10),
-          _informationRow(label: l10n.farm, value: _farmName),
+          _informationRow(
+            label: l10n.farm,
+            value: _farmName,
+          ),
           const SizedBox(height: 10),
           _informationRow(
             label: l10n.farmId,
             value: 'FM-${widget.farmId.padLeft(4, '0')}',
           ),
           const SizedBox(height: 10),
-          _informationRow(label: l10n.block, value: _blockName),
+          _informationRow(
+            label: l10n.block,
+            value: _blockName,
+          ),
           const SizedBox(height: 10),
           _informationRow(
             label: l10n.blockId,
             value: 'BL-${widget.blockId.padLeft(4, '0')}',
           ),
           const SizedBox(height: 10),
-          _informationRow(label: l10n.variety, value: _variety),
+          _informationRow(
+            label: l10n.variety,
+            value: _variety,
+          ),
           const SizedBox(height: 10),
-          _informationRow(label: l10n.plantingYear, value: _plantingYear),
+          _informationRow(
+            label: l10n.plantingYear,
+            value: _plantingYear,
+          ),
           const SizedBox(height: 10),
-          _informationRow(label: l10n.status, value: _formattedStatus(context)),
+          _informationRow(
+            label: l10n.status,
+            value: _formattedStatus(context),
+          ),
         ],
       ),
     );
@@ -447,7 +671,10 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
 
   Widget _statusBadge() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 9,
+        vertical: 6,
+      ),
       decoration: BoxDecoration(
         color: _statusBackground(_status),
         borderRadius: BorderRadius.circular(7),
@@ -467,7 +694,10 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
   // INFORMATION ROW
   // ===============================================================
 
-  Widget _informationRow({required String label, required String value}) {
+  Widget _informationRow({
+    required String label,
+    required String value,
+  }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -533,10 +763,15 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const ScanPage()),
+                  MaterialPageRoute(
+                    builder: (context) => const ScanPage(),
+                  ),
                 );
               },
-              icon: const Icon(Icons.barcode_reader, size: 19),
+              icon: const Icon(
+                Icons.barcode_reader,
+                size: 19,
+              ),
               label: Text(
                 l10n.scanTreeBarcode,
                 style: const TextStyle(
@@ -581,7 +816,9 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
               fontWeight: FontWeight.w700,
             ),
           ),
+
           const SizedBox(height: 5),
+
           Text(
             l10n.scanBarcodeToIdentifyTree,
             style: const TextStyle(
@@ -589,36 +826,57 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
               fontSize: AppTextStyles.bodySmall,
             ),
           ),
+
           const SizedBox(height: 22),
+
           Center(
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 18,
+              ),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: borderColor),
+                border: Border.all(
+                  color: borderColor,
+                ),
               ),
-              child: BarcodeWidget(
-                barcode: Barcode.code128(),
+              child: Center(
+                child: RepaintBoundary(
+                  key: _barcodeDownloadKey,
+                  child: Container(
+                    color: Colors.white,
+                    padding: const EdgeInsets.all(12),
+                    child: BarcodeWidget(
+                      barcode: Barcode.code128(),
 
-                // IMPORTANT:
-                // Do not localize the tree code.
-                data: _treeCode,
+                      // IMPORTANT:
+                      // Keep the backend tree code exactly as it is.
+                      // Example: TR-000004
+                      data: _treeCode,
 
-                width: 250,
-                height: 80,
-                drawText: true,
-                style: const TextStyle(
-                  color: textDark,
-                  fontSize: AppTextStyles.body,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1,
+                      width: 250,
+                      height: 80,
+                      drawText: true,
+                      backgroundColor: Colors.white,
+                      color: Colors.black,
+                      style: const TextStyle(
+                        color: textDark,
+                        fontSize: AppTextStyles.body,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
+
           const SizedBox(height: 12),
+
           Center(
             child: Text(
               _treeCode,
@@ -629,13 +887,22 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
               ),
             ),
           ),
+
           const SizedBox(height: 18),
+
+          // ---------------------------------------------------------
+          // ENLARGE BARCODE
+          // ---------------------------------------------------------
+
           SizedBox(
             width: double.infinity,
-            height: 40,
+            height: 42,
             child: ElevatedButton.icon(
               onPressed: _showTreeBarcode,
-              icon: const Icon(Icons.zoom_out_map, size: 15),
+              icon: const Icon(
+                Icons.zoom_out_map,
+                size: 16,
+              ),
               label: Text(
                 l10n.enlargeBarcode,
                 style: const TextStyle(
@@ -647,6 +914,53 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
                 backgroundColor: primaryGreen,
                 foregroundColor: Colors.white,
                 elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // ---------------------------------------------------------
+          // DOWNLOAD BARCODE
+          // ---------------------------------------------------------
+
+          SizedBox(
+            width: double.infinity,
+            height: 42,
+            child: OutlinedButton.icon(
+              onPressed:
+                  _isDownloadingBarcode ? null : _downloadBarcode,
+              icon: _isDownloadingBarcode
+                  ? const SizedBox(
+                      width: 17,
+                      height: 17,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: primaryGreen,
+                      ),
+                    )
+                  : const Icon(
+                      Icons.download_outlined,
+                      size: 18,
+                    ),
+              label: Text(
+                _isDownloadingBarcode
+                    ? 'Downloading...'
+                    : 'Download Barcode',
+                style: const TextStyle(
+                  fontSize: AppTextStyles.bodySmall,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: primaryGreen,
+                disabledForegroundColor: textGrey,
+                side: const BorderSide(
+                  color: primaryGreen,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -686,7 +1000,9 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
                     fontWeight: FontWeight.w800,
                   ),
                 ),
+
                 const SizedBox(height: 6),
+
                 Text(
                   _treeCode,
                   textAlign: TextAlign.center,
@@ -695,7 +1011,9 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
                     fontSize: AppTextStyles.bodySmall,
                   ),
                 ),
+
                 const SizedBox(height: 25),
+
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
@@ -704,24 +1022,74 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
                   ),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    border: Border.all(color: borderColor),
+                    border: Border.all(
+                      color: borderColor,
+                    ),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: BarcodeWidget(
-                    barcode: Barcode.code128(),
-                    data: _treeCode,
-                    width: 280,
-                    height: 100,
-                    drawText: true,
-                    style: const TextStyle(
-                      color: textDark,
-                      fontSize: AppTextStyles.body,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.2,
+                  child: Center(
+                    child: BarcodeWidget(
+                      barcode: Barcode.code128(),
+                      data: _treeCode,
+                      width: 280,
+                      height: 100,
+                      drawText: true,
+                      backgroundColor: Colors.white,
+                      color: Colors.black,
+                      style: const TextStyle(
+                        color: textDark,
+                        fontSize: AppTextStyles.body,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.2,
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 25),
+
+                const SizedBox(height: 20),
+
+                SizedBox(
+                  width: double.infinity,
+                  height: 42,
+                  child: OutlinedButton.icon(
+                    onPressed:
+                        _isDownloadingBarcode ? null : _downloadBarcode,
+                    icon: _isDownloadingBarcode
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: primaryGreen,
+                            ),
+                          )
+                        : const Icon(
+                            Icons.download_outlined,
+                            size: 17,
+                          ),
+                    label: Text(
+                      _isDownloadingBarcode
+                          ? 'Downloading...'
+                          : 'Download Barcode',
+                      style: const TextStyle(
+                        fontSize: AppTextStyles.bodySmall,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: primaryGreen,
+                      side: const BorderSide(
+                        color: primaryGreen,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
                 SizedBox(
                   width: double.infinity,
                   height: 42,
@@ -776,7 +1144,9 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
               fontWeight: FontWeight.w700,
             ),
           ),
+
           const SizedBox(height: 15),
+
           Row(
             children: [
               Container(
@@ -792,7 +1162,9 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
                   size: 18,
                 ),
               ),
+
               const SizedBox(width: 10),
+
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -806,7 +1178,9 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      _hasGeometry ? _geometry : l10n.noGpsCoordinatesRecorded,
+                      _hasGeometry
+                          ? _geometry
+                          : l10n.noGpsCoordinatesRecorded,
                       style: const TextStyle(
                         color: textDark,
                         fontSize: AppTextStyles.bodySmall,
@@ -818,11 +1192,18 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
               ),
             ],
           ),
+
           if (_hasGeometry) ...[
             const SizedBox(height: 14),
-            const Divider(height: 1, color: borderColor),
+            const Divider(
+              height: 1,
+              color: borderColor,
+            ),
             const SizedBox(height: 12),
-            _informationRow(label: l10n.geometry, value: _geometry),
+            _informationRow(
+              label: l10n.geometry,
+              value: _geometry,
+            ),
           ],
         ],
       ),
@@ -845,7 +1226,11 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
         children: [
           Row(
             children: [
-              const Icon(Icons.notes_outlined, color: primaryGreen, size: 17),
+              const Icon(
+                Icons.notes_outlined,
+                color: primaryGreen,
+                size: 17,
+              ),
               const SizedBox(width: 7),
               Text(
                 l10n.notes,
@@ -893,7 +1278,9 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
               fontWeight: FontWeight.w700,
             ),
           ),
+
           const SizedBox(height: 5),
+
           Text(
             l10n.treeActivitiesDescription,
             style: const TextStyle(
@@ -901,7 +1288,9 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
               fontSize: AppTextStyles.bodySmall,
             ),
           ),
+
           const SizedBox(height: 15),
+
           SizedBox(
             width: double.infinity,
             height: 42,
@@ -924,7 +1313,10 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
                   await _loadTree();
                 }
               },
-              icon: const Icon(Icons.add_task, size: 16),
+              icon: const Icon(
+                Icons.add_task,
+                size: 16,
+              ),
               label: Text(
                 l10n.addViewTreeActivities,
                 style: const TextStyle(
@@ -951,8 +1343,8 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
   // LOCALIZED STATUS
   //
   // IMPORTANT:
-  // _status remains the raw backend value.
-  // Only the displayed text is translated.
+  // _status remains the raw backend enum value.
+  // Only the displayed value is translated.
   // ===============================================================
 
   String _formattedStatus(BuildContext context) {
@@ -1043,7 +1435,9 @@ class _TreeDetailsPageState extends State<TreeDetailsPage> {
     return BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(13),
-      border: Border.all(color: borderColor),
+      border: Border.all(
+        color: borderColor,
+      ),
     );
   }
 }

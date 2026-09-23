@@ -58,7 +58,7 @@
 
   "totalTrees": "Jumla ya Mikorosho",
   "registeredTrees": "Mikorosho Iliyosajiliwa",
-  "searchTreeHint": "Tafuta mkorosho kwa namba, shamba, kitalu au aina",
+  "searchTreeHint": "Tafuta mkorosho",
 
   "treeCount": "Mikorosho {count}",
   "@treeCount": {
@@ -569,5 +569,10 @@
 "validLongitudeRequired": "Tafadhali weka longitudo sahihi kati ya -180 na 180.",
 "bothCoordinatesRequired": "Latitudo na longitudo zote zinahitajika.",
 "invalidLatitude": "Latitudo si sahihi.",
-"invalidLongitude": "Longitudo si sahihi."
+"invalidLongitude": "Longitudo si sahihi.",
+"home": "Nyumbani",
+"farms": "Mashamba",
+"trees": "Mikorosho",
+"activities": "Shughuli",
+"more": "Zaidi"
 }
