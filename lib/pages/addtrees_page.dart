@@ -204,7 +204,7 @@ class _AddTreePageState extends State<AddTreePage> {
         ),
       );
 
-      if (position.accuracy >= 5) {
+      if (position.accuracy >= 35) {
         _showError(
           'GPS accuracy is low (${position.accuracy.toStringAsFixed(1)} m). '
           'Move to an open area and try again.',
