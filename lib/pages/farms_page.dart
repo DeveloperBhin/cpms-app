@@ -81,9 +81,17 @@ Future<void> _loadFarms() async {
     });
   }
 
-    try {
-      final farms = await LocalDataService.instance.getFarms();
   try {
+    final localFarms =
+        await LocalDataService.instance.getFarms();
+
+    if (mounted) {
+      setState(() {
+        _farms =
+            List<Map<String, dynamic>>.from(localFarms);
+      });
+    }
+
     final results = await Future.wait([
       FarmApiServices.getMyFarms(),
       TreeApiServices.getMyTrees(),
@@ -91,41 +99,29 @@ Future<void> _loadFarms() async {
 
     if (!mounted) return;
 
-    final farms =
-        List<Map<String, dynamic>>.from(
-      results[0],
-    );
+    final apiFarms =
+        List<Map<String, dynamic>>.from(results[0]);
 
     final trees =
-        List<Map<String, dynamic>>.from(
-      results[1],
-    );
-
-    debugPrint(
-      'FARMS PAGE -> FARMS: ${farms.length}',
-    );
-
-    debugPrint(
-      'FARMS PAGE -> TREES: ${trees.length}',
-    );
+        List<Map<String, dynamic>>.from(results[1]);
 
     setState(() {
-      _farms = farms;
+      _farms = apiFarms;
       _trees = trees;
     });
   } catch (e) {
-    debugPrint(
-      'FARMS PAGE LOAD ERROR: $e',
-    );
+    debugPrint('FARMS PAGE LOAD ERROR: $e');
 
     if (!mounted) return;
 
-    setState(() {
-      _error = e.toString().replaceFirst(
-            'Exception: ',
-            '',
-          );
-    });
+    if (_farms.isEmpty) {
+      setState(() {
+        _error = e.toString().replaceFirst(
+          'Exception: ',
+          '',
+        );
+      });
+    }
   } finally {
     if (mounted) {
       setState(() {
@@ -948,41 +944,31 @@ Future<void> _loadFarms() async {
             CrossAxisAlignment.start,
 
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  farmName,
-          // =====================================================
-          // FARM NAME
-          // =====================================================
-
-          Text(
-            displayFarmName,
-
-            style:
-                const TextStyle(
-              color:
-                  textDark,
-
-  fontSize: AppTextStyles.bodyLarge,
-
-              fontWeight:
-                  FontWeight.w800,
-            ),
-                ),
-              ),
-              if (farm['_pendingSync'] == true)
-                const Tooltip(
-                  message: 'Waiting to sync',
-                  child: Icon(
-                    Icons.cloud_upload_outlined,
-                    color: Colors.orange,
-                    size: 17,
-                  ),
-                ),
-            ],
-          ),
+Row(
+  children: [
+    Expanded(
+      child: Text(
+        displayFarmName,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          color: textDark,
+          fontSize: AppTextStyles.bodyLarge,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    ),
+    if (farm['_pendingSync'] == true)
+      const Tooltip(
+        message: 'Waiting to sync',
+        child: Icon(
+          Icons.cloud_upload_outlined,
+          color: Colors.orange,
+          size: 17,
+        ),
+      ),
+  ],
+),
 
           const SizedBox(
             height: 6,

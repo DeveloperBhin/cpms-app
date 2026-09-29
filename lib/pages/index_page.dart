@@ -58,6 +58,7 @@ class IndexPageState extends State<IndexPage>  {
   bool _isLoading = true;
 
   String? _error;
+  int _unreadNotificationCount = 0;
 
   // ============================================================
   // INITIALIZE
@@ -161,10 +162,19 @@ class IndexPageState extends State<IndexPage>  {
   // MORE
   // ============================================================
 
-  void _openMoreMenu() {
-    debugPrint(
-      'OPEN MORE',
-    );
+  // void _openMoreMenu() {
+  //   debugPrint(
+  //     'OPEN MORE',
+  //   );
+
+  void _openNotifications() {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => const NotificationsPage(),
+    ),
+  );
+}
 
     // TODO:
     // Navigate to More page.
@@ -1257,32 +1267,100 @@ class IndexPageState extends State<IndexPage>  {
             width: 10,
           ),
 
-          // ====================================================
-          // MORE
-          // ====================================================
+          // // ====================================================
+          // // MORE
+          // // ====================================================
 
-          InkWell(
-            onTap:
-                _openMoreMenu,
+          // InkWell(
+          //   onTap:
+          //       _openMoreMenu,
 
-            borderRadius:
-                BorderRadius.circular(
-              50,
+          //   borderRadius:
+          //       BorderRadius.circular(
+          //     50,
+          //   ),
+
+          //   child:
+          //       _dashboardHeaderCircle(
+          //     child:
+          //         const Icon(
+          //       Icons.more_vert,
+
+          //       color:
+          //           Colors.white,
+
+          //       size: 25,
+          //     ),
+          //   ),
+          // ),
+
+          // ====================================================
+// NOTIFICATIONS
+// ====================================================
+
+InkWell(
+  onTap: _openNotifications,
+
+  borderRadius: BorderRadius.circular(50),
+
+  child: Stack(
+    clipBehavior: Clip.none,
+
+    children: [
+
+      // Notification circle
+      _dashboardHeaderCircle(
+        child: const Icon(
+          Icons.notifications_none_rounded,
+          color: Colors.white,
+          size: 25,
+        ),
+      ),
+
+      // Unread notification badge
+      if (_unreadNotificationCount > 0)
+        Positioned(
+          right: -3,
+          top: -4,
+
+          child: Container(
+            constraints: const BoxConstraints(
+              minWidth: 18,
+              minHeight: 18,
             ),
 
-            child:
-                _dashboardHeaderCircle(
-              child:
-                  const Icon(
-                Icons.more_vert,
+            padding: const EdgeInsets.symmetric(
+              horizontal: 5,
+            ),
 
-                color:
-                    Colors.white,
+            decoration: BoxDecoration(
+              color: Colors.red,
+              borderRadius: BorderRadius.circular(10),
 
-                size: 25,
+              border: Border.all(
+                color: Colors.white,
+                width: 1.5,
+              ),
+            ),
+
+            alignment: Alignment.center,
+
+            child: Text(
+              _unreadNotificationCount > 99
+                  ? '99+'
+                  : '$_unreadNotificationCount',
+
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
+        ),
+    ],
+  ),
+),
         ],
       ),
     );

@@ -102,7 +102,7 @@ class LocalDataService {
     try {
       final result = await FarmApiServices.createFarm(
         name: values['name'] as String,
-        farmerId: values['farmerId'] as int,
+        // farmerId: values['farmerId'] as int,
         acreage: (values['acreage'] as num).toDouble(),
         plantingDate: values['plantingDate'] as String,
         farmType: values['farmType'] as String,
@@ -260,7 +260,7 @@ class LocalDataService {
       try {
         final result = await FarmApiServices.createFarm(
           name: payload['name'] as String,
-          farmerId: payload['farmerId'] as int,
+          // farmerId: payload['farmerId'] as int,
           acreage: (payload['acreage'] as num).toDouble(),
           plantingDate: payload['plantingDate'] as String,
           farmType: payload['farmType'] as String,
