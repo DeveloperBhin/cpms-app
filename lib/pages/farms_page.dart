@@ -65,7 +65,52 @@ class _FarmsPageState extends State<FarmsPage> {
   // LOAD FARMS + TREES
   // ===============================================================
 
+
+  try {
+    final localFarms =
+        await LocalDataService.instance.getFarms();
+
+    if (mounted) {
+      setState(() {
+        _farms =
+            List<Map<String, dynamic>>.from(localFarms);
+      });
+    }
+
+    final results = await Future.wait([
+      FarmApiServices.getMyFarms(),
+      TreeApiServices.getMyTrees(),
+    ]);
+
+    if (!mounted) return;
+
+    final apiFarms =
+        List<Map<String, dynamic>>.from(results[0]);
+
+    final trees =
+        List<Map<String, dynamic>>.from(results[1]);
+
+    setState(() {
+      _farms = apiFarms;
+      _trees = trees;
+    });
+  } catch (e) {
+    debugPrint('FARMS PAGE LOAD ERROR: $e');
+
+    if (!mounted) return;
+
+    if (_farms.isEmpty) {
+      setState(() {
+        _error = e.toString().replaceFirst(
+          'Exception: ',
+          '',
+        );
+      });
+    }
+  } finally {
+
   Future<void> _loadFarms() async {
+
     if (mounted) {
       setState(() {
         _isLoading = true;
@@ -695,68 +740,31 @@ class _FarmsPageState extends State<FarmsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // =======================================================
-          // FARM NAME
-          // =======================================================
-
-          Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: const BoxDecoration(
-                  color: lightGreen,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.agriculture_outlined,
-                  color: primaryGreen,
-                  size: 19,
-                ),
-              ),
-
-              const SizedBox(width: 10),
-
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      displayFarmName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: textDark,
-                        fontSize: AppTextStyles.bodyLarge,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-
-                    const SizedBox(height: 3),
-
-                    Text(
-                      '${farmTrees.length} ${l10n.trees}',
-                      style: const TextStyle(
-                        color: textGrey,
-                        fontSize: AppTextStyles.bodySmall,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              if (farm['_pendingSync'] == true)
-                const Tooltip(
-                  message: 'Waiting to sync',
-                  child: Icon(
-                    Icons.cloud_upload_outlined,
-                    color: Colors.orange,
-                    size: 17,
-                  ),
-                ),
-            ],
-          ),
+Row(
+  children: [
+    Expanded(
+      child: Text(
+        displayFarmName,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          color: textDark,
+          fontSize: AppTextStyles.bodyLarge,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    ),
+    if (farm['_pendingSync'] == true)
+      const Tooltip(
+        message: 'Waiting to sync',
+        child: Icon(
+          Icons.cloud_upload_outlined,
+          color: Colors.orange,
+          size: 17,
+        ),
+      ),
+  ],
+),
 
           const SizedBox(height: 10),
 

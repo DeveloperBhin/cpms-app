@@ -279,89 +279,21 @@ class LocalDataService {
     );
   }
 
-  // ============================================================
-  // CREATE FARM
-  // ============================================================
-
-  Future<Map<String, dynamic>>
-      createFarm({
-    required Map<String, dynamic>
-        values,
-  }) async {
-    // ==========================================================
-    // EXTRACT VALUES
-    // ==========================================================
-
-    final name =
-        values['name']
-                ?.toString()
-                .trim() ??
-            '';
-
-    final acreageValue =
-        values['acreage'];
-
-    final acreage =
-        acreageValue is num
-            ? acreageValue
-                .toDouble()
-            : double.tryParse(
-                  acreageValue
-                          ?.toString() ??
-                      '',
-                ) ??
-                0.0;
-
-    final plantingDate =
-        values['plantingDate']
-                ?.toString()
-                .trim() ??
-            '';
-
-    final farmType =
-        values['farmType']
-                ?.toString()
-                .trim()
-                .toUpperCase() ??
-            '';
-
-    final geometry =
-        values['geometry']
-                ?.toString()
-                .trim() ??
-            '';
-
-    final region =
-        values['region']
-                ?.toString()
-                .trim() ??
-            '';
-
-    final district =
-        values['district']
-                ?.toString()
-                .trim() ??
-            '';
-
-    final ward =
-        values['ward']
-                ?.toString()
-                .trim() ??
-            '';
-
-    final village =
-        values['village']
-                ?.toString()
-                .trim() ??
-            '';
-
-    // ==========================================================
-    // VALIDATION
-    // ==========================================================
-
-    if (name.isEmpty) {
-      throw Exception(
-        'Farm name is required.',
+  Future<Map<String, dynamic>> createFarm({required Map<String, dynamic> values}) async {
+    try {
+      final result = await FarmApiServices.createFarm(
+        name: values['name'] as String,
+        // farmerId: values['farmerId'] as int,
+        acreage: (values['acreage'] as num).toDouble(),
+        plantingDate: values['plantingDate'] as String,
+        farmType: values['farmType'] as String,
+        farmLocation: values['farmLocation'] as String,
+        region: values['region'] as String,
+        district: values['district'] as String,
+        ward: values['ward'] as String,
+        village: values['village'] as String,
+        latitude: (values['latitude'] as num).toDouble(),
+        longitude: (values['longitude'] as num).toDouble(),
       );
     }
 
@@ -1544,8 +1476,37 @@ Future<Map<String, dynamic>> _saveTreeOffline(
   // ============================================================
 
   Future<void> syncPending() async {
-    if (_syncInProgress) {
-      return;
+    final database = await _db;
+    final farms = await database.query('farms', where: 'pending = 1');
+    for (final row in farms) {
+      final payload = Map<String, dynamic>.from(jsonDecode(row['payload']! as String));
+      try {
+        final result = await FarmApiServices.createFarm(
+          name: payload['name'] as String,
+          // farmerId: payload['farmerId'] as int,
+          acreage: (payload['acreage'] as num).toDouble(),
+          plantingDate: payload['plantingDate'] as String,
+          farmType: payload['farmType'] as String,
+          farmLocation: payload['farmLocation'] as String,
+          region: payload['region'] as String,
+          district: payload['district'] as String,
+          ward: payload['ward'] as String,
+          village: payload['village'] as String,
+          latitude: (payload['latitude'] as num).toDouble(),
+          longitude: (payload['longitude'] as num).toDouble(),
+        );
+        final newId = result['id']?.toString();
+        if (newId == null) continue;
+        final oldId = row['id']! as String;
+        await database.transaction((transaction) async {
+          await transaction.delete('farms', where: 'id = ?', whereArgs: [oldId]);
+          await transaction.insert('farms', {'id': newId, 'payload': jsonEncode(result), 'pending': 0});
+          await _replaceParentId(transaction, 'blocks', 'farm_id', oldId, newId, 'farmId');
+          await _replaceParentId(transaction, 'trees', 'farm_id', oldId, newId, 'farmId');
+        });
+      } catch (_) {
+        break;
+      }
     }
 
     _syncInProgress = true;

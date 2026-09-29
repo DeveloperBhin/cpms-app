@@ -50,6 +50,7 @@ class IndexPageState extends State<IndexPage> {
   bool _isLoading = true;
 
   String? _error;
+  int _unreadNotificationCount = 0;
 
   // ============================================================
   // INITIALIZE
@@ -132,8 +133,19 @@ class IndexPageState extends State<IndexPage> {
   // MORE
   // ============================================================
 
-  void _openMoreMenu() {
-    debugPrint('OPEN MORE');
+  // void _openMoreMenu() {
+  //   debugPrint(
+  //     'OPEN MORE',
+  //   );
+
+  void _openNotifications() {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => const NotificationsPage(),
+    ),
+  );
+}
 
     // TODO:
     // Navigate to More page.
@@ -923,6 +935,412 @@ class IndexPageState extends State<IndexPage> {
   }
 
   // ============================================================
+
+  // DASHBOARD HEADER
+  // ============================================================
+
+  Widget _dashboardHeader() {
+    final l10n =
+        AppLocalizations.of(context)!;
+
+    final language =
+        context.watch<LanguageProvider>();
+
+    return Container(
+      width:
+          double.infinity,
+
+      padding:
+          const EdgeInsets
+              .fromLTRB(
+        16,
+        16,
+        16,
+        18,
+      ),
+
+      decoration:
+          const BoxDecoration(
+        color:
+            primaryGreen,
+
+        borderRadius:
+            BorderRadius.only(
+          bottomLeft:
+              Radius.circular(26),
+
+          bottomRight:
+              Radius.circular(26),
+        ),
+      ),
+
+      child: Row(
+        children: [
+          // ====================================================
+          // PROFILE AVATAR
+          // ====================================================
+
+          InkWell(
+            onTap:
+                _openProfile,
+
+            borderRadius:
+                BorderRadius.circular(
+              50,
+            ),
+
+            child: Container(
+              width: 54,
+              height: 54,
+
+              decoration:
+                  BoxDecoration(
+                color:
+                    Colors.white,
+
+                shape:
+                    BoxShape.circle,
+
+                border:
+                    Border.all(
+                  color:
+                      Colors.white,
+
+                  width: 2,
+                ),
+
+                boxShadow: [
+                  BoxShadow(
+                    color:
+                        Colors.black
+                            .withValues(
+                      alpha: 0.10,
+                    ),
+
+                    blurRadius: 8,
+
+                    offset:
+                        const Offset(
+                      0,
+                      3,
+                    ),
+                  ),
+                ],
+              ),
+
+              child:
+                  const Icon(
+                Icons.person,
+
+                size: 34,
+
+                color:
+                    Color(
+                  0xFFBDBDBD,
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(
+            width: 13,
+          ),
+
+          // ====================================================
+          // GREETING + USER NAME
+          // ====================================================
+
+          Expanded(
+            child: Column(
+              mainAxisAlignment:
+                  MainAxisAlignment
+                      .center,
+
+              crossAxisAlignment:
+                  CrossAxisAlignment
+                      .start,
+
+              children: [
+                Text(
+                  _greeting(
+                    context,
+                  ),
+
+                  maxLines: 1,
+
+                  overflow:
+                      TextOverflow
+                          .ellipsis,
+
+                  style:
+                      TextStyle(
+                    color:
+                        Colors.white
+                            .withValues(
+                      alpha: 0.85,
+                    ),
+
+  fontSize: AppTextStyles.body,
+
+                    fontWeight:
+                        FontWeight
+                            .w400,
+                  ),
+                ),
+
+                const SizedBox(
+                  height: 3,
+                ),
+
+                Text(
+                  _userName,
+
+                  maxLines: 1,
+
+                  overflow:
+                      TextOverflow
+                          .ellipsis,
+
+                  style:
+                      const TextStyle(
+                    color:
+                        Colors.white,
+
+                    fontSize: AppTextStyles.body,
+
+                    fontWeight:
+                        FontWeight
+                            .w800,
+
+                    height: 1.1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(
+            width: 8,
+          ),
+
+          // ====================================================
+          // LANGUAGE
+          // ====================================================
+
+          PopupMenuButton<String>(
+            tooltip:
+                l10n.changeLanguage,
+
+            offset:
+                const Offset(
+              0,
+              50,
+            ),
+
+            color:
+                Colors.white,
+
+            shape:
+                RoundedRectangleBorder(
+              borderRadius:
+                  BorderRadius.circular(
+                14,
+              ),
+            ),
+
+            onSelected:
+                (languageCode) async {
+              await context
+                  .read<
+                      LanguageProvider>()
+                  .setLanguage(
+                    languageCode,
+                  );
+            },
+
+            itemBuilder:
+                (context) => [
+              PopupMenuItem<String>(
+                value: 'sw',
+
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        l10n.swahili,
+                      ),
+                    ),
+
+                    if (language
+                            .languageCode ==
+                        'sw')
+                      const Icon(
+                        Icons.check,
+
+                        color:
+                            primaryGreen,
+
+                        size: 18,
+                      ),
+                  ],
+                ),
+              ),
+
+              PopupMenuItem<String>(
+                value: 'en',
+
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        l10n.english,
+                      ),
+                    ),
+
+                    if (language
+                            .languageCode ==
+                        'en')
+                      const Icon(
+                        Icons.check,
+
+                        color:
+                            primaryGreen,
+
+                        size: 18,
+                      ),
+                  ],
+                ),
+              ),
+            ],
+
+            child:
+                _dashboardHeaderCircle(
+              child: Text(
+                language
+                    .languageCode
+                    .toUpperCase(),
+
+                style:
+                    const TextStyle(
+                  color:
+                      Colors.white,
+
+  fontSize: AppTextStyles.bodySmall,
+
+                  fontWeight:
+                      FontWeight
+                          .w800,
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(
+            width: 10,
+          ),
+
+          // // ====================================================
+          // // MORE
+          // // ====================================================
+
+          // InkWell(
+          //   onTap:
+          //       _openMoreMenu,
+
+          //   borderRadius:
+          //       BorderRadius.circular(
+          //     50,
+          //   ),
+
+          //   child:
+          //       _dashboardHeaderCircle(
+          //     child:
+          //         const Icon(
+          //       Icons.more_vert,
+
+          //       color:
+          //           Colors.white,
+
+          //       size: 25,
+          //     ),
+          //   ),
+          // ),
+
+          // ====================================================
+// NOTIFICATIONS
+// ====================================================
+
+InkWell(
+  onTap: _openNotifications,
+
+  borderRadius: BorderRadius.circular(50),
+
+  child: Stack(
+    clipBehavior: Clip.none,
+
+    children: [
+
+      // Notification circle
+      _dashboardHeaderCircle(
+        child: const Icon(
+          Icons.notifications_none_rounded,
+          color: Colors.white,
+          size: 25,
+        ),
+      ),
+
+      // Unread notification badge
+      if (_unreadNotificationCount > 0)
+        Positioned(
+          right: -3,
+          top: -4,
+
+          child: Container(
+            constraints: const BoxConstraints(
+              minWidth: 18,
+              minHeight: 18,
+            ),
+
+            padding: const EdgeInsets.symmetric(
+              horizontal: 5,
+            ),
+
+            decoration: BoxDecoration(
+              color: Colors.red,
+              borderRadius: BorderRadius.circular(10),
+
+              border: Border.all(
+                color: Colors.white,
+                width: 1.5,
+              ),
+            ),
+
+            alignment: Alignment.center,
+
+            child: Text(
+              _unreadNotificationCount > 99
+                  ? '99+'
+                  : '$_unreadNotificationCount',
+
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
+    ],
+  ),
+),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+
+
   // HEADER CIRCLE
   // ============================================================
 
