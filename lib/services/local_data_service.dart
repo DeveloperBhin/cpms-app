@@ -1062,119 +1062,407 @@ class LocalDataService {
   // CREATE TREE
   // ============================================================
 
-  Future<Map<String, dynamic>>
-      createTree({
-    required String farmId,
-    required String blockId,
-    required String variety,
-    required int plantingYear,
-    required String status,
-    double? latitude,
-    double? longitude,
-    String? notes,
-  }) async {
-    final values =
-        <String, dynamic>{
-      'farmId':
-          farmId,
-      'blockId':
-          blockId,
-      'variety':
-          variety,
-      'plantingYear':
-          plantingYear,
-      'status':
-          status,
-      'latitude':
-          latitude,
-      'longitude':
-          longitude,
-      'notes':
-          notes,
-    };
+  // Future<Map<String, dynamic>>
+  //     createTree({
+  //   required String farmId,
+  //   required String blockId,
+  //   required String variety,
+  //   required int plantingYear,
+  //   required String status,
+  //   double? latitude,
+  //   double? longitude,
+  //   String? notes,
+  // }) async {
+  //   final values =
+  //       <String, dynamic>{
+  //     'farmId':
+  //         farmId,
+  //     'blockId':
+  //         blockId,
+  //     'variety':
+  //         variety,
+  //     'plantingYear':
+  //         plantingYear,
+  //     'status':
+  //         status,
+  //     'latitude':
+  //         latitude,
+  //     'longitude':
+  //         longitude,
+  //     'notes':
+  //         notes,
+  //   };
 
-    if (!await hasNetworkConnection()) {
-      return _saveTreeOffline(
-        values,
-      );
-    }
+  //   if (!await hasNetworkConnection()) {
+  //     return _saveTreeOffline(
+  //       values,
+  //     );
+  //   }
 
-    try {
-      final result =
-          await TreeApiServices
-              .createTree(
-        farmId:
-            farmId,
-        blockId:
-            blockId,
-        variety:
-            variety,
-        plantingYear:
-            plantingYear,
-        status:
-            status,
-        latitude:
-            latitude,
-        longitude:
-            longitude,
-        notes:
-            notes,
-      );
+  //   try {
+  //     final result =
+  //         await TreeApiServices
+  //             .createTree(
+  //       farmId:
+  //           farmId,
+  //       blockId:
+  //           blockId,
+  //       variety:
+  //           variety,
+  //       plantingYear:
+  //           plantingYear,
+  //       status:
+  //           status,
+  //       latitude:
+  //           latitude,
+  //       longitude:
+  //           longitude,
+  //       notes:
+  //           notes,
+  //     );
 
-      final id =
-          result['id']
-              ?.toString();
+  //     final id =
+  //         result['id']
+  //             ?.toString();
 
-      if (id != null &&
-          id.isNotEmpty) {
-        await _save(
-          'trees',
-          result,
-          id:
-              id,
-          farmId:
-              farmId,
-          blockId:
-              blockId,
-          pending:
-              false,
-        );
-      }
+  //     if (id != null &&
+  //         id.isNotEmpty) {
+  //       await _save(
+  //         'trees',
+  //         result,
+  //         id:
+  //             id,
+  //         farmId:
+  //             farmId,
+  //         blockId:
+  //             blockId,
+  //         pending:
+  //             false,
+  //       );
+  //     }
 
-      return result;
-    } catch (e) {
-      if (!_isNetworkError(e)) {
-        rethrow;
-      }
+  //     return result;
+  //   } catch (e) {
+  //     if (!_isNetworkError(e)) {
+  //       rethrow;
+  //     }
 
-      return _saveTreeOffline(
-        values,
-      );
-    }
+  //     return _saveTreeOffline(
+  //       values,
+  //     );
+  //   }
+  // }
+
+  // Future<Map<String, dynamic>> _saveTreeOffline(
+  //   Map<String, dynamic> values,
+  // ) async {
+  //   final local =
+  //       Map<String, dynamic>.from(
+  //     values,
+  //   )
+  //         ..['id'] = _localId('tree')
+  //         ..['_pendingSync'] = true;
+
+  //   await _save(
+  //     'trees',
+  //     local,
+  //     id: local['id'] as String,
+  //     farmId: values['farmId'] as String,
+  //     blockId: values['blockId'] as String,
+  //     pending: true,
+  //   );
+
+  //   return local;
+  // }
+
+
+// ============================================================
+// CREATE TREE
+// ============================================================
+
+Future<Map<String, dynamic>> createTree({
+  required String farmId,
+  required String blockId,
+  required String variety,
+  required int plantingYear,
+  required String status,
+  double? latitude,
+  double? longitude,
+  String? notes,
+}) async {
+  // ==========================================================
+  // VALIDATE BASIC VALUES
+  // ==========================================================
+
+  final cleanFarmId = farmId.trim();
+  final cleanBlockId = blockId.trim();
+  final cleanVariety = variety.trim();
+  final cleanStatus = status.trim().toUpperCase();
+  final cleanNotes = notes?.trim();
+
+  if (cleanFarmId.isEmpty) {
+    throw Exception('Farm ID is required.');
   }
 
-  Future<Map<String, dynamic>> _saveTreeOffline(
-    Map<String, dynamic> values,
-  ) async {
-    final local =
-        Map<String, dynamic>.from(
+  if (cleanBlockId.isEmpty) {
+    throw Exception('Block ID is required.');
+  }
+
+  if (cleanVariety.isEmpty) {
+    throw Exception('Cashew variety is required.');
+  }
+
+  if (plantingYear < 1950 ||
+      plantingYear > DateTime.now().year) {
+    throw Exception('Invalid planting year.');
+  }
+
+  if (cleanStatus.isEmpty) {
+    throw Exception('Tree status is required.');
+  }
+
+  // ==========================================================
+  // VALIDATE GPS
+  // ==========================================================
+
+  if ((latitude == null && longitude != null) ||
+      (latitude != null && longitude == null)) {
+    throw Exception(
+      'Both latitude and longitude are required.',
+    );
+  }
+
+  if (latitude != null &&
+      (latitude < -90 || latitude > 90)) {
+    throw Exception('Invalid latitude.');
+  }
+
+  if (longitude != null &&
+      (longitude < -180 || longitude > 180)) {
+    throw Exception('Invalid longitude.');
+  }
+
+  // ==========================================================
+  // CREATE WKT POINT
+  //
+  // IMPORTANT:
+  // WKT uses:
+  //
+  // POINT (longitude latitude)
+  //
+  // NOT:
+  // POINT (latitude longitude)
+  //
+  // Example:
+  // latitude  = -6.093685
+  // longitude = 35.8941967
+  //
+  // becomes:
+  // POINT (35.8941967 -6.093685)
+  // ==========================================================
+
+  String? geometry;
+
+  if (latitude != null && longitude != null) {
+    geometry = 'POINT ($longitude $latitude)';
+  }
+
+  // ==========================================================
+  // VALUES SAVED LOCALLY
+  // ==========================================================
+
+  final values = <String, dynamic>{
+    'farmId': cleanFarmId,
+    'blockId': cleanBlockId,
+    'variety': cleanVariety,
+    'plantingYear': plantingYear,
+    'status': cleanStatus,
+
+    // Keep WKT so offline synchronization can use it later.
+    'geometry': geometry,
+
+    // Keep raw coordinates too because they are useful
+    // for the Flutter map/UI.
+    'latitude': latitude,
+    'longitude': longitude,
+
+    'notes': cleanNotes,
+  };
+
+  print('========================================');
+  print('ATTEMPTING TREE CREATION');
+  print('FARM ID: $cleanFarmId');
+  print('BLOCK ID: $cleanBlockId');
+  print('VARIETY: $cleanVariety');
+  print('PLANTING YEAR: $plantingYear');
+  print('STATUS: $cleanStatus');
+  print('LATITUDE: $latitude');
+  print('LONGITUDE: $longitude');
+  print('GEOMETRY: $geometry');
+  print('========================================');
+
+  // ==========================================================
+  // OFFLINE
+  // ==========================================================
+
+  if (!await hasNetworkConnection()) {
+    print('No network connection.');
+    print('Saving tree offline.');
+
+    return _saveTreeOffline(
       values,
-    )
-          ..['id'] = _localId('tree')
-          ..['_pendingSync'] = true;
+    );
+  }
+
+  // ==========================================================
+  // ONLINE
+  // ==========================================================
+
+  try {
+    final result =
+        await TreeApiServices.createTree(
+      farmId: cleanFarmId,
+      blockId: cleanBlockId,
+      variety: cleanVariety,
+      plantingYear: plantingYear,
+      status: cleanStatus,
+
+      // THIS IS THE IMPORTANT FIX.
+      geometry: geometry,
+
+      notes: cleanNotes,
+
+      // We can still send these if the API supports them.
+      latitude: latitude,
+      longitude: longitude,
+    );
+
+    print('========================================');
+    print('TREE CREATED ONLINE SUCCESSFULLY');
+    print('SERVER TREE: $result');
+    print('========================================');
+
+    final id =
+        result['id']?.toString();
+
+    if (id == null || id.isEmpty) {
+      throw Exception(
+        'Tree was created but the server did not return a tree ID.',
+      );
+    }
+
+    // ========================================================
+    // PRESERVE LOCATION DATA
+    // ========================================================
+
+    final onlineTree = <String, dynamic>{
+      ...values,
+      ...result,
+
+      // If backend response doesn't return geometry,
+      // preserve what was submitted.
+      'geometry':
+          result['geometry'] ?? geometry,
+
+      'latitude':
+          result['latitude'] ?? latitude,
+
+      'longitude':
+          result['longitude'] ?? longitude,
+
+      '_pendingSync': false,
+    };
+
+    // ========================================================
+    // CACHE ONLINE TREE LOCALLY
+    // ========================================================
 
     await _save(
       'trees',
-      local,
-      id: local['id'] as String,
-      farmId: values['farmId'] as String,
-      blockId: values['blockId'] as String,
-      pending: true,
+      onlineTree,
+      id: id,
+      farmId: cleanFarmId,
+      blockId: cleanBlockId,
+      pending: false,
     );
 
-    return local;
+    return onlineTree;
   }
 
+  // ==========================================================
+  // API/SERVER ERROR
+  //
+  // 400/401/403/404/500 are NOT offline errors.
+  // ==========================================================
+
+  on TreeApiException catch (e) {
+    print('========================================');
+    print('TREE SERVER ERROR');
+    print('STATUS: ${e.statusCode}');
+    print('MESSAGE: ${e.message}');
+    print('========================================');
+
+    rethrow;
+  }
+
+  // ==========================================================
+  // NETWORK / OTHER ERROR
+  // ==========================================================
+
+  catch (e, stackTrace) {
+    print('========================================');
+    print('TREE CREATION ERROR');
+    print('ERROR: $e');
+    print('STACK: $stackTrace');
+    print('========================================');
+
+    if (_isNetworkError(e)) {
+      print('Network-related error detected.');
+      print('Saving tree offline.');
+
+      return _saveTreeOffline(
+        values,
+      );
+    }
+
+    rethrow;
+  }
+}
+
+// ============================================================
+// SAVE TREE OFFLINE
+// ============================================================
+
+Future<Map<String, dynamic>> _saveTreeOffline(
+  Map<String, dynamic> values,
+) async {
+  final localId =
+      _localId('tree');
+
+  final local =
+      Map<String, dynamic>.from(values)
+        ..['id'] = localId
+        ..['_pendingSync'] = true;
+
+  await _save(
+    'trees',
+    local,
+    id: localId,
+    farmId: values['farmId'].toString(),
+    blockId: values['blockId'].toString(),
+    pending: true,
+  );
+
+  print('========================================');
+  print('TREE SAVED OFFLINE');
+  print('LOCAL ID: $localId');
+  print('LATITUDE: ${local['latitude']}');
+  print('LONGITUDE: ${local['longitude']}');
+  print('GEOMETRY: ${local['geometry']}');
+  print('========================================');
+
+  return local;
+}
   // ============================================================
   // PENDING COUNT
   // ============================================================

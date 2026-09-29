@@ -233,12 +233,20 @@ Future<void> _submitTree() async {
     return;
   }
 
+  // ============================================================
+  // VALIDATE FORM
+  // ============================================================
+
   final valid =
       _formKey.currentState?.validate() ?? false;
 
   if (!valid) {
     return;
   }
+
+  // ============================================================
+  // PLANTING YEAR
+  // ============================================================
 
   final plantingYear = int.tryParse(
     _plantingYearController.text.trim(),
@@ -248,8 +256,13 @@ Future<void> _submitTree() async {
     _showError(
       l10n.validPlantingYearRequired,
     );
+
     return;
   }
+
+  // ============================================================
+  // GPS VALUES
+  // ============================================================
 
   final latitudeText =
       _latitudeController.text.trim();
@@ -260,9 +273,9 @@ Future<void> _submitTree() async {
   double? latitude;
   double? longitude;
 
-  // ==========================================
+  // ============================================================
   // LATITUDE
-  // ==========================================
+  // ============================================================
 
   if (latitudeText.isNotEmpty) {
     latitude =
@@ -274,13 +287,14 @@ Future<void> _submitTree() async {
       _showError(
         l10n.validLatitudeRequired,
       );
+
       return;
     }
   }
 
-  // ==========================================
+  // ============================================================
   // LONGITUDE
-  // ==========================================
+  // ============================================================
 
   if (longitudeText.isNotEmpty) {
     longitude =
@@ -292,49 +306,122 @@ Future<void> _submitTree() async {
       _showError(
         l10n.validLongitudeRequired,
       );
+
       return;
     }
   }
 
-  // Both coordinates must be supplied together.
-  if ((latitude == null &&
-          longitude != null) ||
-      (latitude != null &&
-          longitude == null)) {
+  // ============================================================
+  // GPS LOCATION IS REQUIRED
+  // ============================================================
+
+  if (latitude == null || longitude == null) {
     _showError(
-      l10n.bothCoordinatesRequired,
+      'Please capture the tree GPS location before saving.',
     );
+
     return;
   }
+
+  // ============================================================
+  // DEBUG LOCATION
+  // ============================================================
+
+  debugPrint(
+    '========================================',
+  );
+
+  debugPrint(
+    'TREE GPS LOCATION',
+  );
+
+  debugPrint(
+    'LATITUDE: $latitude',
+  );
+
+  debugPrint(
+    'LONGITUDE: $longitude',
+  );
+
+  // WKT must be:
+  // POINT (longitude latitude)
+  final geometry =
+      'POINT ($longitude $latitude)';
+
+  debugPrint(
+    'TREE WKT: $geometry',
+  );
+
+  debugPrint(
+    '========================================',
+  );
+
+  // ============================================================
+  // START LOADING
+  // ============================================================
 
   setState(() {
     _isLoading = true;
   });
 
   try {
-    // LocalDataService handles the local/offline
-    // creation and synchronization flow.
+    // ==========================================================
+    // CREATE TREE
+    // ==========================================================
+    //
+    // LocalDataService receives latitude and longitude.
+    //
+    // The rewritten LocalDataService then generates:
+    //
+    // POINT (longitude latitude)
+    //
+    // and sends that geometry to TreeApiServices.
+
     final result =
         await LocalDataService.instance.createTree(
       farmId: widget.farmId,
       blockId: widget.blockId,
       variety:
           _varietyController.text.trim(),
-      plantingYear: plantingYear,
-      status: _status.toUpperCase(),
-      latitude: latitude,
-      longitude: longitude,
+      plantingYear:
+          plantingYear,
+
+      // Keep backend enum value unchanged.
+      status:
+          _status.toUpperCase(),
+
+      latitude:
+          latitude,
+      longitude:
+          longitude,
+
       notes:
           _notesController.text.trim(),
     );
 
     debugPrint(
-      'TREE CREATED SUCCESSFULLY: $result',
+      '========================================',
+    );
+
+    debugPrint(
+      'TREE CREATED SUCCESSFULLY',
+    );
+
+    debugPrint(
+      'RESULT: $result',
+    );
+
+    debugPrint(
+      '========================================',
     );
 
     if (!mounted) {
       return;
     }
+
+    // ==========================================================
+    // SUCCESS MESSAGE
+    // ==========================================================
 
     ScaffoldMessenger.of(context)
         .showSnackBar(
@@ -344,18 +431,34 @@ Future<void> _submitTree() async {
               ? 'Tree saved offline and will sync when connected'
               : l10n.treeAddedSuccessfully,
         ),
-        backgroundColor: primaryGreen,
+        backgroundColor:
+            primaryGreen,
       ),
     );
 
-    // Tell BlockDetailsPage to reload.
+    // ==========================================================
+    // RETURN TO BLOCK DETAILS
+    // ==========================================================
+
     Navigator.pop(
       context,
       true,
     );
-  } catch (e) {
+  } catch (e, stackTrace) {
+    debugPrint(
+      '========================================',
+    );
+
     debugPrint(
       'CREATE TREE ERROR: $e',
+    );
+
+    debugPrint(
+      'STACK TRACE: $stackTrace',
+    );
+
+    debugPrint(
+      '========================================',
     );
 
     if (!mounted) {
@@ -377,199 +480,161 @@ Future<void> _submitTree() async {
   }
 }
 
+// Future<void> _submitTree() async {
+//   final l10n = AppLocalizations.of(context)!;
 
-  // Future<void> _submitTree() async {
-  //   final l10n =
-  //       AppLocalizations.of(context)!;
+//   if (_isLoading) {
+//     return;
+//   }
 
-  //   if (_isLoading) {
-  //     return;
-  //   }
+//   final valid =
+//       _formKey.currentState?.validate() ?? false;
 
-  //   final valid =
-  //       _formKey.currentState
-  //               ?.validate() ??
-  //           false;
+//   if (!valid) {
+//     return;
+//   }
 
-  //   if (!valid) {
-  //     return;
-  //   }
+//   final plantingYear = int.tryParse(
+//     _plantingYearController.text.trim(),
+//   );
 
-  //   final plantingYear =
-  //       int.tryParse(
-  //     _plantingYearController.text
-  //         .trim(),
-  //   );
+//   if (plantingYear == null) {
+//     _showError(
+//       l10n.validPlantingYearRequired,
+//     );
+//     return;
+//   }
 
-  //   if (plantingYear == null) {
-  //     _showError(
-  //       l10n.validPlantingYearRequired,
-  //     );
-  //     return;
-  //   }
+//   final latitudeText =
+//       _latitudeController.text.trim();
 
-  //   final latitudeText =
-  //       _latitudeController.text
-  //           .trim();
+//   final longitudeText =
+//       _longitudeController.text.trim();
 
-  //   final longitudeText =
-  //       _longitudeController.text
-  //           .trim();
+//   double? latitude;
+//   double? longitude;
 
-  //   double? latitude;
-  //   double? longitude;
 
-  //   // ============================================================
-  //   // LATITUDE
-  //   // ============================================================
+  
 
-  //   if (latitudeText.isNotEmpty) {
-  //     latitude =
-  //         double.tryParse(
-  //       latitudeText,
-  //     );
+//   // ==========================================
+//   // LATITUDE
+//   // ==========================================
 
-  //     if (latitude == null ||
-  //         latitude < -90 ||
-  //         latitude > 90) {
-  //       _showError(
-  //         l10n.validLatitudeRequired,
-  //       );
-  //       return;
-  //     }
-  //   }
+//   if (latitudeText.isNotEmpty) {
+//     latitude =
+//         double.tryParse(latitudeText);
 
-  //   // ============================================================
-  //   // LONGITUDE
-  //   // ============================================================
+//     if (latitude == null ||
+//         latitude < -90 ||
+//         latitude > 90) {
+//       _showError(
+//         l10n.validLatitudeRequired,
+//       );
+//       return;
+//     }
+//   }
 
-  //   if (longitudeText.isNotEmpty) {
-  //     longitude =
-  //         double.tryParse(
-  //       longitudeText,
-  //     );
+//   // ==========================================
+//   // LONGITUDE
+//   // ==========================================
 
-  //     if (longitude == null ||
-  //         longitude < -180 ||
-  //         longitude > 180) {
-  //       _showError(
-  //         l10n.validLongitudeRequired,
-  //       );
-  //       return;
-  //     }
-  //   }
+//   if (longitudeText.isNotEmpty) {
+//     longitude =
+//         double.tryParse(longitudeText);
 
-  //   // Require both coordinates or neither.
-  //   if ((latitude == null &&
-  //           longitude != null) ||
-  //       (latitude != null &&
-  //           longitude == null)) {
-  //     _showError(
-  //       l10n.bothCoordinatesRequired,
-  //     );
-  //     return;
-  //   }
+//     if (longitude == null ||
+//         longitude < -180 ||
+//         longitude > 180) {
+//       _showError(
+//         l10n.validLongitudeRequired,
+//       );
+//       return;
+//     }
+//   }
 
-  //   setState(() {
-  //     _isLoading = true;
-  //   });
+//   // Both coordinates must be supplied together.
+//   if ((latitude == null &&
+//           longitude != null) ||
+//       (latitude != null &&
+//           longitude == null)) {
+//     _showError(
+//       l10n.bothCoordinatesRequired,
+//     );
+//     return;
+//   }
 
-  // try {
-  //   final result =
-  //     await LocalDataService.instance.createTree(
-  //     farmId: widget.farmId,
-  //     blockId: widget.blockId,
-  //     variety: _varietyController.text.trim(),
-  //     plantingYear: plantingYear,
-  //     status: _status.toUpperCase(),
-  //     latitude: latitude,
-  //     longitude: longitude,
-  //     notes: _notesController.text.trim(),
-  //   );
-  //   try {
-  //     final result =
-  //         await TreeApiServices.createTree(
-  //       farmId:
-  //           widget.farmId,
+//   setState(() {
+//     _isLoading = true;
+//   });
 
-  //       blockId:
-  //           widget.blockId,
+//   try {
+//     // LocalDataService handles the local/offline
+//     // creation and synchronization flow.
+//     final result =
+//         await LocalDataService.instance.createTree(
+//       farmId: widget.farmId,
+//       blockId: widget.blockId,
+//       variety:
+//           _varietyController.text.trim(),
+//       plantingYear: plantingYear,
+//       status: _status.toUpperCase(),
+//       latitude: latitude,
+//       longitude: longitude,
+//       notes:
+//           _notesController.text.trim(),
+//     );
 
-  //       variety:
-  //           _varietyController.text
-  //               .trim(),
+//     debugPrint(
+//       'TREE CREATED SUCCESSFULLY: $result',
+//     );
 
-  //       plantingYear:
-  //           plantingYear,
+//     if (!mounted) {
+//       return;
+//     }
 
-  //       // Already the exact backend enum.
-  //       status:
-  //           _status,
+//     ScaffoldMessenger.of(context)
+//         .showSnackBar(
+//       SnackBar(
+//         content: Text(
+//           result['_pendingSync'] == true
+//               ? 'Tree saved offline and will sync when connected'
+//               : l10n.treeAddedSuccessfully,
+//         ),
+//         backgroundColor: primaryGreen,
+//       ),
+//     );
 
-  //       latitude:
-  //           latitude,
+//     // Tell BlockDetailsPage to reload.
+//     Navigator.pop(
+//       context,
+//       true,
+//     );
+//   } catch (e) {
+//     debugPrint(
+//       'CREATE TREE ERROR: $e',
+//     );
 
-  //       longitude:
-  //           longitude,
+//     if (!mounted) {
+//       return;
+//     }
 
-  //       notes:
-  //           _notesController.text
-  //               .trim(),
-  //     );
+//     _showError(
+//       e.toString().replaceFirst(
+//             'Exception: ',
+//             '',
+//           ),
+//     );
+//   } finally {
+//     if (mounted) {
+//       setState(() {
+//         _isLoading = false;
+//       });
+//     }
+//   }
+// }
 
-  //     debugPrint(
-  //       'TREE CREATED SUCCESSFULLY: $result',
-  //     );
 
-  //     if (!mounted) {
-  //       return;
-  //     }
-
-  //     ScaffoldMessenger.of(context)
-  //         .showSnackBar(
-  //       SnackBar(
-  //         content: Text(
-  //           l10n.treeAddedSuccessfully,
-  //         ),
-  //         backgroundColor:
-  //             primaryGreen,
-  //       ),
-  //     );
-
-  //     // Return true so BlockDetailsPage reloads trees.
-  //     Navigator.pop(
-  //       context,
-  //       true,
-  //     );
-  //   } catch (e) {
-  //     if (!mounted) {
-  //       return;
-  //     }
-
-  //     debugPrint(
-  //       'CREATE TREE ERROR: $e',
-  //     );
-
-  //     _showError(
-  //       e
-  //           .toString()
-  //           .replaceFirst(
-  //             'Exception: ',
-  //             '',
-  //           ),
-  //     );
-  //   } finally {
-  //     if (mounted) {
-  //       setState(() {
-  //         _isLoading = false;
-  //       });
-  //     }
-  //   }
-  // }
-
-  // ============================================================
-  // ERROR
-  // ============================================================
 
   void _showError(
     String message,

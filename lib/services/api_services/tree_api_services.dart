@@ -4,6 +4,9 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
 class TreeApiException implements Exception {
   final String message;
@@ -95,107 +98,434 @@ class TreeApiServices {
   // CREATE TREE
   // ============================================================
 
-  static Future<Map<String, dynamic>>
-      createTree({
-    required String farmId,
-    required String blockId,
-    required String variety,
-    required int plantingYear,
-    required String status,
-    String? geometry,
-    String? notes,
-    double? latitude,
-    double? longitude,
-  }) async {
-    final uri = Uri.parse(
-      '$baseUrl/farms/$farmId/blocks/$blockId/trees',
+// ============================================================
+// CREATE TREE
+// ============================================================
+
+static Future<Map<String, dynamic>> createTree({
+  required String farmId,
+  required String blockId,
+  required String variety,
+  required int plantingYear,
+  required String status,
+  String? geometry,
+  String? notes,
+  double? latitude,
+  double? longitude,
+}) async {
+  // ==========================================================
+  // VALIDATE IDS
+  // ==========================================================
+
+  final cleanFarmId = farmId.trim();
+  final cleanBlockId = blockId.trim();
+
+  if (cleanFarmId.isEmpty) {
+    throw const TreeApiException(
+      'Farm ID is required.',
     );
+  }
 
-    final body = <String, dynamic>{
-      'variety': variety.trim(),
-      'plantingYear': plantingYear,
-      'status': status,
-      'geometry': geometry?.trim(),
-      'notes': notes?.trim(),
+  if (cleanBlockId.isEmpty) {
+    throw const TreeApiException(
+      'Block ID is required.',
+    );
+  }
 
-      if (latitude != null)
-        'latitude': latitude,
+  // ==========================================================
+  // BUILD / NORMALIZE GEOMETRY
+  // ==========================================================
 
-      if (longitude != null)
-        'longitude': longitude,
-    };
+  String? wktGeometry =
+      geometry?.trim();
+
+  // If geometry wasn't supplied but GPS coordinates exist,
+  // automatically create the PostGIS WKT point.
+  if ((wktGeometry == null ||
+          wktGeometry.isEmpty) &&
+      latitude != null &&
+      longitude != null) {
+    // IMPORTANT:
+    // WKT order = longitude latitude
+    wktGeometry =
+        'POINT ($longitude $latitude)';
+  }
+
+  // ==========================================================
+  // VALIDATE GEOMETRY
+  // ==========================================================
+
+  if (wktGeometry == null ||
+      wktGeometry.isEmpty) {
+    throw const TreeApiException(
+      'Tree GPS location is required.',
+    );
+  }
+
+  if (!wktGeometry
+      .toUpperCase()
+      .startsWith('POINT')) {
+    throw const TreeApiException(
+      'Tree geometry must be a WKT POINT.',
+    );
+  }
+
+  // ==========================================================
+  // URL
+  // ==========================================================
+
+  final uri = Uri.parse(
+    '$baseUrl/farms/$cleanFarmId/'
+    'blocks/$cleanBlockId/trees',
+  );
+
+  // ==========================================================
+  // REQUEST BODY
+  // ==========================================================
+
+  final body = <String, dynamic>{
+    'variety': variety.trim(),
+    'plantingYear': plantingYear,
+
+    // Backend enum remains unchanged.
+    'status': status.trim().toUpperCase(),
+
+    // Backend/PostGIS receives valid WKT.
+    'geometry': wktGeometry,
+
+    'notes': notes?.trim(),
+
+    // Keep these only if your backend DTO accepts them.
+    if (latitude != null)
+      'latitude': latitude,
+
+    if (longitude != null)
+      'longitude': longitude,
+  };
+
+  debugPrint(
+    '========================================',
+  );
+
+  debugPrint(
+    'CREATE TREE URL: $uri',
+  );
+
+  debugPrint(
+    'CREATE TREE FARM ID: $cleanFarmId',
+  );
+
+  debugPrint(
+    'CREATE TREE BLOCK ID: $cleanBlockId',
+  );
+
+  debugPrint(
+    'CREATE TREE LATITUDE: $latitude',
+  );
+
+  debugPrint(
+    'CREATE TREE LONGITUDE: $longitude',
+  );
+
+  debugPrint(
+    'CREATE TREE GEOMETRY: $wktGeometry',
+  );
+
+  debugPrint(
+    'CREATE TREE BODY: ${jsonEncode(body)}',
+  );
+
+  debugPrint(
+    '========================================',
+  );
+
+  try {
+    final response = await http
+        .post(
+          uri,
+          headers: await _headers(
+            includeContentType: true,
+          ),
+          body: jsonEncode(body),
+        )
+        .timeout(
+          const Duration(seconds: 30),
+        );
 
     debugPrint(
-      'CREATE TREE URL: $uri',
+      '========================================',
     );
 
     debugPrint(
-      'CREATE TREE BODY: '
-      '${jsonEncode(body)}',
+      'CREATE TREE STATUS: ${response.statusCode}',
     );
 
-    try {
-      final response =
-          await http.post(
-        uri,
-        headers: await _headers(
-          includeContentType: true,
-        ),
-        body: jsonEncode(body),
-      );
+    debugPrint(
+      'CREATE TREE RESPONSE: ${response.body}',
+    );
 
-      debugPrint(
-        'CREATE TREE STATUS: '
-        '${response.statusCode}',
-      );
+    debugPrint(
+      '========================================',
+    );
 
-      debugPrint(
-        'CREATE TREE RESPONSE: '
-        '${response.body}',
-      );
+    // Handle expired/invalid session.
+    await _checkSession(response);
 
-      await _checkSession(response);
+    // ========================================================
+    // SUCCESS
+    // ========================================================
 
-      if (response.statusCode >= 200 &&
-          response.statusCode < 300) {
-        if (response.body
-            .trim()
-            .isEmpty) {
-          return {};
+    if (response.statusCode >= 200 &&
+        response.statusCode < 300) {
+      if (response.body.trim().isEmpty) {
+        return <String, dynamic>{};
+      }
+
+      dynamic decoded;
+
+      try {
+        decoded =
+            jsonDecode(response.body);
+      } on FormatException {
+        throw const TreeApiException(
+          'The server returned an invalid tree response.',
+        );
+      }
+
+      if (decoded is Map) {
+        final map =
+            Map<String, dynamic>.from(
+          decoded,
+        );
+
+        // Support:
+        //
+        // {
+        //   "data": {...}
+        // }
+        if (map['data'] is Map) {
+          return Map<String, dynamic>.from(
+            map['data'] as Map,
+          );
         }
 
+        // Also support direct tree object.
+        return map;
+      }
+
+      throw const TreeApiException(
+        'Invalid tree response from server.',
+      );
+    }
+
+    // ========================================================
+    // SERVER ERROR
+    // ========================================================
+
+    String message =
+        'Failed to create tree '
+        '(${response.statusCode})';
+
+    if (response.body.trim().isNotEmpty) {
+      try {
         final decoded =
             jsonDecode(response.body);
 
         if (decoded is Map) {
-          return Map<String, dynamic>.from(
-            decoded,
-          );
+          final serverMessage =
+              decoded['message'] ??
+              decoded['error'] ??
+              decoded['detail'];
+
+          if (serverMessage != null &&
+              serverMessage
+                  .toString()
+                  .trim()
+                  .isNotEmpty) {
+            message =
+                serverMessage.toString();
+          }
+        } else {
+          message =
+              response.body.trim();
         }
-
-        throw const TreeApiException(
-          'Invalid tree response from server.',
-        );
+      } catch (_) {
+        message =
+            response.body.trim();
       }
-
-      throw TreeApiException(
-        'Failed to create tree '
-        '(${response.statusCode}): '
-        '${response.body}',
-        statusCode:
-            response.statusCode,
-      );
-    } on SocketException {
-      throw const TreeApiException(
-        'Unable to connect to the server.',
-      );
-    } on http.ClientException {
-      throw const TreeApiException(
-        'Unable to connect to the server.',
-      );
     }
+
+    throw TreeApiException(
+      message,
+      statusCode:
+          response.statusCode,
+    );
   }
 
+  // ==========================================================
+  // SOCKET ERROR
+  // ==========================================================
+
+  on SocketException catch (e) {
+    debugPrint(
+      'TREE SOCKET ERROR: $e',
+    );
+
+    throw const TreeApiException(
+      'Unable to connect to the server.',
+    );
+  }
+
+  // ==========================================================
+  // HTTP CLIENT ERROR
+  // ==========================================================
+
+  on http.ClientException catch (e) {
+    debugPrint(
+      'TREE HTTP CLIENT ERROR: $e',
+    );
+
+    throw const TreeApiException(
+      'Unable to connect to the server.',
+    );
+  }
+
+  // ==========================================================
+  // TIMEOUT
+  // ==========================================================
+
+  on TimeoutException catch (e) {
+    debugPrint(
+      'TREE REQUEST TIMEOUT: $e',
+    );
+
+    throw const TreeApiException(
+      'Connection to the server timed out.',
+    );
+  }
+
+  // ==========================================================
+  // TREE API ERROR
+  // ==========================================================
+
+  on TreeApiException {
+    rethrow;
+  }
+
+  // ==========================================================
+  // UNKNOWN ERROR
+  // ==========================================================
+
+  catch (e) {
+    debugPrint(
+      'UNEXPECTED CREATE TREE ERROR: $e',
+    );
+
+    rethrow;
+  }
+}
+  // static Future<Map<String, dynamic>>
+  //     createTree({
+  //   required String farmId,
+  //   required String blockId,
+  //   required String variety,
+  //   required int plantingYear,
+  //   required String status,
+  //   String? geometry,
+  //   String? notes,
+  //   double? latitude,
+  //   double? longitude,
+  // }) async {
+  //   final uri = Uri.parse(
+  //     '$baseUrl/farms/$farmId/blocks/$blockId/trees',
+  //   );
+
+  //   final body = <String, dynamic>{
+  //     'variety': variety.trim(),
+  //     'plantingYear': plantingYear,
+  //     'status': status,
+  //     'geometry': geometry?.trim(),
+  //     'notes': notes?.trim(),
+
+  //     if (latitude != null)
+  //       'latitude': latitude,
+
+  //     if (longitude != null)
+  //       'longitude': longitude,
+  //   };
+
+  //   debugPrint(
+  //     'CREATE TREE URL: $uri',
+  //   );
+
+  //   debugPrint(
+  //     'CREATE TREE BODY: '
+  //     '${jsonEncode(body)}',
+  //   );
+
+  //   try {
+  //     final response =
+  //         await http.post(
+  //       uri,
+  //       headers: await _headers(
+  //         includeContentType: true,
+  //       ),
+  //       body: jsonEncode(body),
+  //     );
+
+  //     debugPrint(
+  //       'CREATE TREE STATUS: '
+  //       '${response.statusCode}',
+  //     );
+
+  //     debugPrint(
+  //       'CREATE TREE RESPONSE: '
+  //       '${response.body}',
+  //     );
+
+  //     await _checkSession(response);
+
+  //     if (response.statusCode >= 200 &&
+  //         response.statusCode < 300) {
+  //       if (response.body
+  //           .trim()
+  //           .isEmpty) {
+  //         return {};
+  //       }
+
+  //       final decoded =
+  //           jsonDecode(response.body);
+
+  //       if (decoded is Map) {
+  //         return Map<String, dynamic>.from(
+  //           decoded,
+  //         );
+  //       }
+
+  //       throw const TreeApiException(
+  //         'Invalid tree response from server.',
+  //       );
+  //     }
+
+  //     throw TreeApiException(
+  //       'Failed to create tree '
+  //       '(${response.statusCode}): '
+  //       '${response.body}',
+  //       statusCode:
+  //           response.statusCode,
+  //     );
+  //   } on SocketException {
+  //     throw const TreeApiException(
+  //       'Unable to connect to the server.',
+  //     );
+  //   } on http.ClientException {
+  //     throw const TreeApiException(
+  //       'Unable to connect to the server.',
+  //     );
+  //   }
+  // }
+
+  
   // ============================================================
   // GET TREES BY BLOCK
   // ============================================================
