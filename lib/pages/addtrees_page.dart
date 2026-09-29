@@ -204,7 +204,7 @@ class _AddTreePageState extends State<AddTreePage> {
         ),
       );
 
-      if (position.accuracy >= 5) {
+      if (position.accuracy >= 35) {
         _showError(
           'GPS accuracy is low (${position.accuracy.toStringAsFixed(1)} m). '
           'Move to an open area and try again.',
@@ -227,198 +227,345 @@ class _AddTreePageState extends State<AddTreePage> {
   }
 
 Future<void> _submitTree() async {
+  final l10n = AppLocalizations.of(context)!;
+
   if (_isLoading) {
     return;
   }
 
-  Future<void> _submitTree() async {
-    final l10n =
-        AppLocalizations.of(context)!;
+  final valid =
+      _formKey.currentState?.validate() ?? false;
 
-    if (_isLoading) {
-      return;
-    }
+  if (!valid) {
+    return;
+  }
 
-    final valid =
-        _formKey.currentState
-                ?.validate() ??
-            false;
+  final plantingYear = int.tryParse(
+    _plantingYearController.text.trim(),
+  );
 
-    if (!valid) {
-      return;
-    }
-
-    final plantingYear =
-        int.tryParse(
-      _plantingYearController.text
-          .trim(),
+  if (plantingYear == null) {
+    _showError(
+      l10n.validPlantingYearRequired,
     );
+    return;
+  }
 
-    if (plantingYear == null) {
+  final latitudeText =
+      _latitudeController.text.trim();
+
+  final longitudeText =
+      _longitudeController.text.trim();
+
+  double? latitude;
+  double? longitude;
+
+  // ==========================================
+  // LATITUDE
+  // ==========================================
+
+  if (latitudeText.isNotEmpty) {
+    latitude =
+        double.tryParse(latitudeText);
+
+    if (latitude == null ||
+        latitude < -90 ||
+        latitude > 90) {
       _showError(
-        l10n.validPlantingYearRequired,
+        l10n.validLatitudeRequired,
       );
       return;
     }
+  }
 
-    final latitudeText =
-        _latitudeController.text
-            .trim();
+  // ==========================================
+  // LONGITUDE
+  // ==========================================
 
-    final longitudeText =
-        _longitudeController.text
-            .trim();
+  if (longitudeText.isNotEmpty) {
+    longitude =
+        double.tryParse(longitudeText);
 
-    double? latitude;
-    double? longitude;
-
-    // ============================================================
-    // LATITUDE
-    // ============================================================
-
-    if (latitudeText.isNotEmpty) {
-      latitude =
-          double.tryParse(
-        latitudeText,
-      );
-
-      if (latitude == null ||
-          latitude < -90 ||
-          latitude > 90) {
-        _showError(
-          l10n.validLatitudeRequired,
-        );
-        return;
-      }
-    }
-
-    // ============================================================
-    // LONGITUDE
-    // ============================================================
-
-    if (longitudeText.isNotEmpty) {
-      longitude =
-          double.tryParse(
-        longitudeText,
-      );
-
-      if (longitude == null ||
-          longitude < -180 ||
-          longitude > 180) {
-        _showError(
-          l10n.validLongitudeRequired,
-        );
-        return;
-      }
-    }
-
-    // Require both coordinates or neither.
-    if ((latitude == null &&
-            longitude != null) ||
-        (latitude != null &&
-            longitude == null)) {
+    if (longitude == null ||
+        longitude < -180 ||
+        longitude > 180) {
       _showError(
-        l10n.bothCoordinatesRequired,
+        l10n.validLongitudeRequired,
       );
       return;
     }
+  }
 
-    setState(() {
-      _isLoading = true;
-    });
+  // Both coordinates must be supplied together.
+  if ((latitude == null &&
+          longitude != null) ||
+      (latitude != null &&
+          longitude == null)) {
+    _showError(
+      l10n.bothCoordinatesRequired,
+    );
+    return;
+  }
+
+  setState(() {
+    _isLoading = true;
+  });
 
   try {
+    // LocalDataService handles the local/offline
+    // creation and synchronization flow.
     final result =
-      await LocalDataService.instance.createTree(
+        await LocalDataService.instance.createTree(
       farmId: widget.farmId,
       blockId: widget.blockId,
-      variety: _varietyController.text.trim(),
+      variety:
+          _varietyController.text.trim(),
       plantingYear: plantingYear,
       status: _status.toUpperCase(),
       latitude: latitude,
       longitude: longitude,
-      notes: _notesController.text.trim(),
+      notes:
+          _notesController.text.trim(),
     );
-    try {
-      final result =
-          await TreeApiServices.createTree(
-        farmId:
-            widget.farmId,
 
-        blockId:
-            widget.blockId,
+    debugPrint(
+      'TREE CREATED SUCCESSFULLY: $result',
+    );
 
-        variety:
-            _varietyController.text
-                .trim(),
+    if (!mounted) {
+      return;
+    }
 
-        plantingYear:
-            plantingYear,
-
-        // Already the exact backend enum.
-        status:
-            _status,
-
-        latitude:
-            latitude,
-
-        longitude:
-            longitude,
-
-        notes:
-            _notesController.text
-                .trim(),
-      );
-
-      debugPrint(
-        'TREE CREATED SUCCESSFULLY: $result',
-      );
-
-      if (!mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-        SnackBar(
-          content: Text(
-            l10n.treeAddedSuccessfully,
-          ),
-          backgroundColor:
-              primaryGreen,
+    ScaffoldMessenger.of(context)
+        .showSnackBar(
+      SnackBar(
+        content: Text(
+          result['_pendingSync'] == true
+              ? 'Tree saved offline and will sync when connected'
+              : l10n.treeAddedSuccessfully,
         ),
-      );
+        backgroundColor: primaryGreen,
+      ),
+    );
 
-      // Return true so BlockDetailsPage reloads trees.
-      Navigator.pop(
-        context,
-        true,
-      );
-    } catch (e) {
-      if (!mounted) {
-        return;
-      }
+    // Tell BlockDetailsPage to reload.
+    Navigator.pop(
+      context,
+      true,
+    );
+  } catch (e) {
+    debugPrint(
+      'CREATE TREE ERROR: $e',
+    );
 
-      debugPrint(
-        'CREATE TREE ERROR: $e',
-      );
+    if (!mounted) {
+      return;
+    }
 
-      _showError(
-        e
-            .toString()
-            .replaceFirst(
-              'Exception: ',
-              '',
-            ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+    _showError(
+      e.toString().replaceFirst(
+            'Exception: ',
+            '',
+          ),
+    );
+  } finally {
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
+}
+
+
+  // Future<void> _submitTree() async {
+  //   final l10n =
+  //       AppLocalizations.of(context)!;
+
+  //   if (_isLoading) {
+  //     return;
+  //   }
+
+  //   final valid =
+  //       _formKey.currentState
+  //               ?.validate() ??
+  //           false;
+
+  //   if (!valid) {
+  //     return;
+  //   }
+
+  //   final plantingYear =
+  //       int.tryParse(
+  //     _plantingYearController.text
+  //         .trim(),
+  //   );
+
+  //   if (plantingYear == null) {
+  //     _showError(
+  //       l10n.validPlantingYearRequired,
+  //     );
+  //     return;
+  //   }
+
+  //   final latitudeText =
+  //       _latitudeController.text
+  //           .trim();
+
+  //   final longitudeText =
+  //       _longitudeController.text
+  //           .trim();
+
+  //   double? latitude;
+  //   double? longitude;
+
+  //   // ============================================================
+  //   // LATITUDE
+  //   // ============================================================
+
+  //   if (latitudeText.isNotEmpty) {
+  //     latitude =
+  //         double.tryParse(
+  //       latitudeText,
+  //     );
+
+  //     if (latitude == null ||
+  //         latitude < -90 ||
+  //         latitude > 90) {
+  //       _showError(
+  //         l10n.validLatitudeRequired,
+  //       );
+  //       return;
+  //     }
+  //   }
+
+  //   // ============================================================
+  //   // LONGITUDE
+  //   // ============================================================
+
+  //   if (longitudeText.isNotEmpty) {
+  //     longitude =
+  //         double.tryParse(
+  //       longitudeText,
+  //     );
+
+  //     if (longitude == null ||
+  //         longitude < -180 ||
+  //         longitude > 180) {
+  //       _showError(
+  //         l10n.validLongitudeRequired,
+  //       );
+  //       return;
+  //     }
+  //   }
+
+  //   // Require both coordinates or neither.
+  //   if ((latitude == null &&
+  //           longitude != null) ||
+  //       (latitude != null &&
+  //           longitude == null)) {
+  //     _showError(
+  //       l10n.bothCoordinatesRequired,
+  //     );
+  //     return;
+  //   }
+
+  //   setState(() {
+  //     _isLoading = true;
+  //   });
+
+  // try {
+  //   final result =
+  //     await LocalDataService.instance.createTree(
+  //     farmId: widget.farmId,
+  //     blockId: widget.blockId,
+  //     variety: _varietyController.text.trim(),
+  //     plantingYear: plantingYear,
+  //     status: _status.toUpperCase(),
+  //     latitude: latitude,
+  //     longitude: longitude,
+  //     notes: _notesController.text.trim(),
+  //   );
+  //   try {
+  //     final result =
+  //         await TreeApiServices.createTree(
+  //       farmId:
+  //           widget.farmId,
+
+  //       blockId:
+  //           widget.blockId,
+
+  //       variety:
+  //           _varietyController.text
+  //               .trim(),
+
+  //       plantingYear:
+  //           plantingYear,
+
+  //       // Already the exact backend enum.
+  //       status:
+  //           _status,
+
+  //       latitude:
+  //           latitude,
+
+  //       longitude:
+  //           longitude,
+
+  //       notes:
+  //           _notesController.text
+  //               .trim(),
+  //     );
+
+  //     debugPrint(
+  //       'TREE CREATED SUCCESSFULLY: $result',
+  //     );
+
+  //     if (!mounted) {
+  //       return;
+  //     }
+
+  //     ScaffoldMessenger.of(context)
+  //         .showSnackBar(
+  //       SnackBar(
+  //         content: Text(
+  //           l10n.treeAddedSuccessfully,
+  //         ),
+  //         backgroundColor:
+  //             primaryGreen,
+  //       ),
+  //     );
+
+  //     // Return true so BlockDetailsPage reloads trees.
+  //     Navigator.pop(
+  //       context,
+  //       true,
+  //     );
+  //   } catch (e) {
+  //     if (!mounted) {
+  //       return;
+  //     }
+
+  //     debugPrint(
+  //       'CREATE TREE ERROR: $e',
+  //     );
+
+  //     _showError(
+  //       e
+  //           .toString()
+  //           .replaceFirst(
+  //             'Exception: ',
+  //             '',
+  //           ),
+  //     );
+  //   } finally {
+  //     if (mounted) {
+  //       setState(() {
+  //         _isLoading = false;
+  //       });
+  //     }
+  //   }
+  // }
 
   // ============================================================
   // ERROR
@@ -790,91 +937,182 @@ Future<void> _submitTree() async {
                           height: 13,
                         ),
 
-                        SizedBox(
-                          width: double.infinity,
-                          height: 44,
-                          child: OutlinedButton.icon(
-                            onPressed: (_isLoading || _isFetchingLocation)
-                                ? null
-                                : _captureLocation,
-                            icon: _isFetchingLocation
-                                ? const SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  )
-                                : const Icon(Icons.my_location, size: 17),
-                            label: Text(
-                              _locationAccuracy == null
-                                  ? 'Get GPS Location'
-                                  : 'GPS captured • ${_locationAccuracy!.toStringAsFixed(1)} m accuracy',
-                              style: const TextStyle(fontSize: 10),
-                        Row(
-                          children: [
-                            Expanded(
-                              child:
-                                  _buildField(
-                                controller:
-                                    _latitudeController,
+SizedBox(
+  width: double.infinity,
+  height: 44,
+  child: OutlinedButton.icon(
+    onPressed:
+        (_isLoading || _isFetchingLocation)
+            ? null
+            : _captureLocation,
+    icon: _isFetchingLocation
+        ? const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+            ),
+          )
+        : const Icon(
+            Icons.my_location,
+            size: 17,
+          ),
+    label: Text(
+      _locationAccuracy == null
+          ? 'Get GPS Location'
+          : 'GPS captured • '
+              '${_locationAccuracy!.toStringAsFixed(1)} m accuracy',
+      style: const TextStyle(
+        fontSize: 10,
+      ),
+    ),
+    style: OutlinedButton.styleFrom(
+      foregroundColor: primaryGreen,
+      side: const BorderSide(
+        color: primaryGreen,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius:
+            BorderRadius.circular(8),
+      ),
+    ),
+  ),
+),
 
-                                hint:
-                                    l10n.latitude,
+const SizedBox(
+  height: 12,
+),
 
-                                keyboardType:
-                                    const TextInputType
-                                        .numberWithOptions(
-                                  decimal:
-                                      true,
-                                  signed:
-                                      true,
-                                ),
+Row(
+  children: [
+    Expanded(
+      child: _buildField(
+        controller:
+            _latitudeController,
+        hint: l10n.latitude,
+        readOnly: true,
+        keyboardType:
+            const TextInputType
+                .numberWithOptions(
+          decimal: true,
+          signed: true,
+        ),
+        textInputAction:
+            TextInputAction.next,
+        validator:
+            _latitudeValidator,
+      ),
+    ),
 
-                                textInputAction:
-                                    TextInputAction
-                                        .next,
+    const SizedBox(
+      width: 10,
+    ),
 
-                                validator:
-                                    _latitudeValidator,
-                              ),
-                            ),
+    Expanded(
+      child: _buildField(
+        controller:
+            _longitudeController,
+        hint: l10n.longitude,
+        readOnly: true,
+        keyboardType:
+            const TextInputType
+                .numberWithOptions(
+          decimal: true,
+          signed: true,
+        ),
+        textInputAction:
+            TextInputAction.next,
+        validator:
+            _longitudeValidator,
+      ),
+    ),
+  ],
+),
+                        // SizedBox(
+                        //   width: double.infinity,
+                        //   height: 44,
+                        //   child: OutlinedButton.icon(
+                        //     onPressed: (_isLoading || _isFetchingLocation)
+                        //         ? null
+                        //         : _captureLocation,
+                        //     icon: _isFetchingLocation
+                        //         ? const SizedBox(
+                        //             width: 16,
+                        //             height: 16,
+                        //             child: CircularProgressIndicator(strokeWidth: 2),
+                        //           )
+                        //         : const Icon(Icons.my_location, size: 17),
+                        //     label: Text(
+                        //       _locationAccuracy == null
+                        //           ? 'Get GPS Location'
+                        //           : 'GPS captured • ${_locationAccuracy!.toStringAsFixed(1)} m accuracy',
+                        //       style: const TextStyle(fontSize: 10),
+                        // Row(
+                        //   children: [
+                        //     Expanded(
+                        //       child:
+                        //           _buildField(
+                        //         controller:
+                        //             _latitudeController,
 
-                            const SizedBox(
-                              width: 10,
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: primaryGreen,
-                              side: const BorderSide(color: primaryGreen),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
+                        //         hint:
+                        //             l10n.latitude,
 
-                            Expanded(
-                              child:
-                                  _buildField(
-                                controller:
-                                    _longitudeController,
+                        //         keyboardType:
+                        //             const TextInputType
+                        //                 .numberWithOptions(
+                        //           decimal:
+                        //               true,
+                        //           signed:
+                        //               true,
+                        //         ),
 
-                                hint:
-                                    l10n.longitude,
+                        //         textInputAction:
+                        //             TextInputAction
+                        //                 .next,
 
-                                keyboardType:
-                                    const TextInputType
-                                        .numberWithOptions(
-                                  decimal:
-                                      true,
-                                  signed:
-                                      true,
-                                ),
+                        //         validator:
+                        //             _latitudeValidator,
+                        //       ),
+                        //     ),
 
-                                textInputAction:
-                                    TextInputAction
-                                        .next,
+                        //     const SizedBox(
+                        //       width: 10,
+                        //     ),
+                        //     style: OutlinedButton.styleFrom(
+                        //       foregroundColor: primaryGreen,
+                        //       side: const BorderSide(color: primaryGreen),
+                        //       shape: RoundedRectangleBorder(
+                        //         borderRadius: BorderRadius.circular(8),
 
-                                validator:
-                                    _longitudeValidator,
-                              ),
-                            ),
-                          ),
-                        ),
+                        //     Expanded(
+                        //       child:
+                        //           _buildField(
+                        //         controller:
+                        //             _longitudeController,
+
+                        //         hint:
+                        //             l10n.longitude,
+
+                        //         keyboardType:
+                        //             const TextInputType
+                        //                 .numberWithOptions(
+                        //           decimal:
+                        //               true,
+                        //           signed:
+                        //               true,
+                        //         ),
+
+                        //         textInputAction:
+                        //             TextInputAction
+                        //                 .next,
+
+                        //         validator:
+                        //             _longitudeValidator,
+                        //       ),
+                        //     ),
+                        //   ),
+                        // ),
 
                         const SizedBox(
                           height: 24,

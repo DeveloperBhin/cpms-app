@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import '../services/local_data_service.dart';
 import 'package:flutter/foundation.dart';
-import '../theme/app_text_styles.dart';
-import '../l10n/app_localizations.dart';
-import '../services/api_services/api_services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-import '../services/api_services/farm_api_services.dart';
+
+import '../services/local_data_service.dart';
+import '../services/api_services/api_services.dart';
+import '../theme/app_text_styles.dart';
+import '../l10n/app_localizations.dart';
 
 class AddFarmPage extends StatefulWidget {
   const AddFarmPage({
@@ -18,8 +18,7 @@ class AddFarmPage extends StatefulWidget {
       _AddFarmPageState();
 }
 
-class _AddFarmPageState
-    extends State<AddFarmPage> {
+class _AddFarmPageState extends State<AddFarmPage> {
   final _formKey =
       GlobalKey<FormState>();
 
@@ -39,8 +38,11 @@ class _AddFarmPageState
       TextEditingController();
 
   bool _isLoading = false;
+
   final List<LatLng> _farmBoundary = [];
+
   String? _farmBoundaryWkt;
+
   LatLng? _currentLocation;
 
   static const Color primaryGreen =
@@ -81,9 +83,6 @@ class _AddFarmPageState
           DateTime(1990),
       lastDate:
           DateTime.now(),
-
-      // Flutter's date picker automatically follows
-      // MaterialApp's current locale.
       locale:
           Localizations.localeOf(
         context,
@@ -95,7 +94,6 @@ class _AddFarmPageState
     }
 
     setState(() {
-      // Keep API date in yyyy-MM-dd format.
       _plantingDateController.text =
           '${date.year}-'
           '${date.month.toString().padLeft(2, '0')}-'
@@ -103,72 +101,363 @@ class _AddFarmPageState
     });
   }
 
+  // ============================================================
+  // CREATE WKT POLYGON
+  // ============================================================
+
+  String _pointsToWktPolygon(
+    List<LatLng> points,
+  ) {
+    if (points.length < 3) {
+      throw Exception(
+        'At least three farm boundary points are required.',
+      );
+    }
+
+    final closedPoints =
+        List<LatLng>.from(
+      points,
+    );
+
+    final first =
+        closedPoints.first;
+
+    final last =
+        closedPoints.last;
+
+    // A WKT polygon must be closed.
+    if (first.latitude != last.latitude ||
+        first.longitude != last.longitude) {
+      closedPoints.add(
+        first,
+      );
+    }
+
+    // IMPORTANT:
+    //
+    // PostGIS / WKT:
+    //
+    // X = longitude
+    // Y = latitude
+
+    final coordinates =
+        closedPoints
+            .map(
+              (point) =>
+                  '${point.longitude} ${point.latitude}',
+            )
+            .join(', ');
+
+    return 'POLYGON (($coordinates))';
+  }
+
+  // ============================================================
+  // START FARM MAPPING
+  // ============================================================
+
   Future<void> _startFarmMapping() async {
     try {
-      if (!await Geolocator.isLocationServiceEnabled()) {
-        throw Exception('Please enable GPS location services');
-      }
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        throw Exception('Location permission is required to map the farm');
-      }
-      final position = await Geolocator.getCurrentPosition();
-      final location = LatLng(position.latitude, position.longitude);
-      setState(() {
-        _currentLocation = location;
-        _farmBoundary.clear();
-      });
-      if (!mounted) return;
-      final boundaryWkt = await showModalBottomSheet<String>(
-        context: context,
-        isScrollControlled: true,
-        builder: (_) => _FarmMapSheet(
-          initialLocation: location,
-          onBoundaryChanged: (points) {
-            setState(() {
-              _farmBoundary
-                ..clear()
-                ..addAll(points);
-              if (points.length >= 3) {
-                _farmSizeController.text =
-                    _areaInAcres(points).toStringAsFixed(2);
-              } else {
-                _farmSizeController.clear();
-              }
-            });
-          },
-        ),
-      );
-      if (boundaryWkt != null && mounted) {
-        setState(() {
-          _farmBoundaryWkt = boundaryWkt;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      // ========================================================
+      // CHECK LOCATION SERVICE
+      // ========================================================
+
+      final serviceEnabled =
+          await Geolocator
+              .isLocationServiceEnabled();
+
+      if (!serviceEnabled) {
+        throw Exception(
+          'Please enable GPS location services',
         );
       }
+
+      // ========================================================
+      // CHECK LOCATION PERMISSION
+      // ========================================================
+
+      var permission =
+          await Geolocator
+              .checkPermission();
+
+      if (permission ==
+          LocationPermission.denied) {
+        permission =
+            await Geolocator
+                .requestPermission();
+      }
+
+      if (permission ==
+              LocationPermission.denied ||
+          permission ==
+              LocationPermission.deniedForever) {
+        throw Exception(
+          'Location permission is required to map the farm',
+        );
+      }
+
+      // ========================================================
+      // GET CURRENT LOCATION
+      // ========================================================
+
+      final position =
+          await Geolocator
+              .getCurrentPosition();
+
+      final location =
+          LatLng(
+        position.latitude,
+        position.longitude,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _currentLocation =
+            location;
+
+        // Starting a new/redrawn polygon.
+        _farmBoundary.clear();
+        _farmBoundaryWkt =
+            null;
+        _farmSizeController.clear();
+      });
+
+      // ========================================================
+      // OPEN MAP
+      // ========================================================
+
+      final boundaryWkt =
+          await showModalBottomSheet<String>(
+        context: context,
+        isScrollControlled: true,
+        builder: (_) {
+          return _FarmMapSheet(
+            initialLocation:
+                location,
+
+            onBoundaryChanged:
+                (points) {
+              if (!mounted) {
+                return;
+              }
+
+              setState(() {
+                // ==============================================
+                // SAVE POINTS
+                // ==============================================
+
+                _farmBoundary
+                  ..clear()
+                  ..addAll(
+                    points,
+                  );
+
+                // ==============================================
+                // CREATE GEOMETRY IMMEDIATELY
+                // ==============================================
+
+                if (points.length >= 3) {
+                  final acreage =
+                      _areaInAcres(
+                    points,
+                  );
+
+                  _farmSizeController.text =
+                      acreage
+                          .toStringAsFixed(
+                    2,
+                  );
+
+                  // THIS WAS THE IMPORTANT MISSING PART.
+                  //
+                  // The WKT is now stored as soon as the
+                  // polygon contains at least 3 points.
+
+                  _farmBoundaryWkt =
+                      _pointsToWktPolygon(
+                    points,
+                  );
+
+                  debugPrint(
+                    '========================================',
+                  );
+
+                  debugPrint(
+                    'FARM BOUNDARY UPDATED',
+                  );
+
+                  debugPrint(
+                    'BOUNDARY POINTS: ${points.length}',
+                  );
+
+                  debugPrint(
+                    'FARM ACREAGE: ${_farmSizeController.text}',
+                  );
+
+                  debugPrint(
+                    'FARM WKT: $_farmBoundaryWkt',
+                  );
+
+                  debugPrint(
+                    '========================================',
+                  );
+                } else {
+                  _farmSizeController
+                      .clear();
+
+                  _farmBoundaryWkt =
+                      null;
+                }
+              });
+            },
+          );
+        },
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      // ========================================================
+      // USE WKT RETURNED BY MAP SHEET
+      // ========================================================
+
+      if (boundaryWkt != null &&
+          boundaryWkt
+              .trim()
+              .isNotEmpty) {
+        setState(() {
+          _farmBoundaryWkt =
+              boundaryWkt.trim();
+        });
+
+        debugPrint(
+          'MAP SHEET RETURNED WKT: '
+          '$_farmBoundaryWkt',
+        );
+      }
+
+      // ========================================================
+      // FINAL FALLBACK
+      // ========================================================
+
+      if (_farmBoundary.length >= 3 &&
+          (_farmBoundaryWkt == null ||
+              _farmBoundaryWkt!
+                  .trim()
+                  .isEmpty)) {
+        setState(() {
+          _farmBoundaryWkt =
+              _pointsToWktPolygon(
+            _farmBoundary,
+          );
+        });
+      }
+
+      debugPrint(
+        'FINAL FARM WKT: $_farmBoundaryWkt',
+      );
+    } catch (e) {
+      debugPrint(
+        'FARM MAPPING ERROR: $e',
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
+        SnackBar(
+          content: Text(
+            e
+                .toString()
+                .replaceFirst(
+                  'Exception: ',
+                  '',
+                ),
+          ),
+          backgroundColor:
+              Colors.red,
+        ),
+      );
     }
   }
 
-  double _areaInAcres(List<LatLng> points) {
-    var area = 0.0;
-    const earthRadius = 6378137.0;
-    for (var i = 0; i < points.length; i++) {
-      final a = points[i];
-      final b = points[(i + 1) % points.length];
-      area += (b.longitude * 0.0174532925199433) *
-          (a.latitude * 0.0174532925199433) -
-          (a.longitude * 0.0174532925199433) *
-              (b.latitude * 0.0174532925199433);
+  // ============================================================
+  // CALCULATE FARM AREA
+  // ============================================================
+
+  double _areaInAcres(
+    List<LatLng> points,
+  ) {
+    if (points.length < 3) {
+      return 0;
     }
-    return (area.abs() * earthRadius * earthRadius / 2) / 4046.8564224;
+
+    var area = 0.0;
+
+    const earthRadius =
+        6378137.0;
+
+    const degreesToRadians =
+        0.0174532925199433;
+
+    for (var i = 0;
+        i < points.length;
+        i++) {
+      final a =
+          points[i];
+
+      final b =
+          points[
+              (i + 1) %
+                  points.length];
+
+      area +=
+          (b.longitude *
+                  degreesToRadians) *
+              (a.latitude *
+                  degreesToRadians) -
+          (a.longitude *
+                  degreesToRadians) *
+              (b.latitude *
+                  degreesToRadians);
+    }
+
+    final squareMeters =
+        area.abs() *
+            earthRadius *
+            earthRadius /
+            2;
+
+    return squareMeters /
+        4046.8564224;
+  }
+
+  // ============================================================
+  // SHOW ERROR
+  // ============================================================
+
+  void _showError(
+    String message,
+  ) {
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content:
+              Text(message),
+          backgroundColor:
+              Colors.red,
+        ),
+      );
   }
 
   // ============================================================
@@ -177,12 +466,30 @@ class _AddFarmPageState
 
   Future<void> _submitFarm() async {
     final l10n =
-        AppLocalizations.of(context)!;
+        AppLocalizations.of(
+      context,
+    )!;
 
-    if (!_formKey.currentState!
-        .validate()) {
+    if (_isLoading) {
       return;
     }
+
+    // ==========================================================
+    // FORM VALIDATION
+    // ==========================================================
+
+    final valid =
+        _formKey.currentState
+                ?.validate() ??
+            false;
+
+    if (!valid) {
+      return;
+    }
+
+    // ==========================================================
+    // FARM SIZE
+    // ==========================================================
 
     final acreage =
         double.tryParse(
@@ -192,20 +499,134 @@ class _AddFarmPageState
 
     if (acreage == null ||
         acreage <= 0) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-        SnackBar(
-          content: Text(
-            l10n
-                .validFarmSizeRequired,
-          ),
-          backgroundColor:
-              Colors.red,
-        ),
+      _showError(
+        l10n.validFarmSizeRequired,
       );
 
       return;
     }
+
+    // ==========================================================
+    // FARM GEOMETRY
+    // ==========================================================
+
+    String? geometry =
+        _farmBoundaryWkt
+            ?.trim();
+
+    // IMPORTANT:
+    //
+    // If for any reason the WKT variable was lost but we still
+    // have the actual polygon points, regenerate it.
+
+    if ((geometry == null ||
+            geometry.isEmpty) &&
+        _farmBoundary.length >= 3) {
+      geometry =
+          _pointsToWktPolygon(
+        _farmBoundary,
+      );
+
+      _farmBoundaryWkt =
+          geometry;
+    }
+
+    if (geometry == null ||
+        geometry.isEmpty) {
+      _showError(
+        'Farm boundary is required. '
+        'Please map the farm before saving.',
+      );
+
+      return;
+    }
+
+    if (!geometry
+        .toUpperCase()
+        .startsWith(
+          'POLYGON',
+        )) {
+      _showError(
+        'Invalid farm boundary. '
+        'Please redraw the farm boundary.',
+      );
+
+      return;
+    }
+
+    // ==========================================================
+    // BASIC VALUES
+    // ==========================================================
+
+    final name =
+        _farmNameController.text
+            .trim();
+
+    final plantingDate =
+        _plantingDateController
+            .text
+            .trim();
+
+    final farmType =
+        _farmTypeController.text
+            .trim()
+            .toUpperCase();
+
+    if (name.isEmpty) {
+      _showError(
+        l10n.farmNameRequired,
+      );
+
+      return;
+    }
+
+    if (plantingDate.isEmpty) {
+      _showError(
+        l10n.plantingDateRequired,
+      );
+
+      return;
+    }
+
+    if (farmType.isEmpty) {
+      _showError(
+        l10n.farmTypeRequired,
+      );
+
+      return;
+    }
+
+    debugPrint(
+      '========================================',
+    );
+
+    debugPrint(
+      'SUBMITTING FARM',
+    );
+
+    debugPrint(
+      'NAME: $name',
+    );
+
+    debugPrint(
+      'ACREAGE: $acreage',
+    );
+
+    debugPrint(
+      'PLANTING DATE: $plantingDate',
+    );
+
+    debugPrint(
+      'FARM TYPE: $farmType',
+    );
+
+    debugPrint(
+      'GEOMETRY: $geometry',
+    );
+
+    debugPrint(
+      '========================================',
+    );
 
     setState(() {
       _isLoading = true;
@@ -213,39 +634,59 @@ class _AddFarmPageState
 
     try {
       // ========================================================
-      // GET LOGGED-IN USER
-      //
-      // We only need the user's profile location.
-      // We DO NOT extract or send farmerId.
-      // Farm ownership is determined by the JWT/backend.
+      // GET CURRENT USER
       // ========================================================
 
-      final currentUserResponse =
-          await ApiServices
-              .getCurrentUser();
-  try {
-    // ==========================================
-    // 1. GET ACTUAL LOGGED-IN USER
-    // ==========================================
-    Map<String, dynamic> currentUserResponse;
-    try {
-      currentUserResponse = await ApiServices.getCurrentUser();
-      await LocalDataService.instance.cacheProfile(currentUserResponse);
-    } catch (_) {
-      currentUserResponse =
-          await LocalDataService.instance.getCachedProfile() ??
-              (throw Exception('No cached profile is available offline'));
-    }
+      Map<String, dynamic>
+          currentUserResponse;
+
+      try {
+        currentUserResponse =
+            await ApiServices
+                .getCurrentUser();
+
+        await LocalDataService
+            .instance
+            .cacheProfile(
+          currentUserResponse,
+        );
+
+        debugPrint(
+          'CURRENT USER LOADED ONLINE',
+        );
+      } catch (e) {
+        debugPrint(
+          'CURRENT USER ONLINE ERROR: $e',
+        );
+
+        final cachedProfile =
+            await LocalDataService
+                .instance
+                .getCachedProfile();
+
+        if (cachedProfile ==
+            null) {
+          throw Exception(
+            'No cached profile is available offline',
+          );
+        }
+
+        currentUserResponse =
+            cachedProfile;
+
+        debugPrint(
+          'USING CACHED USER PROFILE',
+        );
+      }
 
       debugPrint(
         'CURRENT USER RESPONSE: '
         '$currentUserResponse',
       );
 
-      // Support either:
-      // { "data": {...} }
-      // or:
-      // { ...user fields... }
+      // ========================================================
+      // NORMALIZE USER RESPONSE
+      // ========================================================
 
       final dynamic rawUser =
           currentUserResponse[
@@ -256,13 +697,14 @@ class _AddFarmPageState
 
       if (rawUser is Map) {
         user =
-            Map<String, dynamic>
-                .from(
+            Map<String, dynamic>.from(
           rawUser,
         );
       } else {
         user =
-            currentUserResponse;
+            Map<String, dynamic>.from(
+          currentUserResponse,
+        );
       }
 
       // ========================================================
@@ -298,133 +740,171 @@ class _AddFarmPageState
           ward.isEmpty ||
           village.isEmpty) {
         throw Exception(
-          l10n
-              .profileLocationIncomplete,
+          l10n.profileLocationIncomplete,
         );
       }
+
+      debugPrint(
+        '========================================',
+      );
+
+      debugPrint(
+        'FARM PROFILE LOCATION',
+      );
+
+      debugPrint(
+        'REGION: $region',
+      );
+
+      debugPrint(
+        'DISTRICT: $district',
+      );
+
+      debugPrint(
+        'WARD: $ward',
+      );
+
+      debugPrint(
+        'VILLAGE: $village',
+      );
+
+      debugPrint(
+        '========================================',
+      );
 
       // ========================================================
       // CREATE FARM
       // ========================================================
+      //
+      // IMPORTANT:
+      //
+      // Do NOT send:
+      //
+      // farmLocation: geometry
+      //
+      // The current backend/API expects:
+      //
+      // geometry: "POLYGON ((...))"
+      //
+      // LocalDataService will:
+      //
+      // 1. Try the API first.
+      // 2. Cache successful server result locally.
+      // 3. Save pending only on a real network failure.
 
       final result =
-          await FarmApiServices
+          await LocalDataService
+              .instance
               .createFarm(
-        name:
-            _farmNameController
-                .text
-                .trim(),
+        values: {
+          'name':
+              name,
 
-        acreage: acreage,
+          'acreage':
+              acreage,
 
-        plantingDate:
-            _plantingDateController
-                .text
-                .trim(),
+          'plantingDate':
+              plantingDate,
 
-        farmType:
-            _farmTypeController
-                .text
-                .trim()
-                .toUpperCase(),
-    // ==========================================
-    // 4. CREATE FARM
-    // ==========================================
-    final result =
-        await LocalDataService.instance.createFarm(
-      values: {
-        'name': _farmNameController.text.trim(),
-        'farmerId': farmerId,
-        'acreage': acreage,
-        'plantingDate':
-          _plantingDateController.text.trim(),
-        'farmType':
-          _farmTypeController.text
-              .trim()
-              .toUpperCase(),
+          // Backend enum.
+          'farmType':
+              farmType,
 
-        farmLocation:
-            _notesController
-                .text
-                .trim(),
-        'farmLocation':
-          _farmBoundaryWkt ?? _notesController.text.trim(),
+          // PostGIS WKT polygon.
+          'geometry':
+              geometry,
 
-        region: region,
-        district: district,
-        ward: ward,
-        village: village,
-        'region': region,
-        'district': district,
-        'ward': ward,
-        'village': village,
+          'region':
+              region,
 
-        // Keep these only if your current
-        // FarmApiServices signature still requires them.
-        latitude: 0.0,
-        longitude: 0.0,
+          'district':
+              district,
+
+          'ward':
+              ward,
+
+          'village':
+              village,
+        },
       );
-      // GPS will be connected next.
-        'latitude': _currentLocation?.latitude ?? 0.0,
-      'longitude': _currentLocation?.longitude ?? 0.0,
-      },
-    );
 
       debugPrint(
-        'CREATE FARM RESULT: '
-        '$result',
+        '========================================',
       );
 
-      if (!mounted) return;
+      debugPrint(
+        'CREATE FARM RESULT: $result',
+      );
+
+      debugPrint(
+        'PENDING SYNC: '
+        '${result['_pendingSync']}',
+      );
+
+      debugPrint(
+        '========================================',
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      // ========================================================
+      // SUCCESS MESSAGE
+      // ========================================================
+
+      final pendingSync =
+          result['_pendingSync'] ==
+              true;
 
       ScaffoldMessenger.of(context)
-          .showSnackBar(
-        SnackBar(
-          content: Text(
-            l10n
-                .farmAddedSuccessfully,
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              pendingSync
+                  ? 'Farm saved offline and will sync when connected'
+                  : l10n
+                      .farmAddedSuccessfully,
+            ),
+            backgroundColor:
+                primaryGreen,
           ),
-          backgroundColor:
-              primaryGreen,
-        ),
-      );
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          result['_pendingSync'] == true
-              ? 'Farm saved offline and will sync when connected'
-              : 'Farm added successfully',
-        ),
-        backgroundColor: primaryGreen,
-      ),
-    );
+        );
 
-      // Tell FarmsPage to reload.
+      // Tell FarmsPage to refresh.
       Navigator.pop(
         context,
         true,
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint(
+        '========================================',
+      );
+
       debugPrint(
         'CREATE FARM ERROR: $e',
       );
 
-      if (!mounted) return;
+      debugPrint(
+        'STACK TRACE: $stackTrace',
+      );
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-        SnackBar(
-          content: Text(
-            e
-                .toString()
-                .replaceFirst(
-                  'Exception: ',
-                  '',
-                ),
-          ),
-          backgroundColor:
-              Colors.red,
-        ),
+      debugPrint(
+        '========================================',
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      _showError(
+        e
+            .toString()
+            .replaceFirst(
+              'Exception: ',
+              '',
+            ),
       );
     } finally {
       if (mounted) {
@@ -445,29 +925,26 @@ class _AddFarmPageState
     BuildContext context,
   ) {
     final l10n =
-        AppLocalizations.of(context)!;
+        AppLocalizations.of(
+      context,
+    )!;
 
     return Scaffold(
       backgroundColor:
           primaryGreen,
-
       resizeToAvoidBottomInset:
           true,
-
       body: SafeArea(
         bottom: false,
-
         child: Container(
           width:
               double.infinity,
-
           height:
               double.infinity,
-
           decoration:
               const BoxDecoration(
-            color: Colors.white,
-
+            color:
+                Colors.white,
             borderRadius:
                 BorderRadius.only(
               bottomLeft:
@@ -480,7 +957,6 @@ class _AddFarmPageState
               ),
             ),
           ),
-
           child: Column(
             children: [
               // =================================================
@@ -490,37 +966,33 @@ class _AddFarmPageState
               Container(
                 width:
                     double.infinity,
-
-                height: 52,
-
+                height:
+                    52,
                 padding:
                     const EdgeInsets
                         .symmetric(
-                  horizontal: 14,
+                  horizontal:
+                      14,
                 ),
-
                 decoration:
                     const BoxDecoration(
                   color:
                       primaryGreen,
-
-                  borderRadius:
-                      BorderRadius.only(
-                    bottomLeft:
-                        Radius.circular(
-                      18,
-                    ),
-                    bottomRight:
-                        Radius.circular(
-                      18,
-                    ),
-                  ),
+                  // borderRadius:
+                      // BorderRadius.only(
+                    // bottomLeft:
+                        // Radius.circular(
+                      // 18,
+                    // ),
+                    // bottomRight:
+                        // Radius.circular(
+                      // 18,
+                    // ),
+                  // ),
                 ),
-
                 alignment:
                     Alignment
                         .centerLeft,
-
                 child: Row(
                   children: [
                     InkWell(
@@ -529,13 +1001,11 @@ class _AddFarmPageState
                           context,
                         );
                       },
-
                       borderRadius:
                           BorderRadius
                               .circular(
                         20,
                       ),
-
                       child:
                           const Padding(
                         padding:
@@ -543,32 +1013,31 @@ class _AddFarmPageState
                                 .all(
                           3,
                         ),
-
-                        child: Icon(
+                        child:
+                            Icon(
                           Icons
                               .arrow_back_ios_new,
                           color:
                               Colors
                                   .white,
-                          size: 14,
+                          size:
+                              14,
                         ),
                       ),
                     ),
-
                     const SizedBox(
-                      width: 7,
+                      width:
+                          7,
                     ),
-
                     Text(
                       l10n.addFarm,
-
                       style:
                           const TextStyle(
                         color:
-                            Colors
-                                .white,
+                            Colors.white,
                         fontSize:
-                            AppTextStyles.body,
+                            AppTextStyles
+                                .body,
                         fontWeight:
                             FontWeight
                                 .w700,
@@ -588,7 +1057,6 @@ class _AddFarmPageState
                   keyboardDismissBehavior:
                       ScrollViewKeyboardDismissBehavior
                           .onDrag,
-
                   padding:
                       const EdgeInsets
                           .fromLTRB(
@@ -597,38 +1065,34 @@ class _AddFarmPageState
                     18,
                     30,
                   ),
-
-                  child: Form(
+                  child:
+                      Form(
                     key:
                         _formKey,
-
-                    child: Column(
+                    child:
+                        Column(
                       crossAxisAlignment:
                           CrossAxisAlignment
                               .start,
-
                       children: [
                         // =======================================
                         // FARM NAME
                         // =======================================
 
                         _buildLabel(
-                          l10n
-                              .farmName,
+                          l10n.farmName,
                         ),
 
                         const SizedBox(
-                          height: 7,
+                          height:
+                              7,
                         ),
 
                         _buildField(
                           controller:
                               _farmNameController,
-
                           hint:
-                              l10n
-                                  .farmName,
-
+                              l10n.farmName,
                           validator:
                               (value) {
                             if (value ==
@@ -645,7 +1109,8 @@ class _AddFarmPageState
                         ),
 
                         const SizedBox(
-                          height: 18,
+                          height:
+                              18,
                         ),
 
                         // =======================================
@@ -653,37 +1118,32 @@ class _AddFarmPageState
                         // =======================================
 
                         _buildLabel(
-                          l10n
-                              .plantingDate,
+                          l10n.plantingDate,
                         ),
 
                         const SizedBox(
-                          height: 7,
+                          height:
+                              7,
                         ),
 
                         _buildField(
                           controller:
                               _plantingDateController,
-
                           hint:
-                              l10n
-                                  .plantingDate,
-
+                              l10n.plantingDate,
                           readOnly:
                               true,
-
                           onTap:
                               _selectPlantingDate,
-
                           suffixIcon:
                               const Icon(
                             Icons
                                 .calendar_today_outlined,
-                            size: 18,
+                            size:
+                                18,
                             color:
                                 primaryGreen,
                           ),
-
                           validator:
                               (value) {
                             if (value ==
@@ -700,7 +1160,8 @@ class _AddFarmPageState
                         ),
 
                         const SizedBox(
-                          height: 18,
+                          height:
+                              18,
                         ),
 
                         // =======================================
@@ -708,12 +1169,12 @@ class _AddFarmPageState
                         // =======================================
 
                         _buildLabel(
-                          l10n
-                              .farmType,
+                          l10n.farmType,
                         ),
 
                         const SizedBox(
-                          height: 7,
+                          height:
+                              7,
                         ),
 
                         _buildFarmTypeDropdown(
@@ -721,7 +1182,8 @@ class _AddFarmPageState
                         ),
 
                         const SizedBox(
-                          height: 18,
+                          height:
+                              18,
                         ),
 
                         // =======================================
@@ -729,53 +1191,75 @@ class _AddFarmPageState
                         // =======================================
 
                         _buildLabel(
-                          l10n
-                              .farmSize,
+                          l10n.farmSize,
                         ),
 
                         const SizedBox(
-                          height: 7,
+                          height:
+                              7,
                         ),
-      // FARM SIZE
-      _buildLabel('Farm Size'),
-      const SizedBox(height: 7),
 
-      SizedBox(
-        width: double.infinity,
-        height: 42,
-        child: OutlinedButton.icon(
-          onPressed: _isLoading ? null : _startFarmMapping,
-          icon: const Icon(Icons.map_outlined, size: 18),
-          label: Text(_farmBoundary.length >= 3
-              ? 'Redraw Farm Boundary'
-              : 'Draw Farm Boundary on Map'),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: primaryGreen,
-            side: const BorderSide(color: primaryGreen),
-          ),
-        ),
-      ),
-      const SizedBox(height: 7),
+                        SizedBox(
+                          width:
+                              double.infinity,
+                          height:
+                              42,
+                          child:
+                              OutlinedButton
+                                  .icon(
+                            onPressed:
+                                _isLoading
+                                    ? null
+                                    : _startFarmMapping,
+                            icon:
+                                const Icon(
+                              Icons
+                                  .map_outlined,
+                              size:
+                                  18,
+                            ),
+                            label:
+                                Text(
+                              _farmBoundary
+                                          .length >=
+                                      3
+                                  ? 'Redraw Farm Boundary'
+                                  : 'Draw Farm Boundary on Map',
+                            ),
+                            style:
+                                OutlinedButton
+                                    .styleFrom(
+                              foregroundColor:
+                                  primaryGreen,
+                              side:
+                                  const BorderSide(
+                                color:
+                                    primaryGreen,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(
+                          height:
+                              7,
+                        ),
 
                         _buildField(
                           controller:
                               _farmSizeController,
-
                           hint:
-                              l10n
-                                  .farmSize,
-
+                              l10n.farmSize,
                           keyboardType:
                               const TextInputType
                                   .numberWithOptions(
                             decimal:
                                 true,
                           ),
-
+                          readOnly:
+                              true,
                           suffixText:
-                              l10n
-                                  .acres,
-
+                              l10n.acres,
                           validator:
                               (value) {
                             if (value ==
@@ -788,8 +1272,7 @@ class _AddFarmPageState
                             }
 
                             final size =
-                                double
-                                    .tryParse(
+                                double.tryParse(
                               value
                                   .trim(),
                             );
@@ -801,28 +1284,14 @@ class _AddFarmPageState
                               return l10n
                                   .validFarmSizeRequired;
                             }
-      _buildField(
-        controller: _farmSizeController,
-        hint: 'Farm Size',
-        readOnly: true,
-        suffixText: 'Acres',
-        validator: (value) {
-          if (value == null || value.trim().isEmpty) {
-            return 'Farm size is required';
-          }
-
-          final size = double.tryParse(value.trim());
-
-          if (size == null || size <= 0) {
-            return 'Enter a valid farm size';
-          }
 
                             return null;
                           },
                         ),
 
                         const SizedBox(
-                          height: 40,
+                          height:
+                              18,
                         ),
 
                         // =======================================
@@ -831,39 +1300,30 @@ class _AddFarmPageState
 
                         SizedBox(
                           width:
-                              double
-                                  .infinity,
-
+                              double.infinity,
                           height:
                               46,
-
                           child:
                               ElevatedButton(
                             onPressed:
                                 _isLoading
                                     ? null
                                     : _submitFarm,
-
                             style:
                                 ElevatedButton
                                     .styleFrom(
                               backgroundColor:
                                   primaryGreen,
-
                               foregroundColor:
-                                  Colors
-                                      .white,
-
+                                  Colors.white,
                               disabledBackgroundColor:
                                   primaryGreen
                                       .withValues(
                                 alpha:
                                     0.60,
                               ),
-
                               elevation:
                                   0,
-
                               shape:
                                   RoundedRectangleBorder(
                                 borderRadius:
@@ -873,7 +1333,6 @@ class _AddFarmPageState
                                 ),
                               ),
                             ),
-
                             child:
                                 _isLoading
                                     ? const SizedBox(
@@ -923,10 +1382,10 @@ class _AddFarmPageState
   ) {
     return Text(
       label,
-
       style:
           const TextStyle(
-        fontSize: AppTextStyles.body,
+        fontSize:
+            AppTextStyles.body,
         fontWeight:
             FontWeight.w600,
         color:
@@ -945,10 +1404,11 @@ class _AddFarmPageState
     BuildContext context,
   ) {
     final l10n =
-        AppLocalizations.of(context)!;
+        AppLocalizations.of(
+      context,
+    )!;
 
-    return DropdownButtonFormField<
-        String>(
+    return DropdownButtonFormField<String>(
       value:
           _farmTypeController
                   .text
@@ -956,35 +1416,33 @@ class _AddFarmPageState
               ? null
               : _farmTypeController
                   .text,
-
-      isExpanded: true,
-
+      isExpanded:
+          true,
       decoration:
           InputDecoration(
         hintText:
             l10n.selectFarmType,
-
         hintStyle:
             TextStyle(
-          fontSize: AppTextStyles.bodySmall,
+          fontSize:
+              AppTextStyles.bodySmall,
           color:
               Colors.grey.shade500,
         ),
-
-        filled: true,
-
+        filled:
+            true,
         fillColor:
             fieldBackground,
-
-        isDense: true,
-
+        isDense:
+            true,
         contentPadding:
             const EdgeInsets
                 .symmetric(
-          horizontal: 13,
-          vertical: 14,
+          horizontal:
+              13,
+          vertical:
+              14,
         ),
-
         enabledBorder:
             OutlineInputBorder(
           borderRadius:
@@ -997,7 +1455,6 @@ class _AddFarmPageState
                 fieldBorder,
           ),
         ),
-
         focusedBorder:
             OutlineInputBorder(
           borderRadius:
@@ -1008,10 +1465,10 @@ class _AddFarmPageState
               const BorderSide(
             color:
                 primaryGreen,
-            width: 1.2,
+            width:
+                1.2,
           ),
         ),
-
         errorBorder:
             OutlineInputBorder(
           borderRadius:
@@ -1024,7 +1481,6 @@ class _AddFarmPageState
                 Colors.red,
           ),
         ),
-
         focusedErrorBorder:
             OutlineInputBorder(
           borderRadius:
@@ -1037,44 +1493,48 @@ class _AddFarmPageState
                 Colors.red,
           ),
         ),
-
         errorStyle:
             const TextStyle(
-          fontSize: AppTextStyles.bodySmall,
+          fontSize:
+              AppTextStyles.bodySmall,
         ),
       ),
 
-      // IMPORTANT:
-      // Values remain backend enum values.
+      // Backend enum values remain unchanged.
       // Only labels are translated.
+
       items: [
         DropdownMenuItem(
-          value: 'NEW',
-          child: Text(
+          value:
+              'NEW',
+          child:
+              Text(
             l10n.newFarm,
             style:
                 const TextStyle(
-              fontSize: AppTextStyles.body,
+              fontSize:
+                  AppTextStyles.body,
             ),
           ),
         ),
-
         DropdownMenuItem(
           value:
               'PRODUCTION',
-          child: Text(
-            l10n
-                .productionFarm,
+          child:
+              Text(
+            l10n.productionFarm,
             style:
                 const TextStyle(
-              fontSize: AppTextStyles.body,
+              fontSize:
+                  AppTextStyles.body,
             ),
           ),
         ),
       ],
-
-      onChanged: (value) {
-        if (value == null) {
+      onChanged:
+          (value) {
+        if (value ==
+            null) {
           return;
         }
 
@@ -1084,9 +1544,10 @@ class _AddFarmPageState
               value;
         });
       },
-
-      validator: (value) {
-        if (value == null ||
+      validator:
+          (value) {
+        if (value ==
+                null ||
             value.isEmpty) {
           return l10n
               .farmTypeRequired;
@@ -1108,65 +1569,59 @@ class _AddFarmPageState
     TextInputType? keyboardType,
     String? Function(String?)?
         validator,
-    bool readOnly = false,
+    bool readOnly =
+        false,
     VoidCallback? onTap,
-    int maxLines = 1,
-    int minLines = 1,
+    int maxLines =
+        1,
+    int minLines =
+        1,
     String? suffixText,
     Widget? suffixIcon,
   }) {
     return TextFormField(
       controller:
           controller,
-
       keyboardType:
           keyboardType,
-
       validator:
           validator,
-
       readOnly:
           readOnly,
-
       onTap:
           onTap,
-
       maxLines:
           maxLines,
-
       minLines:
           minLines,
-
       style:
           const TextStyle(
-        fontSize: AppTextStyles.bodySmall,
+        fontSize:
+            AppTextStyles.bodySmall,
         color:
             Color(
           0xFF304438,
         ),
       ),
-
       decoration:
           InputDecoration(
         hintText:
             hint,
-
         hintStyle:
             TextStyle(
-          fontSize: AppTextStyles.bodySmall,
+          fontSize:
+              AppTextStyles.bodySmall,
           color:
               Colors.grey.shade500,
         ),
-
         suffixText:
             suffixText,
-
         suffixIcon:
             suffixIcon,
-
         suffixStyle:
             const TextStyle(
-          fontSize: AppTextStyles.bodySmall,
+          fontSize:
+              AppTextStyles.bodySmall,
           fontWeight:
               FontWeight.w600,
           color:
@@ -1174,23 +1629,21 @@ class _AddFarmPageState
             0xFF687A70,
           ),
         ),
-
-        filled: true,
-
+        filled:
+            true,
         fillColor:
             fieldBackground,
-
-        isDense: true,
-
+        isDense:
+            true,
         contentPadding:
             EdgeInsets.symmetric(
-          horizontal: 13,
+          horizontal:
+              13,
           vertical:
               maxLines > 1
                   ? 15
                   : 14,
         ),
-
         enabledBorder:
             OutlineInputBorder(
           borderRadius:
@@ -1203,7 +1656,6 @@ class _AddFarmPageState
                 fieldBorder,
           ),
         ),
-
         focusedBorder:
             OutlineInputBorder(
           borderRadius:
@@ -1214,10 +1666,10 @@ class _AddFarmPageState
               const BorderSide(
             color:
                 primaryGreen,
-            width: 1.2,
+            width:
+                1.2,
           ),
         ),
-
         errorBorder:
             OutlineInputBorder(
           borderRadius:
@@ -1230,7 +1682,6 @@ class _AddFarmPageState
                 Colors.red,
           ),
         ),
-
         focusedErrorBorder:
             OutlineInputBorder(
           borderRadius:
@@ -1243,202 +1694,476 @@ class _AddFarmPageState
                 Colors.red,
           ),
         ),
-
         errorStyle:
             const TextStyle(
-          fontSize: AppTextStyles.bodySmall,
+          fontSize:
+              AppTextStyles.bodySmall,
         ),
       ),
     );
   }
-
-  // ============================================================
-  // GAP
-  // ============================================================
-
-  Widget _gap() {
-    return const SizedBox(
-      height: 12,
-    );
-  }
 }
 
-class _FarmMapSheet extends StatefulWidget {
+// ==================================================================
+// FARM MAP SHEET
+// ==================================================================
+
+class _FarmMapSheet
+    extends StatefulWidget {
   const _FarmMapSheet({
     required this.initialLocation,
     required this.onBoundaryChanged,
   });
 
   final LatLng initialLocation;
-  final ValueChanged<List<LatLng>> onBoundaryChanged;
+
+  final ValueChanged<List<LatLng>>
+      onBoundaryChanged;
 
   @override
-  State<_FarmMapSheet> createState() => _FarmMapSheetState();
+  State<_FarmMapSheet>
+      createState() =>
+          _FarmMapSheetState();
 }
 
-class _FarmMapSheetState extends State<_FarmMapSheet> {
-  static const Color primaryGreen = Color(0xFF087A2F);
-  final List<LatLng> _points = [];
-  GoogleMapController? _mapController;
-  LatLng? _gpsLocation;
-  bool _isLocating = false;
+class _FarmMapSheetState
+    extends State<_FarmMapSheet> {
+  static const Color primaryGreen =
+      Color(0xFF087A2F);
 
-  void _addPoint(LatLng point) {
+  final List<LatLng> _points =
+      [];
+
+  GoogleMapController?
+      _mapController;
+
+  LatLng? _gpsLocation;
+
+  bool _isLocating =
+      false;
+
+  // ============================================================
+  // ADD BOUNDARY POINT
+  // ============================================================
+
+  void _addPoint(
+    LatLng point,
+  ) {
     setState(() {
-      _points.add(point);
+      _points.add(
+        point,
+      );
     });
-    widget.onBoundaryChanged(List<LatLng>.from(_points));
+
+    widget.onBoundaryChanged(
+      List<LatLng>.from(
+        _points,
+      ),
+    );
   }
+
+  // ============================================================
+  // CLEAR BOUNDARY
+  // ============================================================
 
   void _clearPoints() {
     setState(() {
       _points.clear();
     });
-    widget.onBoundaryChanged(const []);
+
+    widget.onBoundaryChanged(
+      const [],
+    );
   }
+
+  // ============================================================
+  // GET GPS LOCATION
+  // ============================================================
 
   Future<void> _pickGpsLocation() async {
     setState(() {
-      _isLocating = true;
+      _isLocating =
+          true;
     });
 
     try {
-      if (!await Geolocator.isLocationServiceEnabled()) {
-        throw Exception('Please enable GPS location services');
-      }
+      final enabled =
+          await Geolocator
+              .isLocationServiceEnabled();
 
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        throw Exception('Location permission is required');
-      }
-
-      final position = await Geolocator.getCurrentPosition();
-      final location = LatLng(position.latitude, position.longitude);
-      setState(() {
-        _gpsLocation = location;
-      });
-      await _mapController?.animateCamera(
-        CameraUpdate.newLatLngZoom(location, 18),
-      );
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      if (!enabled) {
+        throw Exception(
+          'Please enable GPS location services',
         );
       }
+
+      var permission =
+          await Geolocator
+              .checkPermission();
+
+      if (permission ==
+          LocationPermission.denied) {
+        permission =
+            await Geolocator
+                .requestPermission();
+      }
+
+      if (permission ==
+              LocationPermission.denied ||
+          permission ==
+              LocationPermission.deniedForever) {
+        throw Exception(
+          'Location permission is required',
+        );
+      }
+
+      final position =
+          await Geolocator
+              .getCurrentPosition();
+
+      final location =
+          LatLng(
+        position.latitude,
+        position.longitude,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _gpsLocation =
+            location;
+      });
+
+      await _mapController
+          ?.animateCamera(
+        CameraUpdate
+            .newLatLngZoom(
+          location,
+          18,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
+        SnackBar(
+          content:
+              Text(
+            e
+                .toString()
+                .replaceFirst(
+                  'Exception: ',
+                  '',
+                ),
+          ),
+          backgroundColor:
+              Colors.red,
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() {
-          _isLocating = false;
+          _isLocating =
+              false;
         });
       }
     }
   }
 
+  // ============================================================
+  // CONVERT TO WKT
+  // ============================================================
+
   String _toWktPolygon() {
-    final closedPoints = [..._points, _points.first];
-    final coordinates = closedPoints
-        .map((point) => '${point.longitude} ${point.latitude}')
-        .join(', ');
+    if (_points.length < 3) {
+      throw Exception(
+        'At least three boundary points are required',
+      );
+    }
+
+    final closedPoints =
+        List<LatLng>.from(
+      _points,
+    );
+
+    final first =
+        closedPoints.first;
+
+    final last =
+        closedPoints.last;
+
+    if (first.latitude != last.latitude ||
+        first.longitude != last.longitude) {
+      closedPoints.add(
+        first,
+      );
+    }
+
+    final coordinates =
+        closedPoints
+            .map(
+              (point) =>
+                  '${point.longitude} ${point.latitude}',
+            )
+            .join(', ');
+
     return 'POLYGON (($coordinates))';
   }
 
+  // ============================================================
+  // FINISH MAPPING
+  // ============================================================
+
   void _finish() {
     if (_points.length < 3) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tap at least three points on the map')),
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
+        const SnackBar(
+          content:
+              Text(
+            'Tap at least three points on the map',
+          ),
+          backgroundColor:
+              Colors.red,
+        ),
       );
+
       return;
     }
-    widget.onBoundaryChanged(List<LatLng>.from(_points));
-    Navigator.pop(context, _toWktPolygon());
+
+    final wkt =
+        _toWktPolygon();
+
+    // Send the points to AddFarmPage one last time.
+    widget.onBoundaryChanged(
+      List<LatLng>.from(
+        _points,
+      ),
+    );
+
+    debugPrint(
+      '========================================',
+    );
+
+    debugPrint(
+      'FARM MAP FINISHED',
+    );
+
+    debugPrint(
+      'POINTS: ${_points.length}',
+    );
+
+    debugPrint(
+      'WKT: $wkt',
+    );
+
+    debugPrint(
+      '========================================',
+    );
+
+    Navigator.pop(
+      context,
+      wkt,
+    );
   }
 
+  // ============================================================
+  // BUILD MAP
+  // ============================================================
+
   @override
-  Widget build(BuildContext context) {
-    final polygon = _points.length >= 3
-        ? <Polygon>{
-            Polygon(
-              polygonId: const PolygonId('farm-boundary'),
-              points: _points,
-              fillColor: primaryGreen.withOpacity(0.2),
-              strokeColor: primaryGreen,
-              strokeWidth: 2,
-            ),
-          }
-        : <Polygon>{};
+  Widget build(
+    BuildContext context,
+  ) {
+    final polygon =
+        _points.length >= 3
+            ? <Polygon>{
+                Polygon(
+                  polygonId:
+                      const PolygonId(
+                    'farm-boundary',
+                  ),
+                  points:
+                      _points,
+                  fillColor:
+                      primaryGreen
+                          .withOpacity(
+                    0.20,
+                  ),
+                  strokeColor:
+                      primaryGreen,
+                  strokeWidth:
+                      2,
+                ),
+              }
+            : <Polygon>{};
 
     return SafeArea(
-      child: SizedBox(
-        height: MediaQuery.sizeOf(context).height * 0.78,
-        child: Column(
+      child:
+          SizedBox(
+        height:
+            MediaQuery.sizeOf(
+                  context,
+                ).height *
+                0.78,
+        child:
+            Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 8, 8),
-              child: Row(
+              padding:
+                  const EdgeInsets
+                      .fromLTRB(
+                16,
+                10,
+                8,
+                8,
+              ),
+              child:
+                  Row(
                 children: [
                   const Expanded(
-                    child: Text(
+                    child:
+                        Text(
                       'Draw Farm Boundary',
-                      style: TextStyle(fontWeight: FontWeight.w700),
+                      style:
+                          TextStyle(
+                        fontWeight:
+                            FontWeight.w700,
+                      ),
                     ),
                   ),
+
+                  // GPS
                   IconButton(
-                    onPressed: _isLocating ? null : _pickGpsLocation,
-                    tooltip: 'Use GPS location',
-                    icon: _isLocating
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.my_location),
+                    onPressed:
+                        _isLocating
+                            ? null
+                            : _pickGpsLocation,
+                    tooltip:
+                        'Use GPS location',
+                    icon:
+                        _isLocating
+                            ? const SizedBox(
+                                width:
+                                    18,
+                                height:
+                                    18,
+                                child:
+                                    CircularProgressIndicator(
+                                  strokeWidth:
+                                      2,
+                                ),
+                              )
+                            : const Icon(
+                                Icons
+                                    .my_location,
+                              ),
                   ),
+
+                  // CLEAR
                   TextButton(
-                    onPressed: _clearPoints,
-                    child: const Text('Clear'),
-                  ),
-                  ElevatedButton(
-                    onPressed: _finish,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryGreen,
-                      foregroundColor: Colors.white,
+                    onPressed:
+                        _clearPoints,
+                    child:
+                        const Text(
+                      'Clear',
                     ),
-                    child: const Text('Done'),
+                  ),
+
+                  // DONE
+                  ElevatedButton(
+                    onPressed:
+                        _finish,
+                    style:
+                        ElevatedButton
+                            .styleFrom(
+                      backgroundColor:
+                          primaryGreen,
+                      foregroundColor:
+                          Colors.white,
+                    ),
+                    child:
+                        const Text(
+                      'Done',
+                    ),
                   ),
                 ],
               ),
             ),
+
+            // ===================================================
+            // MAP
+            // ===================================================
+
             Expanded(
-              child: GoogleMap(
-                initialCameraPosition: CameraPosition(
-                  target: widget.initialLocation,
-                  zoom: 17,
+              child:
+                  GoogleMap(
+                initialCameraPosition:
+                    CameraPosition(
+                  target:
+                      widget.initialLocation,
+                  zoom:
+                      17,
                 ),
-                myLocationEnabled: true,
-                myLocationButtonEnabled: true,
-                onMapCreated: (controller) => _mapController = controller,
-                polygons: polygon,
+
+                myLocationEnabled:
+                    true,
+
+                myLocationButtonEnabled:
+                    true,
+
+                onMapCreated:
+                    (controller) {
+                  _mapController =
+                      controller;
+                },
+
+                polygons:
+                    polygon,
+
                 markers: {
-                  if (_gpsLocation != null)
+                  // Current GPS marker.
+                  if (_gpsLocation !=
+                      null)
                     Marker(
-                      markerId: const MarkerId('selected-gps-location'),
-                      position: _gpsLocation!,
-                      icon: BitmapDescriptor.defaultMarkerWithHue(
-                        BitmapDescriptor.hueAzure,
+                      markerId:
+                          const MarkerId(
+                        'selected-gps-location',
+                      ),
+                      position:
+                          _gpsLocation!,
+                      icon:
+                          BitmapDescriptor
+                              .defaultMarkerWithHue(
+                        BitmapDescriptor
+                            .hueAzure,
                       ),
                     ),
-                  for (var i = 0; i < _points.length; i++)
+
+                  // Boundary points.
+                  for (var i = 0;
+                      i <
+                          _points
+                              .length;
+                      i++)
                     Marker(
-                      markerId: MarkerId('boundary-$i'),
-                      position: _points[i],
+                      markerId:
+                          MarkerId(
+                        'boundary-$i',
+                      ),
+                      position:
+                          _points[i],
                     ),
                 },
-                onTap: _addPoint,
+
+                // Tap map to add polygon points.
+                onTap:
+                    _addPoint,
               ),
             ),
           ],

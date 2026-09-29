@@ -11,3 +11,6 @@ android/replay_pid*.log
 
 # Installer output
 installer_output/
+android/key.properties
+android/app/*.jks
+android/app/*.keystore

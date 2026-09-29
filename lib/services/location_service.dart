@@ -1,14 +1,12 @@
 import 'package:geolocator/geolocator.dart';
 
 class LocationResult {
-  final double latitude;
-  final double longitude;
-  final double speed;      // meters/second
-  final double accuracy;   // meters
+  final String geometry;
+  final double speed; // meters/second
+  final double accuracy; // meters
 
   LocationResult({
-    required this.latitude,
-    required this.longitude,
+    required this.geometry,
     required this.speed,
     required this.accuracy,
   });
@@ -39,8 +37,7 @@ class LocationService {
     );
 
     return LocationResult(
-      latitude: position.latitude,
-      longitude: position.longitude,
+      geometry: 'POINT(${position.longitude} ${position.latitude})',
       speed: position.speed,
       accuracy: position.accuracy,
     );

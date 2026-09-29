@@ -68,6 +68,55 @@ class _BlockDetailsPageState
   // LOAD TREES
   // ===============================================================
 
+  // Future<void> _loadTrees() async {
+  //   if (mounted) {
+  //     setState(() {
+  //       _isLoadingTrees = true;
+  //       _treeError = null;
+  //     });
+  //   }
+
+  //   try {
+  //     final result = await LocalDataService.instance.getTrees(
+  //       widget.farmId,
+  //       widget.blockId,
+  //     final result =
+  //         await TreeApiServices.getTreesByBlock(
+  //       farmId: widget.farmId,
+  //       blockId: widget.blockId,
+  //     );
+
+  //     debugPrint(
+  //       'BLOCK ${widget.blockId} -> TREES: ${result.length}',
+  //     );
+
+  //     if (!mounted) return;
+
+  //     setState(() {
+  //       trees = result;
+  //       _isLoadingTrees = false;
+  //     });
+  //   } catch (e) {
+  //     debugPrint(
+  //       'LOAD BLOCK TREES ERROR: $e',
+  //     );
+
+  //     if (!mounted) return;
+
+  //     setState(() {
+  //       _isLoadingTrees = false;
+
+  //       _treeError = e
+  //           .toString()
+  //           .replaceFirst(
+  //             'Exception: ',
+  //             '',
+  //           );
+  //     });
+  //   }
+  // }
+
+
   Future<void> _loadTrees() async {
   if (mounted) {
     setState(() {
@@ -275,17 +324,17 @@ class _BlockDetailsPageState
                 decoration:
                     const BoxDecoration(
                   color: primaryGreen,
-                  borderRadius:
-                      BorderRadius.only(
-                    bottomLeft:
-                        Radius.circular(
-                      18,
-                    ),
-                    bottomRight:
-                        Radius.circular(
-                      18,
-                    ),
-                  ),
+                  // borderRadius:
+                  //     BorderRadius.only(
+                  //   bottomLeft:
+                  //       Radius.circular(
+                  //     18,
+                  //   ),
+                  //   bottomRight:
+                  //       Radius.circular(
+                  //     18,
+                  //   ),
+                  // ),
                 ),
                 child: Row(
                   children: [

@@ -12,34 +12,26 @@ import '../services/api_services/farm_harvest_api_services.dart';
 import '../theme/app_text_styles.dart';
 
 class IndexPage extends StatefulWidget {
-  const IndexPage({
-    super.key,
-  });
+  const IndexPage({super.key});
 
-@override
-State<IndexPage> createState() =>
-    IndexPageState();
+  @override
+  State<IndexPage> createState() => IndexPageState();
 }
 
-class IndexPageState extends State<IndexPage>  {
+class IndexPageState extends State<IndexPage> {
   // ============================================================
   // COLORS
   // ============================================================
 
-  static const Color primaryGreen =
-      Color(0xFF087A2F);
+  static const Color primaryGreen = Color(0xFF087A2F);
 
-  static const Color backgroundColor =
-      Color(0xFFF8FAF8);
+  static const Color backgroundColor = Color(0xFFF8FAF8);
 
-  static const Color borderColor =
-      Color(0xFFDCE8DF);
+  static const Color borderColor = Color(0xFFDCE8DF);
 
-  static const Color lightGreen =
-      Color(0xFFE7F3EB);
+  static const Color lightGreen = Color(0xFFE7F3EB);
 
-  static const Color textDark =
-      Color(0xFF25402D);
+  static const Color textDark = Color(0xFF25402D);
 
   // ============================================================
   // REAL API DATA
@@ -76,48 +68,33 @@ class IndexPageState extends State<IndexPage>  {
   // ============================================================
 
   String get _userName {
-    final fullName =
-        _currentUser?['fullName']
-            ?.toString()
-            .trim();
+    final fullName = _currentUser?['fullName']?.toString().trim();
 
-    if (fullName != null &&
-        fullName.isNotEmpty) {
+    if (fullName != null && fullName.isNotEmpty) {
       return _capitalizeName(fullName);
     }
 
-    final username =
-        _currentUser?['username']
-            ?.toString()
-            .trim();
+    final username = _currentUser?['username']?.toString().trim();
 
-    if (username != null &&
-        username.isNotEmpty) {
+    if (username != null && username.isNotEmpty) {
       return _capitalizeName(username);
     }
 
     return 'User';
   }
 
-  String _capitalizeName(
-    String name,
-  ) {
+  String _capitalizeName(String name) {
     return name
         .split(' ')
-        .where(
-          (word) =>
-              word.trim().isNotEmpty,
-        )
-        .map(
-          (word) {
-            if (word.length == 1) {
-              return word.toUpperCase();
-            }
+        .where((word) => word.trim().isNotEmpty)
+        .map((word) {
+          if (word.length == 1) {
+            return word.toUpperCase();
+          }
 
-            return '${word[0].toUpperCase()}'
-                '${word.substring(1).toLowerCase()}';
-          },
-        )
+          return '${word[0].toUpperCase()}'
+              '${word.substring(1).toLowerCase()}';
+        })
         .join(' ');
   }
 
@@ -125,14 +102,10 @@ class IndexPageState extends State<IndexPage>  {
   // GREETING
   // ============================================================
 
-  String _greeting(
-    BuildContext context,
-  ) {
-    final l10n =
-        AppLocalizations.of(context)!;
+  String _greeting(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
 
-    final hour =
-        DateTime.now().hour;
+    final hour = DateTime.now().hour;
 
     if (hour < 12) {
       return l10n.goodMorning;
@@ -150,9 +123,7 @@ class IndexPageState extends State<IndexPage>  {
   // ============================================================
 
   void _openProfile() {
-    debugPrint(
-      'OPEN PROFILE',
-    );
+    debugPrint('OPEN PROFILE');
 
     // TODO:
     // Navigate to profile page.
@@ -181,8 +152,8 @@ class IndexPageState extends State<IndexPage>  {
   }
 
   Future<void> refreshDashboard() async {
-  await _loadDashboard();
-}
+    await _loadDashboard();
+  }
 
   // ============================================================
   // LOAD DASHBOARD DATA
@@ -202,63 +173,47 @@ class IndexPageState extends State<IndexPage>  {
       // GET /api/v1/auth/me
       // ========================================================
 
-      Map<String, dynamic>?
-          currentUser;
+      Map<String, dynamic>? currentUser;
 
       try {
-        currentUser =
-            await ApiServices
-                .getCurrentUser();
+        currentUser = await ApiServices.getCurrentUser();
 
         debugPrint(
           'CURRENT USER: '
           '$currentUser',
         );
       } catch (e) {
-        debugPrint(
-          'CURRENT USER ERROR: $e',
-        );
+        debugPrint('CURRENT USER ERROR: $e');
       }
 
       // ========================================================
       // FARMS
       // ========================================================
 
-      final farms =
-          await FarmApiServices
-              .getMyFarms();
+      final farms = await FarmApiServices.getMyFarms();
 
       // ========================================================
       // TREES
       // ========================================================
 
-      final trees =
-          await TreeApiServices
-              .getMyTrees();
+      final trees = await TreeApiServices.getMyTrees();
 
       // ========================================================
       // TREE ACTIVITIES
       // ========================================================
 
-      final activities =
-          await TreeActivityApiServices
-              .getMyActivities();
+      final activities = await TreeActivityApiServices.getMyActivities();
 
       // ========================================================
       // FARM HARVESTS
       // ========================================================
 
-      List<Map<String, dynamic>>
-          farmHarvests = [];
+      List<Map<String, dynamic>> farmHarvests = [];
 
       try {
-        farmHarvests =
-            await FarmHarvestApiServices
-                .getMyHarvests();
+        farmHarvests = await FarmHarvestApiServices.getMyHarvests();
       } catch (e) {
-        debugPrint(
-          'DASHBOARD FARM HARVEST ERROR: $e',
-        );
+        debugPrint('DASHBOARD FARM HARVEST ERROR: $e');
       }
 
       if (!mounted) {
@@ -266,44 +221,28 @@ class IndexPageState extends State<IndexPage>  {
       }
 
       setState(() {
-        _currentUser =
-            currentUser;
+        _currentUser = currentUser;
 
-        _farms =
-            farms;
+        _farms = farms;
 
-        _trees =
-            trees;
+        _trees = trees;
 
-        _activities =
-            activities;
+        _activities = activities;
 
-        _farmHarvests =
-            farmHarvests;
+        _farmHarvests = farmHarvests;
 
-        _isLoading =
-            false;
+        _isLoading = false;
       });
 
-      debugPrint(
-        '================================',
-      );
+      debugPrint('================================');
 
-      debugPrint(
-        'DASHBOARD REAL DATA',
-      );
+      debugPrint('DASHBOARD REAL DATA');
 
-      debugPrint(
-        'USER: $_userName',
-      );
+      debugPrint('USER: $_userName');
 
-      debugPrint(
-        'FARMS: ${_farms.length}',
-      );
+      debugPrint('FARMS: ${_farms.length}');
 
-      debugPrint(
-        'TREES: ${_trees.length}',
-      );
+      debugPrint('TREES: ${_trees.length}');
 
       debugPrint(
         'TREE ACTIVITIES: '
@@ -335,24 +274,18 @@ class IndexPageState extends State<IndexPage>  {
         '$_totalCost',
       );
 
-      debugPrint(
-        '================================',
-      );
+      debugPrint('================================');
     } catch (e) {
-      debugPrint(
-        'DASHBOARD LOAD ERROR: $e',
-      );
+      debugPrint('DASHBOARD LOAD ERROR: $e');
 
       if (!mounted) {
         return;
       }
 
       setState(() {
-        _isLoading =
-            false;
+        _isLoading = false;
 
-        _error =
-            e.toString();
+        _error = e.toString();
       });
     }
   }
@@ -364,28 +297,16 @@ class IndexPageState extends State<IndexPage>  {
   double get _treeHarvestedKg {
     double total = 0;
 
-    for (final activity
-        in _activities) {
+    for (final activity in _activities) {
       final activityType =
-          activity['activityType']
-                  ?.toString()
-                  .trim()
-                  .toUpperCase() ??
-              '';
+          activity['activityType']?.toString().trim().toUpperCase() ?? '';
 
-      if (activityType !=
-          'HARVESTING') {
+      if (activityType != 'HARVESTING') {
         continue;
       }
 
       final harvestedKg =
-          double.tryParse(
-                activity[
-                            'harvestedKg']
-                        ?.toString() ??
-                    '0',
-              ) ??
-              0;
+          double.tryParse(activity['harvestedKg']?.toString() ?? '0') ?? 0;
 
       total += harvestedKg;
     }
@@ -400,43 +321,24 @@ class IndexPageState extends State<IndexPage>  {
   double get _farmHarvestedKg {
     double total = 0;
 
-    for (final harvest
-        in _farmHarvests) {
-      final totalHarvestedKg =
-          double.tryParse(
-        harvest['totalHarvestedKg']
-                ?.toString() ??
-            '',
+    for (final harvest in _farmHarvests) {
+      final totalHarvestedKg = double.tryParse(
+        harvest['totalHarvestedKg']?.toString() ?? '',
       );
 
-      if (totalHarvestedKg !=
-          null) {
+      if (totalHarvestedKg != null) {
         total += totalHarvestedKg;
 
         continue;
       }
 
       final bucketCount =
-          int.tryParse(
-                harvest[
-                            'bucketCount']
-                        ?.toString() ??
-                    '0',
-              ) ??
-              0;
+          int.tryParse(harvest['bucketCount']?.toString() ?? '0') ?? 0;
 
       final kgPerBucket =
-          double.tryParse(
-                harvest[
-                            'kgPerBucket']
-                        ?.toString() ??
-                    '0',
-              ) ??
-              0;
+          double.tryParse(harvest['kgPerBucket']?.toString() ?? '0') ?? 0;
 
-      total +=
-          bucketCount *
-              kgPerBucket;
+      total += bucketCount * kgPerBucket;
     }
 
     return total;
@@ -447,8 +349,7 @@ class IndexPageState extends State<IndexPage>  {
   // ============================================================
 
   double get _totalHarvestedKg {
-    return _treeHarvestedKg +
-        _farmHarvestedKg;
+    return _treeHarvestedKg + _farmHarvestedKg;
   }
 
   // ============================================================
@@ -458,15 +359,8 @@ class IndexPageState extends State<IndexPage>  {
   double get _treeActivityCost {
     double total = 0;
 
-    for (final activity
-        in _activities) {
-      final cost =
-          double.tryParse(
-                activity['cost']
-                        ?.toString() ??
-                    '0',
-              ) ??
-              0;
+    for (final activity in _activities) {
+      final cost = double.tryParse(activity['cost']?.toString() ?? '0') ?? 0;
 
       total += cost;
     }
@@ -481,15 +375,8 @@ class IndexPageState extends State<IndexPage>  {
   double get _farmHarvestCost {
     double total = 0;
 
-    for (final harvest
-        in _farmHarvests) {
-      final cost =
-          double.tryParse(
-                harvest['cost']
-                        ?.toString() ??
-                    '0',
-              ) ??
-              0;
+    for (final harvest in _farmHarvests) {
+      final cost = double.tryParse(harvest['cost']?.toString() ?? '0') ?? 0;
 
       total += cost;
     }
@@ -502,8 +389,7 @@ class IndexPageState extends State<IndexPage>  {
   // ============================================================
 
   double get _totalCost {
-    return _treeActivityCost +
-        _farmHarvestCost;
+    return _treeActivityCost + _farmHarvestCost;
   }
 
   // ============================================================
@@ -511,123 +397,70 @@ class IndexPageState extends State<IndexPage>  {
   // ============================================================
 
   int get _totalActivities {
-    return _activities.length +
-        _farmHarvests.length;
+    return _activities.length + _farmHarvests.length;
   }
 
   // ============================================================
   // UPCOMING ACTIVITIES
   // ============================================================
 
-  List<Map<String, dynamic>>
-      get _upcomingActivityList {
-    final now =
-        DateTime.now();
+  List<Map<String, dynamic>> get _upcomingActivityList {
+    final now = DateTime.now();
 
-    final today =
-        DateTime(
-      now.year,
-      now.month,
-      now.day,
-    );
+    final today = DateTime(now.year, now.month, now.day);
 
-    final upcoming =
-        _activities.where(
-      (activity) {
-        final status =
-            activity['status']
-                    ?.toString()
-                    .trim()
-                    .toUpperCase() ??
-                '';
+    final upcoming = _activities.where((activity) {
+      final status = activity['status']?.toString().trim().toUpperCase() ?? '';
 
-        final date =
-            DateTime.tryParse(
-          activity[
-                      'activityDate']
-                  ?.toString() ??
-              '',
-        );
+      final date = DateTime.tryParse(
+        activity['activityDate']?.toString() ?? '',
+      );
 
-        if (date == null) {
-          return false;
-        }
+      if (date == null) {
+        return false;
+      }
 
-        final activityDay =
-            DateTime(
-          date.year,
-          date.month,
-          date.day,
-        );
+      final activityDay = DateTime(date.year, date.month, date.day);
 
-        return status ==
-                'PLANNED' &&
-            !activityDay
-                .isBefore(today);
-      },
-    ).toList();
+      return status == 'PLANNED' && !activityDay.isBefore(today);
+    }).toList();
 
-    upcoming.sort(
-      (a, b) {
-        final aDate =
-            DateTime.tryParse(
-                  a['activityDate']
-                          ?.toString() ??
-                      '',
-                ) ??
-                DateTime(2100);
+    upcoming.sort((a, b) {
+      final aDate =
+          DateTime.tryParse(a['activityDate']?.toString() ?? '') ??
+          DateTime(2100);
 
-        final bDate =
-            DateTime.tryParse(
-                  b['activityDate']
-                          ?.toString() ??
-                      '',
-                ) ??
-                DateTime(2100);
+      final bDate =
+          DateTime.tryParse(b['activityDate']?.toString() ?? '') ??
+          DateTime(2100);
 
-        return aDate.compareTo(
-          bDate,
-        );
-      },
-    );
+      return aDate.compareTo(bDate);
+    });
 
-    return upcoming
-        .take(3)
-        .toList();
+    return upcoming.take(3).toList();
   }
 
   // ============================================================
   // FORMAT KG
   // ============================================================
 
-  String _formatKg(
-    double value,
-  ) {
-    if (value ==
-        value.roundToDouble()) {
-      return value
-          .toStringAsFixed(0);
+  String _formatKg(double value) {
+    if (value == value.roundToDouble()) {
+      return value.toStringAsFixed(0);
     }
 
-    return value
-        .toStringAsFixed(1);
+    return value.toStringAsFixed(1);
   }
 
   // ============================================================
   // FORMAT MONEY
   // ============================================================
 
-  String _formatMoney(
-    double value,
-  ) {
-    final number =
-        value.round().toString();
+  String _formatMoney(double value) {
+    final number = value.round().toString();
 
-    final formatted =
-        number.replaceAllMapped(
-      RegExp(
-        r'\B(?=(\d{3})+(?!\d))',
-      ),
+    final formatted = number.replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
       (match) => ',',
     );
 
@@ -638,19 +471,10 @@ class IndexPageState extends State<IndexPage>  {
   // FORMAT ACTIVITY TYPE - LOCALIZED
   // ============================================================
 
-  String _formatActivityType(
-    BuildContext context,
-    dynamic value,
-  ) {
-    final l10n =
-        AppLocalizations.of(context)!;
+  String _formatActivityType(BuildContext context, dynamic value) {
+    final l10n = AppLocalizations.of(context)!;
 
-    final raw =
-        value
-                ?.toString()
-                .trim()
-                .toUpperCase() ??
-            '';
+    final raw = value?.toString().trim().toUpperCase() ?? '';
 
     switch (raw) {
       case 'WEEDING':
@@ -680,13 +504,8 @@ class IndexPageState extends State<IndexPage>  {
   // FORMAT DATE
   // ============================================================
 
-  String _formatDate(
-    dynamic value,
-  ) {
-    final date =
-        DateTime.tryParse(
-      value?.toString() ?? '',
-    );
+  String _formatDate(dynamic value) {
+    final date = DateTime.tryParse(value?.toString() ?? '');
 
     if (date == null) {
       return '-';
@@ -716,244 +535,396 @@ class IndexPageState extends State<IndexPage>  {
   // ============================================================
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
-    final l10n =
-        AppLocalizations.of(context)!;
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor:
-          backgroundColor,
+      backgroundColor: backgroundColor,
 
-      body: SafeArea(
-        bottom: false,
+      body: Column(
+        children: [
+          // ==================================================
+          // GREEN USER HEADER
+          // ==================================================
+          _dashboardHeader(),
 
-        child: Column(
-          children: [
-            // ==================================================
-            // GREEN USER HEADER
-            // ==================================================
+          // ==================================================
+          // DASHBOARD CONTENT
+          // ==================================================
+          Expanded(
+            child: RefreshIndicator(
+              color: primaryGreen,
 
-            _dashboardHeader(),
+              onRefresh: _loadDashboard,
 
-            // ==================================================
-            // DASHBOARD CONTENT
-            // ==================================================
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
 
-            Expanded(
-              child:
-                  RefreshIndicator(
-                color:
-                    primaryGreen,
+                padding: const EdgeInsets.fromLTRB(12, 20, 12, 22),
 
-                onRefresh:
-                    _loadDashboard,
+                child: Column(
+                  children: [
+                    // ========================================
+                    // ERROR
+                    // ========================================
+                    if (_error != null) _errorCard(),
 
-                child:
-                    SingleChildScrollView(
-                  physics:
-                      const AlwaysScrollableScrollPhysics(),
+                    if (_error != null) const SizedBox(height: 14),
 
-                  padding:
-                      const EdgeInsets
-                          .fromLTRB(
-                    12,
-                    20,
-                    12,
-                    22,
-                  ),
+                    // ========================================
+                    // FARMS + TREES
+                    // ========================================
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _statCard(
+                            title: l10n.farms,
 
-                  child: Column(
-                    children: [
-                      // ========================================
-                      // ERROR
-                      // ========================================
+                            value: _isLoading ? '-' : _farms.length.toString(),
 
-                      if (_error !=
-                          null)
-                        _errorCard(),
-
-                      if (_error !=
-                          null)
-                        const SizedBox(
-                          height: 14,
+                            subtitle: l10n.registered,
+                          ),
                         ),
 
-                      // ========================================
-                      // FARMS + TREES
-                      // ========================================
+                        const SizedBox(width: 12),
 
-                      Row(
-                        children: [
-                          Expanded(
-                            child:
-                                _statCard(
-                              title:
-                                  l10n.farms,
+                        Expanded(
+                          child: _statCard(
+                            title: l10n.trees,
 
-                              value:
-                                  _isLoading
-                                      ? '-'
-                                      : _farms
-                                          .length
-                                          .toString(),
+                            value: _isLoading ? '-' : _trees.length.toString(),
 
-                              subtitle:
-                                  l10n.registered,
-                            ),
+                            subtitle: l10n.registered,
                           ),
+                        ),
+                      ],
+                    ),
 
-                          const SizedBox(
-                            width: 12,
+                    const SizedBox(height: 14),
+
+                    // ========================================
+                    // HARVEST + COST
+                    // ========================================
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _statCard(
+                            title: l10n.harvested,
+
+                            value: _isLoading
+                                ? '-'
+                                : '${_formatKg(_totalHarvestedKg)} kg',
+
+                            subtitle: l10n.totalHarvested,
                           ),
+                        ),
 
-                          Expanded(
-                            child:
-                                _statCard(
-                              title:
-                                  l10n.trees,
+                        const SizedBox(width: 12),
 
-                              value:
-                                  _isLoading
-                                      ? '-'
-                                      : _trees
-                                          .length
-                                          .toString(),
+                        Expanded(
+                          child: _statCard(
+                            title: l10n.totalCost,
 
-                              subtitle:
-                                  l10n.registered,
-                            ),
+                            value: _isLoading ? '-' : _formatMoney(_totalCost),
+
+                            subtitle: l10n.activityCosts,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
+                    ),
 
-                      const SizedBox(
-                        height: 14,
-                      ),
+                    const SizedBox(height: 14),
 
-                      // ========================================
-                      // HARVEST + COST
-                      // ========================================
+                    // ========================================
+                    // ACTIVITIES + FARM HARVESTS
+                    // ========================================
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _statCard(
+                            title: l10n.activities,
 
-                      Row(
-                        children: [
-                          Expanded(
-                            child:
-                                _statCard(
-                              title:
-                                  l10n.harvested,
+                            value: _isLoading
+                                ? '-'
+                                : _totalActivities.toString(),
 
-                              value:
-                                  _isLoading
-                                      ? '-'
-                                      : '${_formatKg(_totalHarvestedKg)} kg',
-
-                              subtitle:
-                                  l10n.totalHarvested,
-                            ),
+                            subtitle: l10n.recorded,
                           ),
+                        ),
 
-                          const SizedBox(
-                            width: 12,
+                        const SizedBox(width: 12),
+
+                        Expanded(
+                          child: _statCard(
+                            title: l10n.farmHarvests,
+
+                            value: _isLoading
+                                ? '-'
+                                : _farmHarvests.length.toString(),
+
+                            subtitle: l10n.recorded,
                           ),
+                        ),
+                      ],
+                    ),
 
-                          Expanded(
-                            child:
-                                _statCard(
-                              title:
-                                  l10n.totalCost,
+                    const SizedBox(height: 22),
 
-                              value:
-                                  _isLoading
-                                      ? '-'
-                                      : _formatMoney(
-                                          _totalCost,
-                                        ),
+                    // ========================================
+                    // PRODUCTION OVERVIEW
+                    // ========================================
+                    _productionOverview(),
 
-                              subtitle:
-                                  l10n.activityCosts,
-                            ),
-                          ),
-                        ],
-                      ),
+                    const SizedBox(height: 22),
 
-                      const SizedBox(
-                        height: 14,
-                      ),
+                    // ========================================
+                    // UPCOMING
+                    // ========================================
+                    _upcomingActivities(),
 
-                      // ========================================
-                      // ACTIVITIES + FARM HARVESTS
-                      // ========================================
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-                      Row(
-                        children: [
-                          Expanded(
-                            child:
-                                _statCard(
-                              title:
-                                  l10n.activities,
+  // ============================================================
+  // DASHBOARD HEADER
+  // ============================================================
 
-                              value:
-                                  _isLoading
-                                      ? '-'
-                                      : _totalActivities
-                                          .toString(),
+  Widget _dashboardHeader() {
+    final l10n = AppLocalizations.of(context)!;
+    final language = context.watch<LanguageProvider>();
+    return Container(
+      width: double.infinity,
+      color: primaryGreen,
 
-                              subtitle:
-                                  l10n.recorded,
-                            ),
-                          ),
+      // Green covers the system/status-bar area,
+      // while the actual header content starts lower.
+      padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 8),
 
-                          const SizedBox(
-                            width: 12,
-                          ),
+      child: Container(
+        width: double.infinity,
 
-                          Expanded(
-                            child:
-                                _statCard(
-                              title:
-                                  l10n.farmHarvests,
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+        decoration: const BoxDecoration(color: primaryGreen),
+        child: Row(
+          children: [
+            // Widget _dashboardHeader() {
+            //   final l10n =
+            //       AppLocalizations.of(context)!;
 
-                              value:
-                                  _isLoading
-                                      ? '-'
-                                      : _farmHarvests
-                                          .length
-                                          .toString(),
+            //   final language =
+            //       context.watch<LanguageProvider>();
 
-                              subtitle:
-                                  l10n.recorded,
-                            ),
-                          ),
-                        ],
-                      ),
+            //   return Container(
+            //     width:
+            //         double.infinity,
 
-                      const SizedBox(
-                        height: 22,
-                      ),
+            //     padding:
+            //         const EdgeInsets
+            //             .fromLTRB(
+            //       16,
+            //       16,
+            //       16,
+            //       18,
+            //     ),
 
-                      // ========================================
-                      // PRODUCTION OVERVIEW
-                      // ========================================
+            //     decoration:
+            //         const BoxDecoration(
+            //       color:
+            //           primaryGreen,
 
-                      _productionOverview(),
+            //       borderRadius:
+            //           BorderRadius.only(
+            //         bottomLeft:
+            //             Radius.circular(26),
 
-                      const SizedBox(
-                        height: 22,
-                      ),
+            //         bottomRight:
+            //             Radius.circular(26),
+            //       ),
+            //     ),
 
-                      // ========================================
-                      // UPCOMING
-                      // ========================================
+            //     child: Row(
+            //       children: [
+            // ====================================================
+            // PROFILE AVATAR
+            // ====================================================
+            InkWell(
+              onTap: _openProfile,
 
-                      _upcomingActivities(),
+              borderRadius: BorderRadius.circular(50),
 
-                      const SizedBox(
-                        height: 20,
-                      ),
+              child: Container(
+                width: 54,
+                height: 54,
+
+                decoration: BoxDecoration(
+                  color: Colors.white,
+
+                  shape: BoxShape.circle,
+
+                  border: Border.all(color: Colors.white, width: 2),
+
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.10),
+
+                      blurRadius: 8,
+
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+
+                child: const Icon(
+                  Icons.person,
+
+                  size: 34,
+
+                  color: Color(0xFFBDBDBD),
+                ),
+              ),
+            ),
+
+            const SizedBox(width: 13),
+
+            // ====================================================
+            // GREETING + USER NAME
+            // ====================================================
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+
+                crossAxisAlignment: CrossAxisAlignment.start,
+
+                children: [
+                  Text(
+                    _greeting(context),
+
+                    maxLines: 1,
+
+                    overflow: TextOverflow.ellipsis,
+
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.85),
+
+                      fontSize: AppTextStyles.body,
+
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+
+                  const SizedBox(height: 3),
+
+                  Text(
+                    _userName,
+
+                    maxLines: 1,
+
+                    overflow: TextOverflow.ellipsis,
+
+                    style: const TextStyle(
+                      color: Colors.white,
+
+                      fontSize: AppTextStyles.body,
+
+                      fontWeight: FontWeight.w800,
+
+                      height: 1.1,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(width: 8),
+
+            // ====================================================
+            // LANGUAGE
+            // ====================================================
+            PopupMenuButton<String>(
+              tooltip: l10n.changeLanguage,
+
+              offset: const Offset(0, 50),
+
+              color: Colors.white,
+
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+
+              onSelected: (languageCode) async {
+                await context.read<LanguageProvider>().setLanguage(
+                  languageCode,
+                );
+              },
+
+              itemBuilder: (context) => [
+                PopupMenuItem<String>(
+                  value: 'sw',
+
+                  child: Row(
+                    children: [
+                      Expanded(child: Text(l10n.swahili)),
+
+                      if (language.languageCode == 'sw')
+                        const Icon(Icons.check, color: primaryGreen, size: 18),
                     ],
                   ),
+                ),
+
+                PopupMenuItem<String>(
+                  value: 'en',
+
+                  child: Row(
+                    children: [
+                      Expanded(child: Text(l10n.english)),
+
+                      if (language.languageCode == 'en')
+                        const Icon(Icons.check, color: primaryGreen, size: 18),
+                    ],
+                  ),
+                ),
+              ],
+
+              child: _dashboardHeaderCircle(
+                child: Text(
+                  language.languageCode.toUpperCase(),
+
+                  style: const TextStyle(
+                    color: Colors.white,
+
+                    fontSize: AppTextStyles.bodySmall,
+
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(width: 10),
+
+            // ====================================================
+            // MORE
+            // ====================================================
+            InkWell(
+              onTap: _openMoreMenu,
+
+              borderRadius: BorderRadius.circular(50),
+
+              child: _dashboardHeaderCircle(
+                child: const Icon(
+                  Icons.more_vert,
+
+                  color: Colors.white,
+
+                  size: 25,
                 ),
               ),
             ),
@@ -964,6 +935,7 @@ class IndexPageState extends State<IndexPage>  {
   }
 
   // ============================================================
+
   // DASHBOARD HEADER
   // ============================================================
 
@@ -1367,54 +1339,36 @@ InkWell(
   }
 
   // ============================================================
+
+
   // HEADER CIRCLE
   // ============================================================
 
-  Widget _dashboardHeaderCircle({
-    required Widget child,
-  }) {
+  Widget _dashboardHeaderCircle({required Widget child}) {
     return Container(
       width: 45,
       height: 45,
 
-      alignment:
-          Alignment.center,
+      alignment: Alignment.center,
 
-      decoration:
-          BoxDecoration(
-        color:
-            Colors.white.withValues(
-          alpha: 0.10,
-        ),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.10),
 
-        shape:
-            BoxShape.circle,
+        shape: BoxShape.circle,
 
-        border:
-            Border.all(
-          color:
-              Colors.white.withValues(
-            alpha: 0.42,
-          ),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.42),
 
           width: 2,
         ),
 
         boxShadow: [
           BoxShadow(
-            color:
-                Colors.black
-                    .withValues(
-              alpha: 0.08,
-            ),
+            color: Colors.black.withValues(alpha: 0.08),
 
             blurRadius: 10,
 
-            offset:
-                const Offset(
-              0,
-              4,
-            ),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -1428,85 +1382,49 @@ InkWell(
   // ============================================================
 
   Widget _errorCard() {
-    final l10n =
-        AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context)!;
 
     return Container(
-      width:
-          double.infinity,
+      width: double.infinity,
 
-      padding:
-          const EdgeInsets.all(
-        12,
-      ),
+      padding: const EdgeInsets.all(12),
 
-      decoration:
-          BoxDecoration(
-        color:
-            Colors.red.shade50,
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
 
-        borderRadius:
-            BorderRadius.circular(
-          12,
-        ),
+        borderRadius: BorderRadius.circular(12),
 
-        border:
-            Border.all(
-          color:
-              Colors.red.shade200,
-        ),
+        border: Border.all(color: Colors.red.shade200),
       ),
 
       child: Row(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
 
         children: [
-          Icon(
-            Icons.error_outline,
+          Icon(Icons.error_outline, color: Colors.red.shade700, size: 18),
 
-            color:
-                Colors.red.shade700,
-
-            size: 18,
-          ),
-
-          const SizedBox(
-            width: 8,
-          ),
+          const SizedBox(width: 8),
 
           Expanded(
             child: Text(
-              _error ??
-                  l10n
-                      .unableToLoadDashboard,
+              _error ?? l10n.unableToLoadDashboard,
 
-              style:
-                  TextStyle(
-                color:
-                    Colors.red.shade700,
+              style: TextStyle(
+                color: Colors.red.shade700,
 
-  fontSize: AppTextStyles.body,
+                fontSize: AppTextStyles.body,
 
-                fontWeight:
-                    FontWeight.w500,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
 
           IconButton(
-            onPressed:
-                _loadDashboard,
+            onPressed: _loadDashboard,
 
-            visualDensity:
-                VisualDensity.compact,
+            visualDensity: VisualDensity.compact,
 
-            icon:
-                const Icon(
-              Icons.refresh,
-
-              size: 18,
-            ),
+            icon: const Icon(Icons.refresh, size: 18),
           ),
         ],
       ),
@@ -1525,37 +1443,18 @@ InkWell(
     return Container(
       height: 104,
 
-      padding:
-          const EdgeInsets
-              .fromLTRB(
-        12,
-        12,
-        10,
-        10,
-      ),
+      padding: const EdgeInsets.fromLTRB(12, 12, 10, 10),
 
-      decoration:
-          BoxDecoration(
-        color:
-            Colors.white,
+      decoration: BoxDecoration(
+        color: Colors.white,
 
-        borderRadius:
-            BorderRadius.circular(
-          13,
-        ),
+        borderRadius: BorderRadius.circular(13),
 
-        border:
-            Border.all(
-          color:
-              borderColor,
-
-          width: 1,
-        ),
+        border: Border.all(color: borderColor, width: 1),
       ),
 
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
 
         children: [
           Row(
@@ -1564,19 +1463,14 @@ InkWell(
                 width: 17,
                 height: 17,
 
-                decoration:
-                    const BoxDecoration(
-                  color:
-                      lightGreen,
+                decoration: const BoxDecoration(
+                  color: lightGreen,
 
-                  shape:
-                      BoxShape.circle,
+                  shape: BoxShape.circle,
                 ),
               ),
 
-              const SizedBox(
-                width: 7,
-              ),
+              const SizedBox(width: 7),
 
               Expanded(
                 child: Text(
@@ -1584,62 +1478,42 @@ InkWell(
 
                   maxLines: 1,
 
-                  overflow:
-                      TextOverflow
-                          .ellipsis,
+                  overflow: TextOverflow.ellipsis,
 
-                  style:
-                      const TextStyle(
-                    color:
-                        Color(
-                      0xFF637168,
-                    ),
+                  style: const TextStyle(
+                    color: Color(0xFF637168),
 
-  fontSize: AppTextStyles.body,
+                    fontSize: AppTextStyles.body,
 
-                    fontWeight:
-                        FontWeight
-                            .w600,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
             ],
           ),
 
-          const SizedBox(
-            height: 5,
-          ),
+          const SizedBox(height: 5),
 
           Expanded(
             child: Align(
-              alignment:
-                  Alignment
-                      .centerLeft,
+              alignment: Alignment.centerLeft,
 
-              child:
-                  FittedBox(
-                fit:
-                    BoxFit.scaleDown,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
 
-                alignment:
-                    Alignment
-                        .centerLeft,
+                alignment: Alignment.centerLeft,
 
                 child: Text(
                   value,
 
                   maxLines: 1,
 
-                  style:
-                      const TextStyle(
-                    color:
-                        primaryGreen,
+                  style: const TextStyle(
+                    color: primaryGreen,
 
-  fontSize: AppTextStyles.bodyLarge,
+                    fontSize: AppTextStyles.bodyLarge,
 
-                    fontWeight:
-                        FontWeight
-                            .w800,
+                    fontWeight: FontWeight.w800,
 
                     height: 1,
                   ),
@@ -1653,21 +1527,14 @@ InkWell(
 
             maxLines: 1,
 
-            overflow:
-                TextOverflow
-                    .ellipsis,
+            overflow: TextOverflow.ellipsis,
 
-            style:
-                const TextStyle(
-              color:
-                  Color(
-                0xFF89948C,
-              ),
+            style: const TextStyle(
+              color: Color(0xFF89948C),
 
-  fontSize: AppTextStyles.bodySmall,
+              fontSize: AppTextStyles.bodySmall,
 
-              fontWeight:
-                  FontWeight.w400,
+              fontWeight: FontWeight.w400,
             ),
           ),
         ],
@@ -1680,110 +1547,69 @@ InkWell(
   // ============================================================
 
   Widget _productionOverview() {
-    final l10n =
-        AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context)!;
 
     return Container(
-      width:
-          double.infinity,
+      width: double.infinity,
 
-      padding:
-          const EdgeInsets.all(
-        14,
-      ),
+      padding: const EdgeInsets.all(14),
 
-      decoration:
-          BoxDecoration(
-        color:
-            Colors.white,
+      decoration: BoxDecoration(
+        color: Colors.white,
 
-        borderRadius:
-            BorderRadius.circular(
-          13,
-        ),
+        borderRadius: BorderRadius.circular(13),
 
-        border:
-            Border.all(
-          color:
-              borderColor,
-
-          width: 1,
-        ),
+        border: Border.all(color: borderColor, width: 1),
       ),
 
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
 
         children: [
           Text(
             l10n.productionOverview,
 
-            style:
-                const TextStyle(
-              color:
-                  textDark,
+            style: const TextStyle(
+              color: textDark,
 
               fontSize: AppTextStyles.body,
 
-              fontWeight:
-                  FontWeight.w700,
+              fontWeight: FontWeight.w700,
             ),
           ),
 
-          const SizedBox(
-            height: 14,
-          ),
+          const SizedBox(height: 14),
 
           _productionRow(
-            label:
-                l10n.treeHarvest,
+            label: l10n.treeHarvest,
 
-            value:
-                '${_formatKg(_treeHarvestedKg)} kg',
+            value: '${_formatKg(_treeHarvestedKg)} kg',
           ),
 
-          const SizedBox(
-            height: 10,
-          ),
+          const SizedBox(height: 10),
 
           _productionRow(
-            label:
-                l10n.farmHarvest,
+            label: l10n.farmHarvest,
 
-            value:
-                '${_formatKg(_farmHarvestedKg)} kg',
+            value: '${_formatKg(_farmHarvestedKg)} kg',
           ),
 
-          const Divider(
-            height: 22,
-
-            color:
-                borderColor,
-          ),
+          const Divider(height: 22, color: borderColor),
 
           _productionRow(
-            label:
-                l10n.totalHarvested,
+            label: l10n.totalHarvested,
 
-            value:
-                '${_formatKg(_totalHarvestedKg)} kg',
+            value: '${_formatKg(_totalHarvestedKg)} kg',
 
             bold: true,
           ),
 
-          const SizedBox(
-            height: 10,
-          ),
+          const SizedBox(height: 10),
 
           _productionRow(
-            label:
-                l10n.totalCost,
+            label: l10n.totalCost,
 
-            value:
-                _formatMoney(
-              _totalCost,
-            ),
+            value: _formatMoney(_totalCost),
 
             bold: true,
           ),
@@ -1807,45 +1633,27 @@ InkWell(
           child: Text(
             label,
 
-            style:
-                TextStyle(
-              color:
-                  const Color(
-                0xFF637168,
-              ),
+            style: TextStyle(
+              color: const Color(0xFF637168),
 
               fontSize: AppTextStyles.bodySmall,
 
-              fontWeight:
-                  bold
-                      ? FontWeight
-                          .w700
-                      : FontWeight
-                          .w500,
+              fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
             ),
           ),
         ),
 
-        const SizedBox(
-          width: 10,
-        ),
+        const SizedBox(width: 10),
 
         Text(
           value,
 
-          style:
-              TextStyle(
-            color:
-                primaryGreen,
+          style: TextStyle(
+            color: primaryGreen,
 
             fontSize: AppTextStyles.bodySmall,
 
-            fontWeight:
-                bold
-                    ? FontWeight
-                        .w800
-                    : FontWeight
-                        .w700,
+            fontWeight: bold ? FontWeight.w800 : FontWeight.w700,
           ),
         ),
       ],
@@ -1857,58 +1665,37 @@ InkWell(
   // ============================================================
 
   Widget _upcomingActivities() {
-    final l10n =
-        AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context)!;
 
-    final upcoming =
-        _upcomingActivityList;
+    final upcoming = _upcomingActivityList;
 
     return Container(
-      width:
-          double.infinity,
+      width: double.infinity,
 
-      padding:
-          const EdgeInsets
-              .fromLTRB(
-        14,
-        14,
-        14,
-        15,
-      ),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 15),
 
-      decoration:
-          BoxDecoration(
-        color:
-            primaryGreen,
+      decoration: BoxDecoration(
+        color: primaryGreen,
 
-        borderRadius:
-            BorderRadius.circular(
-          13,
-        ),
+        borderRadius: BorderRadius.circular(13),
       ),
 
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
 
         children: [
           Row(
             children: [
               Expanded(
                 child: Text(
-                  l10n
-                      .upcomingActivities,
+                  l10n.upcomingActivities,
 
-                  style:
-                      const TextStyle(
-                    color:
-                        Colors.white,
+                  style: const TextStyle(
+                    color: Colors.white,
 
                     fontSize: AppTextStyles.body,
 
-                    fontWeight:
-                        FontWeight
-                            .w700,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
@@ -1918,53 +1705,36 @@ InkWell(
                   width: 14,
                   height: 14,
 
-                  child:
-                      CircularProgressIndicator(
+                  child: CircularProgressIndicator(
                     strokeWidth: 2,
 
-                    color:
-                        Colors.white,
+                    color: Colors.white,
                   ),
                 ),
             ],
           ),
 
-          const SizedBox(
-            height: 13,
-          ),
+          const SizedBox(height: 13),
 
-          if (!_isLoading &&
-              upcoming.isEmpty)
+          if (!_isLoading && upcoming.isEmpty)
             Text(
-              l10n
-                  .noUpcomingActivities,
+              l10n.noUpcomingActivities,
 
-              style:
-                  const TextStyle(
-                color:
-                    Colors.white70,
+              style: const TextStyle(
+                color: Colors.white70,
 
                 fontSize: AppTextStyles.bodySmall,
 
-                fontWeight:
-                    FontWeight.w500,
+                fontWeight: FontWeight.w500,
               ),
             ),
 
           if (!_isLoading)
             ...upcoming.map(
-              (activity) =>
-                  Padding(
-                padding:
-                    const EdgeInsets
-                        .only(
-                  bottom: 12,
-                ),
+              (activity) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
 
-                child:
-                    _upcomingActivityRow(
-                  activity,
-                ),
+                child: _upcomingActivityRow(activity),
               ),
             ),
         ],
@@ -1976,93 +1746,58 @@ InkWell(
   // UPCOMING ACTIVITY ROW
   // ============================================================
 
-  Widget _upcomingActivityRow(
-    Map<String, dynamic>
-        activity,
-  ) {
-    final activityName =
-        _formatActivityType(
-      context,
-      activity['activityType'],
-    );
+  Widget _upcomingActivityRow(Map<String, dynamic> activity) {
+    final activityName = _formatActivityType(context, activity['activityType']);
 
-    final date =
-        _formatDate(
-      activity['activityDate'],
-    );
+    final date = _formatDate(activity['activityDate']);
 
-    final treeCode =
-        activity['treeCode']
-                ?.toString() ??
-            '';
+    final treeCode = activity['treeCode']?.toString() ?? '';
 
     return Row(
-      crossAxisAlignment:
-          CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
 
       children: [
         Container(
           width: 7,
           height: 7,
 
-          margin:
-              const EdgeInsets.only(
-            top: 3,
-          ),
+          margin: const EdgeInsets.only(top: 3),
 
-          decoration:
-              const BoxDecoration(
-            color:
-                Colors.white,
+          decoration: const BoxDecoration(
+            color: Colors.white,
 
-            shape:
-                BoxShape.circle,
+            shape: BoxShape.circle,
           ),
         ),
 
-        const SizedBox(
-          width: 8,
-        ),
+        const SizedBox(width: 8),
 
         Expanded(
           child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment
-                    .start,
+            crossAxisAlignment: CrossAxisAlignment.start,
 
             children: [
               Text(
                 '$activityName • $date',
 
-                style:
-                    const TextStyle(
-                  color:
-                      Colors.white,
+                style: const TextStyle(
+                  color: Colors.white,
 
                   fontSize: AppTextStyles.bodySmall,
 
-                  fontWeight:
-                      FontWeight
-                          .w600,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
 
-              if (treeCode
-                  .isNotEmpty)
+              if (treeCode.isNotEmpty)
                 Padding(
-                  padding:
-                      const EdgeInsets
-                          .only(
-                    top: 3,
-                  ),
+                  padding: const EdgeInsets.only(top: 3),
 
                   child: Text(
                     treeCode,
 
-                    style:
-                        const TextStyle(
-                      color:
-                          Colors.white70,
+                    style: const TextStyle(
+                      color: Colors.white70,
 
                       fontSize: AppTextStyles.bodySmall,
                     ),

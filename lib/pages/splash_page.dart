@@ -7,20 +7,21 @@
 /// - Loads the AI disease detection model
 /// - Loads disease information
 /// - Initializes application services
-/// - Checks the saved login session
+/// - Checks and validates the saved login session
 ///
 /// Navigation:
-/// - Valid saved token -> MainPage
-/// - No saved token -> LoginPage
+/// - Valid saved session -> MainPage
+/// - Missing/invalid session -> LoginPage
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/disease_info_loader.dart';
 import '../providers/app_provider.dart';
+import '../providers/auth_provider.dart';
 import '../services/model_service.dart';
 import '../theme/app_text_styles.dart';
+
 import 'login_page.dart';
 import 'main_page.dart';
 
@@ -61,8 +62,7 @@ class _SplashPageState extends State<SplashPage>
   // LOADING STATE
   // ============================================================
 
-  String _loadingMessage =
-      'Initializing...';
+  String _loadingMessage = 'Initializing...';
 
   // ============================================================
   // INITIALIZE
@@ -92,16 +92,13 @@ class _SplashPageState extends State<SplashPage>
         reverse: true,
       );
 
-    _scaleAnimation =
-        Tween<double>(
+    _scaleAnimation = Tween<double>(
       begin: 0.95,
       end: 1.05,
     ).animate(
       CurvedAnimation(
-        parent:
-            _animationController,
-        curve:
-            Curves.easeInOut,
+        parent: _animationController,
+        curve: Curves.easeInOut,
       ),
     );
   }
@@ -139,8 +136,7 @@ class _SplashPageState extends State<SplashPage>
 
   Future<void> _initializeApp() async {
     try {
-      final modelService =
-          ModelService();
+      final modelService = ModelService();
 
       final diseaseInfoLoader =
           DiseaseInfoLoader();
@@ -156,8 +152,8 @@ class _SplashPageState extends State<SplashPage>
       try {
         await modelService.loadModel();
       } catch (e) {
-        // The rest of CPMS can still work even when
-        // the disease-detection model fails to load.
+        // CPMS can continue working even when the
+        // disease-detection model fails to load.
 
         debugPrint(
           'Warning: AI model loading failed: $e',
@@ -196,25 +192,21 @@ class _SplashPageState extends State<SplashPage>
           );
 
       // --------------------------------------------------------
-      // CHECK SAVED LOGIN SESSION
+      // CHECK AND VALIDATE LOGIN SESSION
       // --------------------------------------------------------
 
       _updateLoadingMessage(
         'Checking session...',
       );
 
-      final preferences =
-          await SharedPreferences
-              .getInstance();
+      final authProvider =
+          context.read<AuthProvider>();
 
-      final token =
-          preferences.getString(
-        'token',
-      );
+      await authProvider.checkSession();
 
-      final bool isLoggedIn =
-          token != null &&
-          token.trim().isNotEmpty;
+      if (!mounted) {
+        return;
+      }
 
       debugPrint(
         '================================',
@@ -225,8 +217,16 @@ class _SplashPageState extends State<SplashPage>
       );
 
       debugPrint(
-        'TOKEN EXISTS: $isLoggedIn',
+        'AUTHENTICATED: '
+        '${authProvider.isAuthenticated}',
       );
+
+      if (authProvider.currentUser != null) {
+        debugPrint(
+          'CURRENT USER: '
+          '${authProvider.currentUser}',
+        );
+      }
 
       debugPrint(
         '================================',
@@ -254,14 +254,19 @@ class _SplashPageState extends State<SplashPage>
       // NAVIGATE
       // --------------------------------------------------------
 
-      if (isLoggedIn) {
+      if (authProvider.isAuthenticated) {
         _navigateToMain();
       } else {
         _navigateToLogin();
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint(
         'CPMS INITIALIZATION ERROR: $e',
+      );
+
+      debugPrint(
+        'CPMS INITIALIZATION STACK: '
+        '$stackTrace',
       );
 
       if (!mounted) {
@@ -301,13 +306,12 @@ class _SplashPageState extends State<SplashPage>
       return;
     }
 
-    Navigator.of(context)
-        .pushReplacement(
+    Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
-        builder:
-            (context) =>
-                const LoginPage(),
+        builder: (context) =>
+            const LoginPage(),
       ),
+      (route) => false,
     );
   }
 
@@ -320,13 +324,12 @@ class _SplashPageState extends State<SplashPage>
       return;
     }
 
-    Navigator.of(context)
-        .pushReplacement(
+    Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
-        builder:
-            (context) =>
-                const MainPage(),
+        builder: (context) =>
+            const MainPage(),
       ),
+      (route) => false,
     );
   }
 
@@ -339,19 +342,14 @@ class _SplashPageState extends State<SplashPage>
     BuildContext context,
   ) {
     return Scaffold(
-      backgroundColor:
-          backgroundColor,
+      backgroundColor: backgroundColor,
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration:
-            const BoxDecoration(
-          gradient:
-              LinearGradient(
-            begin:
-                Alignment.topCenter,
-            end:
-                Alignment.bottomCenter,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
             colors: [
               Color(0xFFE5F4E9),
               Color(0xFFF8FAF8),
@@ -366,63 +364,47 @@ class _SplashPageState extends State<SplashPage>
         ),
         child: SafeArea(
           child: Center(
-            child:
-                SingleChildScrollView(
+            child: SingleChildScrollView(
               padding:
-                  const EdgeInsets
-                      .symmetric(
+                  const EdgeInsets.symmetric(
                 horizontal: 28,
                 vertical: 30,
               ),
               child: Column(
                 mainAxisAlignment:
-                    MainAxisAlignment
-                        .center,
+                    MainAxisAlignment.center,
                 children: [
                   // ============================================
                   // LOGO
                   // ============================================
 
                   ScaleTransition(
-                    scale:
-                        _scaleAnimation,
-                    child:
-                        Container(
+                    scale: _scaleAnimation,
+                    child: Container(
                       width: 145,
                       height: 145,
                       padding:
-                          const EdgeInsets
-                              .all(
+                          const EdgeInsets.all(
                         8,
                       ),
-                      decoration:
-                          BoxDecoration(
-                        color:
-                            Colors.white,
-                        shape:
-                            BoxShape.circle,
-                        border:
-                            Border.all(
-                          color:
-                              primaryGreen
-                                  .withValues(
-                            alpha:
-                                0.18,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: primaryGreen
+                              .withValues(
+                            alpha: 0.18,
                           ),
                           width: 2,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color:
-                                primaryGreen
-                                    .withValues(
-                              alpha:
-                                  0.18,
+                            color: primaryGreen
+                                .withValues(
+                              alpha: 0.18,
                             ),
-                            blurRadius:
-                                28,
-                            spreadRadius:
-                                5,
+                            blurRadius: 28,
+                            spreadRadius: 5,
                             offset:
                                 const Offset(
                               0,
@@ -431,15 +413,11 @@ class _SplashPageState extends State<SplashPage>
                           ),
                         ],
                       ),
-                      child:
-                          ClipOval(
-                        child:
-                            Image.asset(
+                      child: ClipOval(
+                        child: Image.asset(
                           'assets/images/app_icon.png',
-                          fit:
-                              BoxFit.cover,
-                          errorBuilder:
-                              (
+                          fit: BoxFit.cover,
+                          errorBuilder: (
                             context,
                             error,
                             stackTrace,
@@ -479,15 +457,14 @@ class _SplashPageState extends State<SplashPage>
                     'TARI',
                     textAlign:
                         TextAlign.center,
-                    style:
-                        TextStyle(
-                      color:
-                          primaryGreen,
-                      fontSize: AppTextStyles.subtitle,
+                    style: TextStyle(
+                      color: primaryGreen,
+                      fontSize:
+                          AppTextStyles
+                              .subtitle,
                       fontWeight:
                           FontWeight.w800,
-                      letterSpacing:
-                          2,
+                      letterSpacing: 2,
                     ),
                   ),
 
@@ -503,11 +480,11 @@ class _SplashPageState extends State<SplashPage>
                     'CASHEW PRODUCTION',
                     textAlign:
                         TextAlign.center,
-                    style:
-                        TextStyle(
-                      color:
-                          darkGreen,
-                      fontSize: AppTextStyles.largeHeading,
+                    style: TextStyle(
+                      color: darkGreen,
+                      fontSize:
+                          AppTextStyles
+                              .largeHeading,
                       fontWeight:
                           FontWeight.w800,
                       height: 1.15,
@@ -522,11 +499,11 @@ class _SplashPageState extends State<SplashPage>
                     'MANAGEMENT SYSTEM',
                     textAlign:
                         TextAlign.center,
-                    style:
-                        TextStyle(
-                      color:
-                          darkGreen,
-                      fontSize: AppTextStyles.heading,
+                    style: TextStyle(
+                      color: darkGreen,
+                      fontSize:
+                          AppTextStyles
+                              .heading,
                       fontWeight:
                           FontWeight.w700,
                       height: 1.15,
@@ -545,13 +522,12 @@ class _SplashPageState extends State<SplashPage>
                     'Tanzania Agricultural Research Institute',
                     textAlign:
                         TextAlign.center,
-                    style:
-                        TextStyle(
-                      color:
-                          Color(
+                    style: TextStyle(
+                      color: Color(
                         0xFF66746A,
                       ),
-                      fontSize: AppTextStyles.body,
+                      fontSize:
+                          AppTextStyles.body,
                       fontWeight:
                           FontWeight.w500,
                       height: 1.5,
@@ -571,13 +547,12 @@ class _SplashPageState extends State<SplashPage>
                     'and disease monitoring.',
                     textAlign:
                         TextAlign.center,
-                    style:
-                        TextStyle(
-                      color:
-                          Color(
+                    style: TextStyle(
+                      color: Color(
                         0xFF89948C,
                       ),
-                      fontSize: AppTextStyles.body,
+                      fontSize:
+                          AppTextStyles.body,
                       fontWeight:
                           FontWeight.w400,
                       height: 1.5,
@@ -598,8 +573,7 @@ class _SplashPageState extends State<SplashPage>
                     child:
                         CircularProgressIndicator(
                       strokeWidth: 3,
-                      color:
-                          primaryGreen,
+                      color: primaryGreen,
                     ),
                   ),
 
@@ -616,22 +590,21 @@ class _SplashPageState extends State<SplashPage>
                         const Duration(
                       milliseconds: 250,
                     ),
-                    child:
-                        Text(
+                    child: Text(
                       _loadingMessage,
-                      key:
-                          ValueKey<String>(
+                      key: ValueKey<String>(
                         _loadingMessage,
                       ),
                       textAlign:
                           TextAlign.center,
                       style:
                           const TextStyle(
-                        color:
-                            Color(
+                        color: Color(
                           0xFF637168,
                         ),
-                        fontSize: AppTextStyles.body,
+                        fontSize:
+                            AppTextStyles
+                                .body,
                         fontWeight:
                             FontWeight.w500,
                       ),
@@ -672,9 +645,12 @@ class _SplashPageState extends State<SplashPage>
                           TextStyle(
                         color:
                             primaryGreen,
-                        fontSize: AppTextStyles.bodySmall,
+                        fontSize:
+                            AppTextStyles
+                                .bodySmall,
                         fontWeight:
-                            FontWeight.w800,
+                            FontWeight
+                                .w800,
                         letterSpacing:
                             1.5,
                       ),

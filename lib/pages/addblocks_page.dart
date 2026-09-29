@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../services/local_data_service.dart';
+import '../l10n/app_localizations.dart';
+import '../theme/app_text_styles.dart';
 
 class AddBlockPage extends StatefulWidget {
   final String farmId;
@@ -275,13 +277,13 @@ class _AddBlockPageState extends State<AddBlockPage> {
                   color:
                       primaryGreen,
 
-                  borderRadius:
-                      BorderRadius.only(
-                    bottomLeft:
-                        Radius.circular(18),
-                    bottomRight:
-                        Radius.circular(18),
-                  ),
+                  // borderRadius:
+                  //     BorderRadius.only(
+                  //   bottomLeft:
+                  //       Radius.circular(18),
+                  //   bottomRight:
+                  //       Radius.circular(18),
+                  // ),
                 ),
 
                 child: Row(

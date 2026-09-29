@@ -5,7 +5,7 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.9.2
+  sdk: ^3.9.0
 
 dependencies:
   flutter:
@@ -55,7 +55,9 @@ dependencies:
   barcode_widget: ^2.0.4
   mobile_scanner: ^7.4.2
   geolocator: ^13.0.0
+  connectivity_plus: ^6.1.4
   google_maps_flutter: ^2.11.0
+  path_provider: ^2.1.6
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -1,65 +1,99 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import 'index_page.dart';
-import 'me_page.dart';
-import 'farms_page.dart';
-import 'trees_page.dart';
-import 'activity_page.dart';
-import '../theme/app_text_styles.dart';
+import '../providers/auth_provider.dart';
 import '../widgets/bottom_nav.dart';
 
+import 'activity_page.dart';
+import 'farms_page.dart';
+import 'index_page.dart';
+import 'login_page.dart';
+import 'me_page.dart';
+import 'trees_page.dart';
+
 class MainPage extends StatefulWidget {
-  const MainPage({super.key});
+  const MainPage({
+    super.key,
+  });
 
   @override
-  State<MainPage> createState() => _MainPageState();
+  State<MainPage> createState() =>
+      _MainPageState();
 }
 
 class _MainPageState extends State<MainPage> {
+  // ============================================================
+  // CURRENT NAVIGATION INDEX
+  // ============================================================
+
   int _currentIndex = 0;
 
-  // Used to force a fresh instance of a page when
-  // the user selects a bottom-navigation tab.
+  // ============================================================
+  // PAGE REFRESH KEYS
+  // ============================================================
+
   int _homeRefreshKey = 0;
   int _farmsRefreshKey = 0;
   int _treesRefreshKey = 0;
   int _activitiesRefreshKey = 0;
   int _moreRefreshKey = 0;
 
+  // Prevent multiple redirects to LoginPage.
+  bool _redirectingToLogin = false;
+
   // ============================================================
   // BOTTOM NAVIGATION
   // ============================================================
 
   void _onBottomNavTap(int index) {
+    if (_currentIndex == index) {
+      _refreshCurrentPage(index);
+      return;
+    }
+
     setState(() {
       _currentIndex = index;
 
-      // Force the selected page to be recreated.
-      //
-      // Its initState() will run again and therefore
-      // reload fresh data from the backend.
-      switch (index) {
-        case 0:
-          _homeRefreshKey++;
-          break;
-
-        case 1:
-          _farmsRefreshKey++;
-          break;
-
-        case 2:
-          _treesRefreshKey++;
-          break;
-
-        case 3:
-          _activitiesRefreshKey++;
-          break;
-
-        case 4:
-          _moreRefreshKey++;
-          break;
-      }
+      _incrementRefreshKey(index);
     });
+  }
+
+  // ============================================================
+  // REFRESH CURRENT PAGE
+  // ============================================================
+
+  void _refreshCurrentPage(int index) {
+    setState(() {
+      _incrementRefreshKey(index);
+    });
+  }
+
+  // ============================================================
+  // INCREMENT REFRESH KEY
+  // ============================================================
+
+  void _incrementRefreshKey(int index) {
+    switch (index) {
+      case 0:
+        _homeRefreshKey++;
+        break;
+
+      case 1:
+        _farmsRefreshKey++;
+        break;
+
+      case 2:
+        _treesRefreshKey++;
+        break;
+
+      case 3:
+        _activitiesRefreshKey++;
+        break;
+
+      case 4:
+        _moreRefreshKey++;
+        break;
+    }
   }
 
   // ============================================================
@@ -74,7 +108,34 @@ class _MainPageState extends State<MainPage> {
   }
 
   // ============================================================
-  // PAGES
+  // REDIRECT TO LOGIN
+  // ============================================================
+
+  void _redirectToLogin() {
+    if (_redirectingToLogin) {
+      return;
+    }
+
+    _redirectingToLogin = true;
+
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) {
+        if (!mounted) {
+          return;
+        }
+
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (_) => const LoginPage(),
+          ),
+          (route) => false,
+        );
+      },
+    );
+  }
+
+  // ============================================================
+  // BUILD APPLICATION PAGES
   // ============================================================
 
   List<Widget> _buildPages() {
@@ -141,6 +202,45 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider =
+        context.watch<AuthProvider>();
+
+    // ==========================================================
+    // SESSION CHECKING
+    // ==========================================================
+
+    if (authProvider.isChecking) {
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: CircularProgressIndicator(
+            color: Color(0xFF11732E),
+          ),
+        ),
+      );
+    }
+
+    // ==========================================================
+    // SESSION INVALID / USER LOGGED OUT
+    // ==========================================================
+
+    if (!authProvider.isAuthenticated) {
+      _redirectToLogin();
+
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: CircularProgressIndicator(
+            color: Color(0xFF11732E),
+          ),
+        ),
+      );
+    }
+
+    // ==========================================================
+    // AUTHENTICATED APPLICATION
+    // ==========================================================
+
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,

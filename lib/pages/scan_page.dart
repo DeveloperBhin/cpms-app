@@ -46,16 +46,25 @@ class _ScanPageState extends State<ScanPage> {
   // INIT
   // ==============================================================
 
-  @override
-  void initState() {
-    super.initState();
+ @override
+void initState() {
+  super.initState();
 
-    _scannerController = MobileScannerController(
-      formats: const [
-        BarcodeFormat.code128,
-      ],
-    );
-  }
+  _scannerController = MobileScannerController(
+    detectionSpeed: DetectionSpeed.noDuplicates,
+    formats: const [
+      BarcodeFormat.code128,
+      BarcodeFormat.code39,
+      BarcodeFormat.code93,
+      BarcodeFormat.ean13,
+      BarcodeFormat.ean8,
+      BarcodeFormat.upcA,
+      BarcodeFormat.upcE,
+      BarcodeFormat.itf,
+      BarcodeFormat.codabar,
+    ],
+  );
+}
 
   // ==============================================================
   // DISPOSE
@@ -70,39 +79,66 @@ class _ScanPageState extends State<ScanPage> {
   // ==============================================================
   // BARCODE DETECTED
   // ==============================================================
+Future<void> _onBarcodeDetected(
+  BarcodeCapture capture,
+) async {
+  if (_isProcessing) {
+    return;
+  }
 
-  Future<void> _onBarcodeDetected(
-    BarcodeCapture capture,
-  ) async {
-    if (_isProcessing) {
-      return;
+  if (capture.barcodes.isEmpty) {
+    debugPrint('SCAN: No barcodes detected');
+    return;
+  }
+
+  // Check every detected barcode instead of assuming
+  // the first barcode contains the usable value.
+  String? rawValue;
+  Barcode? detectedBarcode;
+
+  for (final barcode in capture.barcodes) {
+    debugPrint(
+      'SCAN DETECTED -> '
+      'format=${barcode.format}, '
+      'rawValue=${barcode.rawValue}, '
+      'displayValue=${barcode.displayValue}',
+    );
+
+    final value = barcode.rawValue;
+
+    if (value != null && value.trim().isNotEmpty) {
+      rawValue = value;
+      detectedBarcode = barcode;
+      break;
     }
+  }
 
-    if (capture.barcodes.isEmpty) {
-      return;
-    }
+  if (rawValue == null) {
+    debugPrint(
+      'SCAN: Barcode detected but no readable raw value.',
+    );
+    return;
+  }
 
-    final String? rawValue =
-        capture.barcodes.first.rawValue;
+  final code = rawValue.trim().toUpperCase();
 
-    if (rawValue == null || rawValue.trim().isEmpty) {
-      return;
-    }
+  debugPrint('====================================');
+  debugPrint('BARCODE SUCCESSFULLY READ');
+  debugPrint('FORMAT: ${detectedBarcode?.format}');
+  debugPrint('RAW: $rawValue');
+  debugPrint('CODE: $code');
+  debugPrint('====================================');
 
-    // ============================================================
-    // RAW BARCODE VALUE
-    //
-    // Do not localize barcode values.
-    // ==============================================================
+  if (!mounted) {
+    return;
+  }
 
-    final String code =
-        rawValue.trim().toUpperCase();
+  setState(() {
+    _isProcessing = true;
+    _lastScannedCode = code;
+  });
 
-    setState(() {
-      _isProcessing = true;
-      _lastScannedCode = code;
-    });
-
+  try {
     await _scannerController.stop();
 
     if (!mounted) {
@@ -110,68 +146,110 @@ class _ScanPageState extends State<ScanPage> {
     }
 
     await _findTree(code);
-  }
+  } catch (e) {
+    debugPrint('BARCODE PROCESSING ERROR: $e');
 
-  // ==============================================================
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isProcessing = false;
+    });
+
+    try {
+      await _scannerController.start();
+    } catch (scannerError) {
+      debugPrint(
+        'SCANNER RESTART ERROR: $scannerError',
+      );
+    }
+  }
+}  // ==============================================================
   // FIND TREE
   // ==============================================================
+Future<void> _findTree(String code) async {
+  debugPrint('====================================');
+  debugPrint('SEARCHING TREE');
+  debugPrint('TREE CODE: $code');
+  debugPrint('====================================');
 
-  Future<void> _findTree(String code) async {
-    try {
-      final tree =
-          await TreeApiServices.getTreeByCode(
-        treeCode: code,
-      );
+  try {
+    final tree = await TreeApiServices.getTreeByCode(
+      treeCode: code,
+    );
 
-      if (!mounted) {
-        return;
-      }
+    debugPrint('TREE API RESPONSE: $tree');
 
-      // ==========================================================
-      // RAW DATABASE IDS
-      //
-      // Never translate these values.
-      // ==========================================================
+    if (!mounted) {
+      return;
+    }
 
-      final treeId =
-          tree['id']?.toString() ?? '';
+    final treeId = tree['id']?.toString() ?? '';
+    final farmId = tree['farmId']?.toString() ?? '';
+    final blockId = tree['blockId']?.toString() ?? '';
 
-      final farmId =
-          tree['farmId']?.toString() ?? '';
+    debugPrint('TREE ID: $treeId');
+    debugPrint('FARM ID: $farmId');
+    debugPrint('BLOCK ID: $blockId');
 
-      final blockId =
-          tree['blockId']?.toString() ?? '';
-
-      if (treeId.isEmpty ||
-          farmId.isEmpty ||
-          blockId.isEmpty) {
-        await _showTreeNotFound(code);
-        return;
-      }
-
-      await Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => TreeDetailsPage(
-            farmId: farmId,
-            blockId: blockId,
-            treeId: treeId,
-          ),
-        ),
-      );
-    } catch (e) {
+    if (treeId.isEmpty ||
+        farmId.isEmpty ||
+        blockId.isEmpty) {
       debugPrint(
-        'TREE LOOKUP ERROR: $e',
+        'TREE RESPONSE IS MISSING REQUIRED IDS',
       );
-
-      if (!mounted) {
-        return;
-      }
 
       await _showTreeNotFound(code);
+      return;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    await Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TreeDetailsPage(
+          farmId: farmId,
+          blockId: blockId,
+          treeId: treeId,
+        ),
+      ),
+    );
+  } catch (e, stackTrace) {
+    debugPrint('====================================');
+    debugPrint('TREE LOOKUP FAILED');
+    debugPrint('CODE: $code');
+    debugPrint('ERROR: $e');
+    debugPrint('STACK: $stackTrace');
+    debugPrint('====================================');
+
+    if (!mounted) {
+      return;
+    }
+
+    await _showTreeNotFound(code);
+  }
+}
+
+
+String _normalizeTreeCode(String input) {
+  final value = input.trim().toUpperCase();
+
+  // User entered only the numeric tree ID.
+  // Example: 4 -> TR-000004
+  if (RegExp(r'^\d+$').hasMatch(value)) {
+    final id = int.tryParse(value);
+
+    if (id != null && id > 0) {
+      return 'TR-${id.toString().padLeft(6, '0')}';
     }
   }
 
+  return value;
+}
   // ==============================================================
   // TREE NOT FOUND
   // ==============================================================
@@ -397,7 +475,13 @@ class _ScanPageState extends State<ScanPage> {
       _lastScannedCode = result;
     });
 
-    await _findTree(result);
+    // await _findTree(result);
+    final code = _normalizeTreeCode(result);
+
+debugPrint('MANUAL INPUT: $result');
+debugPrint('NORMALIZED TREE CODE: $code');
+
+await _findTree(code);
   }
 
   // ==============================================================
@@ -426,10 +510,10 @@ class _ScanPageState extends State<ScanPage> {
               ),
               decoration: const BoxDecoration(
                 color: primaryGreen,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(18),
-                  bottomRight: Radius.circular(18),
-                ),
+                // borderRadius: BorderRadius.only(
+                //   bottomLeft: Radius.circular(18),
+                //   bottomRight: Radius.circular(18),
+                // ),
               ),
               child: Row(
                 children: [
